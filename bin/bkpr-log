@@ -1,0 +1,132 @@
+#!/usr/bin/perl -wT
+
+use strict;
+use warnings;
+
+$ENV{PATH} = '/bin'; # untaint
+
+BEGIN {
+
+    unless (eval { require Beekeeper }) {
+        # Modules not installed yet
+        my $script_dir = (__FILE__ =~ m|^(.*)/|) ? $1 : ".";
+        unshift @INC, "$script_dir/../lib";
+    }
+}
+
+use Beekeeper::Service::LogTail;
+use Getopt::Long;
+
+my ($opt_count, $opt_level, $opt_host, $opt_pool, $opt_class,  
+    $opt_message, $opt_follow, $opt_verbose, $opt_help);
+
+GetOptions(
+    "number=i"  => \$opt_count,    # --number
+    "level=i"   => \$opt_level,    # --level
+    "host=s"    => \$opt_host,     # --host
+    "pool=s"    => \$opt_pool,     # --pool
+    "class=s"   => \$opt_class,    # --class
+    "message=s" => \$opt_message,  # --message
+    "follow"    => \$opt_follow,   # --follow
+    "verbose"   => \$opt_verbose,  # --verbose
+    "help"      => \$opt_help,     # --help    
+) or exit;
+
+my $Help = "
+Usage: bkpr-log [OPTIONS]
+Bla bla bla.
+
+  -n, --number N    ?
+  -l, --level N     ?
+  -h, --host  re    messages only of specified host
+  -p, --pool  re    messages only of specified pool
+  -c, --class re    messages only of specified class
+  -m, --message re  messages only of specified class
+  -f, --follow      ?
+  -v, --verbose     display host:pool:pid of entries
+  -h, --help        display this help and exit
+
+All filters can be combined.
+
+";
+
+if ($opt_help) {
+    print $Help;
+    exit;
+}
+
+my $last;
+
+MAIN: {
+
+    my $l = Beekeeper::Service::LogTail->tail(
+        count   => $opt_count,
+        level   => $opt_level,
+        host    => $opt_host, 
+        pool    => $opt_pool, 
+        class   => $opt_class,
+        message => $opt_message,
+        after   => $last,
+    );
+
+    foreach my $msg (@$l) {
+
+        my $ts = $msg->{tstamp};
+        my $ms = int(($ts * 1000) % 1000);
+        my @t = reverse((localtime($ts))[0..5]); $t[0] += 1900; $t[1]++;
+
+        my $str = sprintf("[%4d-%02d-%02d %02d:%02d:%02d.%03d]", @t, $ms);
+
+        if ($opt_verbose) {
+            $str .= "[$msg->{host}:$msg->{pool}:$msg->{pid}]";
+        }
+        else {
+            # Timestamp without the date part
+            $str = "[". substr( $str, 12 );
+        }
+
+        $str .= "[$msg->{service}]";
+        $str .= "[$msg->{type}] ";
+        $str .= $msg->{message};
+
+        $str =~ s/\n+\s*$//s;
+
+        print $str . "\n";
+        
+        $last = $ts;
+    }
+
+    sleep 1 && redo if $opt_follow;
+}
+
+
+__END__
+
+=head1 NAME
+
+bkpr-log - ...
+
+=head1 VERSION
+
+Version 0.01
+
+=head1 SYNOPSIS
+
+=head1 DESCRIPTION
+
+=head1 AUTHOR
+
+José Micó, C<< <jose.mico@gmail.com> >>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2015 by José Micó.
+
+This is free software; you can redistribute it and/or modify it under the same 
+terms as the Perl 5 programming language itself.
+
+This software is distributed in the hope that it will be useful, but it is 
+provided “as is” and without any express or implied warranties. For details, 
+see the full text of the license in the file LICENSE.
+
+=cut
