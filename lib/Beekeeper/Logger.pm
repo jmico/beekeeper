@@ -94,8 +94,8 @@ sub new {
         $self->{log_file} = (-d "$dir/$user") ? "$dir/$user/$file" : "$dir/$file";
     }
 
-    unless (1 || $self->{foreground}) {
-        #
+    unless ($self->{foreground}) {
+
         my $log_file = $self->{log_file};
 
         if (open(my $fh, '>>', $log_file)) {
