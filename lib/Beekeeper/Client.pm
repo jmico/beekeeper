@@ -87,10 +87,15 @@ sub new {
         async_cv       => undef,
     };
 
-    my $bus_id = $args{'bus_id'} || 'backend';
-    my $config = Beekeeper::Config->get_bus_config( $bus_id );
+    $args{'bus_id'} ||= 'backend';
 
-    $self->{_BUS} = Beekeeper::Bus::STOMP->new( %$config, %args, bus_id => $bus_id );
+    unless (exists $args{'user'} && exists $args{'pass'}) {
+        # Read connection parameters from config file
+        my $config = Beekeeper::Config->get_bus_config( %args );
+        %args = ( %$config, %args );
+    }
+
+    $self->{_BUS} = Beekeeper::Bus::STOMP->new( %args );
 
     # Connect to STOMP broker
     $self->{_BUS}->connect( blocking => 1 );

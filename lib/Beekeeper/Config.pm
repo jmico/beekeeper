@@ -40,9 +40,11 @@ my %Cache;
 
 
 sub get_bus_config {
-    my ($class, $bus_id) = @_;
+    my ($class, %args) = @_;
 
-    my $config = Beekeeper::Config->read_config_file( "bus.config.json" );
+    my $bus_id = $args{'bus_id'};
+
+    my $config = $class->read_config_file( config_file => "bus.config.json", %args );
 
     my %bus_cfg  = map { $_->{'bus-id'}  => $_ } @$config;
 
@@ -50,9 +52,11 @@ sub get_bus_config {
 }
 
 sub get_pool_config {
-    my ($class, $pool_id) = @_;
+    my ($class, %args) = @_;
 
-    my $config = Beekeeper::Config->read_config_file( "pool.config.json" );
+    my $pool_id = $args{'pool_id'};
+
+    my $config = $class->read_config_file( config_file => "pool.config.json", %args );
 
     my %pool_cfg = map { $_->{'pool-id'} => $_ } @$config;
 
@@ -60,13 +64,15 @@ sub get_pool_config {
 }
 
 sub read_config_file {
-    my ($class, $file) = @_;
+    my ($class, %args) = @_;
 
-    my $cdir; #TODO
-    #my $cdir = $self->{options}->{'config-dir'};
+    my $file = $args{'config_file'};
+    my $cdir = $args{'config_dir'};
+
     $cdir = $ENV{'BEEKEEPER_CONFIG_DIR'} unless ($cdir && -d $cdir);
     $cdir = '~/.config/beekeeper' unless ($cdir && -d $cdir);
     $cdir = '/etc/beekeeper' unless ($cdir && -d $cdir);
+    $cdir = '.' unless ($cdir && -d $cdir);
 
     $file = "$cdir/$file";
 

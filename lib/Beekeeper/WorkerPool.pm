@@ -163,12 +163,12 @@ sub cmd_help {
 sub load_config {
     my $self = shift;
 
-    #Beekeeper::Config->set_config_dir( $self->{options}->{'config-dir'} );
+    #TODO: $self->{options}->{'config-dir'}
 
     my $pool_id = $self->{config}->{'pool-id'};
 
-    my $pool_cfg = Beekeeper::Config->get_pool_config( $pool_id );
-    my $bus_cfg  = Beekeeper::Config->get_bus_config( '*' );
+    my $pool_cfg = Beekeeper::Config->get_pool_config( pool_id => $pool_id );
+    my $bus_cfg  = Beekeeper::Config->get_bus_config( bus_id => '*' );
 
     unless ($pool_cfg) {
         die "Worker pool '$pool_id' is not defined into config file pool.config.json\n";
@@ -213,7 +213,7 @@ sub main {
     # Very basic log handler (STDERR was already redirected to a log file)
     $SIG{'__WARN__'} = sub {
         my @t = reverse((localtime)[0..5]); $t[0] += 1900; $t[1]++;
-        my $tstamp = sprintf("%4d-%02d-%02d %02d:%02d:%02d", @t);
+        my $tstamp = sprintf("%4d-%02d-%02d %02d:%02d:%02d.000", @t);
         warn "[$tstamp][$$]", @_;
     };
 
