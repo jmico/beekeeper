@@ -12,7 +12,8 @@ export PERL5LIB="$EXAMPLE_DIR/lib":"$PROJECT_DIR/lib"
 echo "Using modules from $PERL5LIB"
 
 # Start the worker pool
-$PROJECT_DIR/bin/bkpr --pool-id "myapp" --foreground ${1-start} &
+$PROJECT_DIR/bin/bkpr --pool-id "myapp-1" --foreground ${1-start} &
+$PROJECT_DIR/bin/bkpr --pool-id "myapp-2" --foreground ${1-start} &
 
 # Run the example script
-perl $EXAMPLE_DIR/basic.pl
+echo -e "\nNow open chat.html from your browser"

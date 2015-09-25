@@ -19,6 +19,6 @@
         "host"   : "localhost",
         "user"   : "backend",
         "pass"   : "def456",
-        "vhost"  : "/backend",
+        "vhost"  : "/backend-1",
     },
 ]

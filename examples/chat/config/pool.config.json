@@ -1,0 +1,46 @@
+[
+
+# This file is in relaxed JSON format (it allows comments and trailing commas).
+#
+# All worker pools running on this host must be defined here, specifying 
+# which logical bus should be used and which services it will run.
+#
+# In this example two worker pools are defined. These are almost identical,
+# but use different backend brokers in order to improve fault tolerance.
+#
+# Each pool definition must contain the following parameters:
+#
+#  - pool-id : arbitrary identifier of worker pool
+#  - bus-id  : identifier of logical bus used by worker processes
+#  - workers : a map of worker classes to arbitrary config hashes
+#
+# To start a the worker pools use the "bkpr" command:
+#
+# $ ./bkpr --pool-id "myapp-1" start
+# $ ./bkpr --pool-id "myapp-2" start
+
+    {
+        "pool-id"     : "myapp-1",
+        "bus-id"      : "backend-1",
+        "description" : "pool #1 of MyApp workers",
+
+        "workers" : {
+            "MyApp::Service::Chat::Worker"         : { "workers_count" : 4 },
+            "MyApp::Service::Math::Worker"         : { "workers_count" : 2 },
+            "Beekeeper::Service::Frontend::Worker" : { "workers_count" : 2 },
+            "Beekeeper::Service::LogTail::Worker"  : { "workers_count" : 1 },
+        },
+    },
+    {
+        "pool-id"     : "myapp-2",
+        "bus-id"      : "backend-2",
+        "description" : "pool #2 of MyApp workers",
+
+        "workers" : {
+            "MyApp::Service::Chat::Worker"         : { "workers_count" : 4 },
+            "MyApp::Service::Math::Worker"         : { "workers_count" : 2 },
+            "Beekeeper::Service::Frontend::Worker" : { "workers_count" : 2 },
+            "Beekeeper::Service::LogTail::Worker"  : { "workers_count" : 1 },
+        },
+    },
+]
