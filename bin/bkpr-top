@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-$ENV{PATH} = '/bin'; # untaint
+$ENV{PATH} = '/bin:/usr/bin'; # untaint
 
 BEGIN {
 
