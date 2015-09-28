@@ -148,11 +148,18 @@ sub log {
         }
     });
 
-    $bus->send(
-        'destination'  => "/topic/log.$level.$self->{service}",
-      # 'content-type' => 'application/json;charset=utf-8',
-        'body'         => \$json,
-    );
+    local $@;
+    eval {
+        $bus->send(
+            'destination' => "/topic/log.$level.$self->{service}",
+            'body'        => \$json,
+        );
+    };
+
+    if ($@) {
+        my $msg = $@; chomp($msg);
+        print STDERR "[$tstamp][$$][$Label{$level}] $msg\n";
+    }
 }
 
 1;
