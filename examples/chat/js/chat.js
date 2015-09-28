@@ -39,6 +39,15 @@ function Chat () { return {
             }
         });
 
+        this.rpc.accept_notifications({
+            method: "myapp.chat.pmessage",
+            on_receive: function(params) {
+                var msg = params.message;
+                var from = params.from;
+                This.echo_msg( "PM " + from + ": " + msg );
+            }
+        });
+
         var cmdInput = document.getElementById('cmd');
         cmdInput.onkeypress = function(e) {
             var event = e || window.event;

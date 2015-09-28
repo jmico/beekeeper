@@ -27,7 +27,8 @@
         "workers" : {
             "MyApp::Service::Chat::Worker"         : { "workers_count" : 4 },
             "MyApp::Service::Math::Worker"         : { "workers_count" : 2 },
-            "Beekeeper::Service::Frontend::Worker" : { "workers_count" : 2 },
+            "MyApp::Service::Auth::Worker"         : { "workers_count" : 2 },
+            "Beekeeper::Service::Router::Worker"   : { "workers_count" : 2 },
             "Beekeeper::Service::LogTail::Worker"  : { "workers_count" : 1 },
         },
     },
@@ -39,7 +40,8 @@
         "workers" : {
             "MyApp::Service::Chat::Worker"         : { "workers_count" : 4 },
             "MyApp::Service::Math::Worker"         : { "workers_count" : 2 },
-            "Beekeeper::Service::Frontend::Worker" : { "workers_count" : 2 },
+            "MyApp::Service::Auth::Worker"         : { "workers_count" : 2 },
+            "Beekeeper::Service::Router::Worker"   : { "workers_count" : 2 },
             "Beekeeper::Service::LogTail::Worker"  : { "workers_count" : 1 },
         },
     },

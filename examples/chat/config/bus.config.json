@@ -12,38 +12,43 @@
 #
 # Each bus definition must contain the following parameters:
 #
-#  - bus-id : arbitrary identifier of logical bus
-#  - host   : hostname or IP address of the STOMP broker
-#  - user   : username used to connect to the STOMP broker
-#  - pass   : password used to connect to the STOMP broker
-#  - vhost  : virtual host of STOMP broker (may be omitted)
+#  - bus-id  : unique identifier of the logical bus
+#  - cluster : unique identifier of the cluster which the bus belongs to
+#  - host    : hostname or IP address of the STOMP broker
+#  - user    : username used to connect to the STOMP broker
+#  - pass    : password used to connect to the STOMP broker
+#  - vhost   : virtual host of STOMP broker (may be omitted)
 
     {
-        "bus-id" : "backend-1",
-        "host"   : "localhost",
-        "user"   : "backend",
-        "pass"   : "def456",
-        "vhost"  : "/backend-1",
+        "bus-id"  : "backend-1",
+        "cluster" : "backend",
+        "host"    : "localhost",
+        "user"    : "backend",
+        "pass"    : "def456",
+        "vhost"   : "/backend-1",
     },
     {
-        "bus-id" : "backend-2",
-        "host"   : "localhost",
-        "user"   : "backend",
-        "pass"   : "def456",
-        "vhost"  : "/backend-2",
+        "bus-id"  : "backend-2",
+        "cluster" : "backend",
+        "host"    : "localhost",
+        "user"    : "backend",
+        "pass"    : "def456",
+        "vhost"   : "/backend-2",
     },
     {
-        "bus-id" : "frontend-1",
-        "host"   : "localhost",
-        "user"   : "frontend",
-        "pass"   : "abc123",
-        "vhost"  : "/frontend-1",
+        "bus-id"  : "frontend-1",
+        "cluster" : "frontend",
+        "host"    : "localhost",
+        "user"    : "frontend",
+        "pass"    : "abc123",
+        "vhost"   : "/frontend-1",
     },
     {
-        "bus-id" : "frontend-2",
-        "host"   : "localhost",
-        "user"   : "frontend",
-        "pass"   : "abc123",
-        "vhost"  : "/frontend-2",
+        "bus-id"  : "frontend-2",
+        "cluster" : "frontend",
+        "host"    : "localhost",
+        "user"    : "frontend",
+        "pass"    : "abc123",
+        "vhost"   : "/frontend-2",
     },
 ]

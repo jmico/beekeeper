@@ -10,8 +10,9 @@ sub on_startup {
     my $self = shift;
 
     $self->accept_jobs(
-        'myapp.chat.message' => 'message',
-        'myapp.chat.ping'    => 'ping',
+        'myapp.chat.message'  => 'message',
+        'myapp.chat.pmessage' => 'private_message',
+        'myapp.chat.ping'     => 'ping',
     );
 }
 
@@ -28,6 +29,18 @@ sub message {
     $self->send_notification(
         method => 'myapp.chat.message@frontend',
         params => { from => $from, message => $msg },
+    );
+}
+
+sub private_message {
+    my ($self, $params) = @_;
+
+    my $user = $params->{'username'};
+    my $msg = $params->{'message'};
+
+    $self->send_notification(
+        method => "myapp.chat.message\@frontend.user-$user",
+        params => { from => 'me', message => $msg },
     );
 }
 

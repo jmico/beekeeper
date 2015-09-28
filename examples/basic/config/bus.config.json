@@ -8,7 +8,7 @@
 #
 # Each bus definition must contain the following parameters:
 #
-#  - bus-id : arbitrary identifier of logical bus
+#  - bus-id : unique identifier of the logical bus
 #  - host   : hostname or IP address of the STOMP broker
 #  - user   : username used to connect to the STOMP broker
 #  - pass   : password used to connect to the STOMP broker

@@ -58,6 +58,7 @@ function JSON_RPC () { return {
     reply_queue: null,
     request_seq: 1,
     pending_req: {},
+    callbacks: {},
     connected: false,
 
     connect: function(args) {
@@ -149,6 +150,8 @@ function JSON_RPC () { return {
             return;
         }
 
+        this.callbacks[args.method] = args.on_receive;
+
         this.stomp.subscribe(
             "/topic/msg.frontend." + args.method, 
             function(message) {
@@ -210,7 +213,18 @@ function JSON_RPC () { return {
         var This = this;
         var on_receive_reply = function(message) {
             var resp = JSON.parse(message.body);  //TODO: catch parse exceptions
-            //TODO: pushed notification if !resp.id
+            if (!resp.id) {
+                // Unicasted notification
+                var cb = This.callbacks[resp.method];
+                if (cb) {
+                    try { cb(resp.params) }
+                    catch(e) { console.log("RPC: Exception into callback of '" + resp.method + "': " + e) }
+                }
+                else {
+                    console.log("RPC: Received unhandled notification '" + args.method + "'");
+                }
+                return;
+            }
             var req = This.pending_req[resp.id];
             delete This.pending_req[resp.id];
             if (!req) return;
