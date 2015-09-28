@@ -190,6 +190,8 @@ sub __init_client {
 
     $self->{_CLIENT} = $client->{_CLIENT};
     $self->{_BUS}    = $client->{_BUS};
+
+    $Beekeeper::Client::singleton = $self;
 }
 
 sub __init_worker {
@@ -433,6 +435,7 @@ sub __drain_task_queue {
 
             eval {
                 my $request = decode_json($$body_ref);
+                $request->{_headers} = $msg_headers;
                 bless $request, 'Beekeeper::JSONRPC::Notification';
 
                 my $method = $request->{method};
@@ -473,6 +476,7 @@ sub __drain_task_queue {
             $result = eval {
 
                 $request = decode_json($$body_ref);
+                $request->{_headers} = $msg_headers;
                 bless $request, 'Beekeeper::JSONRPC::Request';
 
                 my $method = $request->{method};
@@ -499,7 +503,7 @@ sub __drain_task_queue {
 
             if ($@) {
                 # Got an exception while executing job
-                my $errmsg = $@; $errmsg =~ s/ at .*? line \d+\.\s*$//s; #TODO: review ?
+                my $errmsg = $@; $errmsg =~ s/ at .*? line \d+(\.|, at EOF)\s*$//s;
 
                 $response = Beekeeper::JSONRPC::Error->server_error( data => $errmsg );
                 $response = { %$response }; #TODO: unbless ?
@@ -704,7 +708,7 @@ sub __report_status {
     my %queues;
     foreach my $q (keys %{$worker->{callbacks}}) {
         next unless $q =~ m/^req\.(.*)\./;
-        next if $q =~ m/^req\.shared-/;
+        next if $q =~ m/^req\.shared-/; #TODO: fix
         $queues{$1} = 1;
     }
     

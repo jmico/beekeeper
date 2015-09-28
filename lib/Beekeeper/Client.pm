@@ -87,7 +87,7 @@ sub new {
         async_cv       => undef,
     };
 
-    $args{'bus_id'} ||= 'backend';
+    $args{'bus_id'} ||= 'backend-1'; #TODO
 
     unless (exists $args{'user'} && exists $args{'pass'}) {
         # Read connection parameters from config file
@@ -146,11 +146,11 @@ sub send_notification {
 
     my $fq_meth = $args{'method'} or croak "Method was not specified";
 
-    $fq_meth =~ m/^     ( [\w-]+ (?: \.[\w-]+ )* )
+    $fq_meth =~ m/^     ( [\w-]+ (?:\.[\w-]+)* )
                      \. ( [\w-]+ ) 
-                 (?: \@ ( [\w-]+ ) )? $/x or croak "Invalid method $fq_meth";
+                 (?: \@ ( [\w-]+ ) (\.[\w-]+)* )? $/x or croak "Invalid method $fq_meth";
 
-    my ($service, $method, $bus) = ($1, $2, $3);
+    my ($service, $method, $bus, $addr) = ($1, $2, $3, $4);
     my $local_bus = $self->{_BUS}->{bus_id};
 
     my $json = encode_json({
@@ -164,6 +164,7 @@ sub send_notification {
     if (defined $bus) {
         $send_args{'destination'}  = "/queue/msg.$bus";
         $send_args{'x-forward-to'} = "/topic/msg.$bus.$service.$method";
+        $send_args{'x-forward-to'} .= "\@$addr" if (defined $addr && $addr =~ s/^\.//);
     }
     else {
         $send_args{'destination'} = "/topic/msg.$local_bus.$service.$method";
@@ -200,10 +201,17 @@ sub send_notification {
 
 =cut
 
+our $WAITING;
+
 sub do_job {
     my $self = shift;
 
     my $req = $self->__do_rpc_request( @_, req_type => 'SYNCHRONOUS' );
+
+    #HACK: Force AnyEvent to allow one level of recursive condvar blocking
+    $WAITING && croak "Recursive condvar blocking wait attempted";
+    local $WAITING = 1;
+    local $AnyEvent::CondVar::Base::WAITING = 0;
 
     # Block until a response is received or request timed out
     $req->{_waiting_response}->recv;
@@ -215,7 +223,7 @@ sub do_job {
         croak "Call to '$req->{method}' failed: $errmsg";
     }
 
-    #On_sucess, on_timeout, on_error
+    #TODO: On_sucess, on_timeout, on_error ?
     return $resp;
 }
 
@@ -242,11 +250,11 @@ sub __do_rpc_request {
 
     my $fq_meth = $args{'method'} or croak "Method was not specified";
 
-    $fq_meth =~ m/^     ( [\w-]+ (?: \.[\w-]+ )* )
+    $fq_meth =~ m/^     ( [\w-]+ (?:\.[\w-]+)* )
                      \. ( [\w-]+ ) 
-                 (?: \@ ( [\w-]+ ) )? $/x or croak "Invalid method $fq_meth";
+                 (?: \@ ( [\w-]+ ) (\.[\w-]+)* )? $/x or croak "Invalid method $fq_meth";
 
-    my ($service, $method, $bus) = ($1, $2, $3);
+    my ($service, $method, $bus, $addr) = ($1, $2, $3, $4);
     my $local_bus = $self->{_BUS}->{bus_id};
 
     my %send_args;
@@ -254,6 +262,7 @@ sub __do_rpc_request {
     if (defined $bus) {
         $send_args{'destination'}  = "/queue/req.$bus";
         $send_args{'x-forward-to'} = "/queue/req.$bus.$service";
+        $send_args{'x-forward-to'} .= "\@$addr" if (defined $addr && $addr =~ s/^\.//);
     }
     else {
         $send_args{'destination'} = "/queue/req.$local_bus.$service";
@@ -397,6 +406,11 @@ sub wait_all_jobs {
 
     # wait for all pending jobs
     my $cv = delete $self->{_CLIENT}->{async_cv};
+
+    #HACK: Force AnyEvent to allow one level of recursive condvar blocking
+    $WAITING && croak "Recursive condvar blocking wait attempted";
+    local $WAITING = 1;
+    local $AnyEvent::CondVar::Base::WAITING = 0;
 
     $cv->recv;
 }

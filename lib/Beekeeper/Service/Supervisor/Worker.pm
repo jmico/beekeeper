@@ -39,7 +39,7 @@ sub on_startup {
     $self->{host} = $self->{_WORKER}->{hostname};
     $self->{pool} = $self->{_WORKER}->{pool_id};
 
-    $self->{Workers} = $self->shared_hash( name => "workers-status" );
+    $self->{Workers} = $self->shared_hash( id => "workers" );
     $self->{Queues} = {};
 
     $self->accept_notifications(
@@ -228,7 +228,7 @@ sub check_queues {
     my @unserviced = grep { $Queues->{$_} == 0 } keys %$Queues;
 
     # Do not drain SharedHash synchronization queue
-    @unserviced = grep { $_ !~ m/^_sync\.shared-/ } @unserviced;
+    @unserviced = grep { $_ !~ m/^_sync\./ } @unserviced;
 
     return unless @unserviced;
 
