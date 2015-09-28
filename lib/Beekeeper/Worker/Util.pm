@@ -17,7 +17,7 @@ Version 0.01
 
 =head1 DESCRIPTION
 
-my $p = $self->shared_hash( name => "" );
+my $p = $self->shared_hash( ... );
 
 =cut
 

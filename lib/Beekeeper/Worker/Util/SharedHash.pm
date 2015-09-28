@@ -17,7 +17,7 @@ Version 0.01
 
 =head1 DESCRIPTION
 
-my $p = $self->shared_hash( name => "" );
+my $p = $self->shared_hash( ... );
 
 =cut
 
@@ -28,17 +28,17 @@ sub new {
     my ($class, %args) = @_;
 
     my $worker = $args{'worker'};
-    my $name   = $args{'name'};
-
-    my $id = "shared-$name";
+    my $id     = $args{'id'};
 
     my $self = {
-        _BUS  => $worker->{_BUS},
-        id    => $id,
-        uid   => int(rand(90000000)+10000000),
-        data  => {},
-        vers  => {},
-        time  => {},
+        _BUS      => $worker->{_BUS},
+        id        => $id,
+        uid       => int(rand(90000000)+10000000),
+        resolver  => $args{'resolver'},
+        on_update => $args{'on_update'},
+        data      => {},
+        vers      => {},
+        time      => {},
     };
 
     bless $self, $class;
@@ -57,11 +57,6 @@ sub new {
             delete $_self->{_init};
         }
     );
-
-    $self->{resolver} = $args{'resolver'} || sub {
-        # Keep newest value
-        return $_[0]->{time} > $_[1]->{time} ? $_[0] : $_[1];
-    };
 
     my $local_bus = $self->{_BUS}->{bus_id};
 
@@ -85,6 +80,8 @@ sub new {
 sub set {
     my ($self, $key, $value) = @_;
 
+    my $old = $self->{data}->{$key};
+
     $self->{data}->{$key} = $value;
     $self->{vers}->{$key}++;
     $self->{time}->{$key} = Time::HiRes::time();
@@ -97,6 +94,8 @@ sub set {
         $self->{uid},
     ]);
 
+    $self->{on_update}->($key, $value, $old) if $self->{on_update};
+
     my $id = $self->{id};
     my $local_bus = $self->{_BUS}->{bus_id};
 
@@ -106,6 +105,8 @@ sub set {
     );
 
     unless (defined $value) {
+        # Postpone delete because it is necessary to keep the versioning 
+        # of this modification until it is propagated to all workers
         $self->{_destroy}->{$key} = AnyEvent->timer( after => 60, cb => sub {
             delete $self->{_destroy}->{$key};
             delete $self->{data}->{$key};
@@ -127,7 +128,7 @@ sub delete {
     $self->set( $key => undef );
 }
 
-sub inner_hash {
+sub raw_data {
     my $self = shift;
 
     $self->{data};
@@ -139,36 +140,53 @@ sub _merge {
     my ($key, $value, $version, $time) = @$entry;
 
     if ($version > ($self->{vers}->{$key} || 0)) {
-        # 
+
+        # Received a fresher value for the entry
+        my $old = $self->{data}->{$key};
+
         $self->{data}->{$key} = $value;
         $self->{vers}->{$key} = $version;
         $self->{time}->{$key} = $time;
+
+        $self->{on_update}->($key, $value, $old) if $self->{on_update};
     }
     elsif ($version < $self->{vers}->{$key}) {
-        # I have a newest version
+
+        # Received an stale value (we have a newest version)
         return;
     }
     else {
-        # conflict if data is not the same
-        my $keep = $self->{resolver}->(
-            {   # mine
+
+        # Version conflict, default resolution is to keep newest value
+        my $resolver = $self->{resolver} || sub {
+            return $_[0]->{time} > $_[1]->{time} ? $_[0] : $_[1];
+        };
+
+        my $keep = $resolver->(
+            {   # Mine
                 data => $self->{data}->{$key},
                 vers => $self->{vers}->{$key},
                 time => $self->{time}->{$key},
             },
-            {   # theirs
+            {   # Theirs
                 data => $value,
                 vers => $version,
                 time => $time,
             },
         );
 
+        my $old = $self->{data}->{$key};
+
         $self->{data}->{$key} = $keep->{data};
         $self->{vers}->{$key} = $keep->{vers};
         $self->{time}->{$key} = $keep->{time};
+
+        $self->{on_update}->($key, $keep->{data}, $old) if $self->{on_update};
     }
 
     unless (defined $self->{data}->{$key}) {
+        # Postpone delete because it is necessary to keep the versioning 
+        # of this modification until it is propagated to all workers
         $self->{_destroy}->{$key} = AnyEvent->timer( after => 60, cb => sub {
             delete $self->{_destroy}->{$key};
             delete $self->{data}->{$key};
