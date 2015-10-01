@@ -6,6 +6,13 @@ use warnings;
 use Beekeeper::Worker ':log';
 use base 'Beekeeper::Worker';
 
+
+sub authorize_request {
+    my ($self, $req) = @_;
+
+    $req->has_auth_tokens('USER');
+}
+
 sub on_startup {
     my $self = shift;
 
@@ -26,6 +33,7 @@ sub message {
 
     #TODO: Filter message
 
+    # Broadcast
     $self->send_notification(
         method => 'myapp.chat.message@frontend',
         params => { from => $from, message => $msg },
@@ -38,8 +46,11 @@ sub private_message {
     my $user = $params->{'username'};
     my $msg = $params->{'message'};
 
+    #$from = $req->uuid;
+
+    # Unicast
     $self->send_notification(
-        method => "myapp.chat.message\@frontend.user-$user",
+        method => "myapp.chat.pmessage\@frontend.user-$user",
         params => { from => 'me', message => $msg },
     );
 }

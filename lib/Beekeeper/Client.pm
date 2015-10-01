@@ -61,6 +61,7 @@ our @EXPORT_OK = qw(
     do_async_job
     do_background_job
     wait_all_jobs
+    set_credentials
     __do_rpc_request
     __create_reply_queue
 );
@@ -84,6 +85,8 @@ sub new {
         in_progress    => undef,
         transaction    => undef,
         transaction_id => undef,
+        auth_tokens    => undef,
+        session_id     => undef,
         async_cv       => undef,
     };
 
@@ -168,6 +171,14 @@ sub send_notification {
     }
     else {
         $send_args{'destination'} = "/topic/msg.$local_bus.$service.$method";
+    }
+
+    if (exists $args{'_auth_'}) {
+        $send_args{'x-auth-tokens'} = $args{'_auth_'} if ($args{'_auth_'});
+    }
+    else {
+        $send_args{'x-auth-tokens'} = $self->{_CLIENT}->{auth_tokens} if ($self->{_CLIENT}->{auth_tokens});
+        $send_args{'x-session'}     = $self->{_CLIENT}->{session_id}  if ($self->{_CLIENT}->{session_id});
     }
 
     if ($self->{transaction}) {
@@ -268,12 +279,22 @@ sub __do_rpc_request {
         $send_args{'destination'} = "/queue/req.$local_bus.$service";
     }
 
-    my $raise_error = $args{'raise_error'};
-    my $timeout     = $args{'timeout'} || REQ_TIMEOUT;
-    my $req_id;
+    if (exists $args{'_auth_'}) {
+        $send_args{'x-auth-tokens'} = $args{'_auth_'} if ($args{'_auth_'});
+    }
+    else {
+        $send_args{'x-auth-tokens'} = $client->{auth_tokens} if ($client->{auth_tokens});
+        $send_args{'x-session'}     = $client->{session_id}  if ($client->{session_id});
+    }
+
+    my $timeout = $args{'timeout'} || REQ_TIMEOUT;
+    $send_args{'expiration'} = int( $timeout * 1000 );
+
 
     my $BACKGROUND  = $args{req_type} eq 'BACKGROUND';
     my $SYNCHRONOUS = $args{req_type} eq 'SYNCHRONOUS';
+    my $raise_error = $args{'raise_error'};
+    my $req_id;
 
     # JSON-RPC call
     my $req = {
@@ -281,9 +302,6 @@ sub __do_rpc_request {
         method  => "$service.$method",
         params  => $args{'params'},
     };
-
-  # $send_args{'content-type'} = 'application/json;charset=utf-8';
-    $send_args{'expiration'} = int( $timeout * 1000 );
 
     unless ($BACKGROUND) {
 
@@ -413,6 +431,22 @@ sub wait_all_jobs {
     local $AnyEvent::CondVar::Base::WAITING = 0;
 
     $cv->recv;
+}
+
+
+sub set_credentials {
+    my ($self, %args) = @_;
+
+    my $uuid   = $args{'uuid'}   || 0;
+    my $tokens = $args{'tokens'} || [];
+
+    croak "Invalid uuid $uuid" unless ($uuid =~ m/^[\w-]+$/);
+
+    foreach my $token (@$tokens) {
+        croak "Invalid token $token" unless ($token =~ m/^\w+$/);
+    }
+
+    $self->{_CLIENT}->{auth_tokens} = join(',', $uuid, @$tokens);
 }
 
 =pod

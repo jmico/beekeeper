@@ -105,7 +105,7 @@ function Chat () { return {
         }
         else if (params =  cmd.match(/^PM\s+(\w+)(.*)/i)) {
             this.rpc.call({
-                method: 'myapp.chat.private_message', 
+                method: 'myapp.chat.pmessage', 
                 params: { "username": params[1], "message": params[2] },
             });
         }

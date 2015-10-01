@@ -111,6 +111,24 @@ sub request_timeout {
     );
 }
 
+sub request_not_authenticated {
+    shift->new(
+        code    => -401,
+        message => "Not logged in",
+        data    => "Request was not authenticated",
+        @_ 
+    );
+}
+
+sub request_not_authorized {
+    shift->new(
+        code    => -403,
+        message => "Request not authorized",
+        data    => "Request was not authorized",
+        @_ 
+    );
+}
+
 sub method_not_found {
     shift->new(
         code    => -32601,

@@ -6,6 +6,13 @@ use warnings;
 use Beekeeper::Worker ':log';
 use base 'Beekeeper::Worker';
 
+
+sub authorize_request {
+    my ($self, $req) = @_;
+
+    return REQUEST_AUTHORIZED;
+}
+
 sub on_startup {
     my $self = shift;
 

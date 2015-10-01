@@ -31,13 +31,18 @@ use Beekeeper::Client;
 sub bind {
     my ($class, %args) = @_;
 
+    my $addr = $args{'address'};
+    my $req  = $args{'request'};
+
     my $client = Beekeeper::Client->instance;
 
     $client->do_background_job(
         method => '_bkpr.router.bind',
+        _auth_ => '0,BKPR_ROUTER',
         params => {
-            addr  => $args{address}, 
-            queue => $args{req}->{_headers}->{'x-forward-reply'},
+            addr  => $addr, 
+            queue => $req->{_headers}->{'x-forward-reply'},
+            sid   => $req->{_headers}->{'x-session'},
         },
     );
 }
@@ -45,12 +50,16 @@ sub bind {
 sub unbind {
     my ($class, %args) = @_;
 
+    my $addr = $args{'address'};
+    my $req  = $args{'request'};
+
     my $client = Beekeeper::Client->instance;
 
     $client->do_background_job(
         method => '_bkpr.router.unbind',
+        _auth_ => '0,BKPR_ROUTER',
         params => {
-            queue => $args{req}->{_headers}->{'x-forward-reply'},
+            queue => $req->{_headers}->{'x-forward-reply'},
         },
     );
 }

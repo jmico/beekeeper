@@ -22,6 +22,7 @@ my $p = $self->shared_hash( ... );
 =cut
 
 use JSON::XS;
+use Carp;
 
 
 sub new {
@@ -46,6 +47,7 @@ sub new {
 
     $self->{_init} = $worker->do_async_job(
         method     => "_sync.$id.dump",
+        _auth_     => '0,BKPR_SYSTEM',
         timeout    => 3,
         on_success => sub {
             $_self->_merge_dump(@_);
@@ -79,6 +81,8 @@ sub new {
 
 sub set {
     my ($self, $key, $value) = @_;
+
+    croak "Key value is undefined" unless (defined $key);
 
     my $old = $self->{data}->{$key};
 

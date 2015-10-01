@@ -29,6 +29,12 @@ use JSON::XS;
 my @Log_buffer;
 
 
+sub authorize_request {
+    my ($self, $req) = @_;
+
+    $req->has_auth_tokens('BKPR_ADMIN');
+}
+
 sub on_startup {
     my $self = shift;
 
@@ -56,6 +62,8 @@ sub on_startup {
 
 sub buffer_entry {
     my ($self, $params, $req) = @_;
+
+    #TODO: unduplicate
 
     $params->{level} = $req->{method};
 

@@ -75,8 +75,11 @@ use Carp;
 
 use constant COMPILE_ERROR_EXIT_CODE => 99;
 use constant REPORT_STATUS_PERIOD    => 2; # should be 5 or something
+use constant REQUEST_AUTHORIZED      => int(rand(90000000)+10000000);
 
 use Exporter 'import';
+
+our @EXPORT = qw( REQUEST_AUTHORIZED );
 
 our @EXPORT_OK = qw(
     log_emergency
@@ -91,9 +94,9 @@ our @EXPORT_OK = qw(
     log_trace
 );
 
-our %EXPORT_TAGS = ('log' => \@EXPORT_OK );
+our %EXPORT_TAGS = ('log' => [ @EXPORT_OK, @EXPORT ]);
 
-our $Logger = sub { warn(@_) }; # redefined by __init_logger
+our $Logger = sub { warn(@_) }; # redefined later by __init_logger
 
 sub log_emergency (@) { $Logger->( LOG_EMERG,  @_ ) }
 sub log_alert     (@) { $Logger->( LOG_ALERT,  @_ ) }
@@ -218,11 +221,19 @@ sub __init_worker {
 
 sub on_startup {
     # Placeholder, intended to be overrided
-    warn "This worker doesn't do anything!";
+    my $class = ref $_[0];
+    warn "Worker class $class doesn't define on_startup() method";
 }
 
 sub on_shutdown {
     # Placeholder, can be overrided if necessary
+}
+
+sub authorize_request {
+    # Placeholder, intended to be overrided
+    my $class = ref $_[0];
+    warn "Worker class $class doesn't define authorize_request() method";
+    return undef; # do NOT authorize
 }
 
 =item accept_notifications ( $method => $callback, ... )
@@ -411,9 +422,11 @@ sub accept_jobs {
 
 sub __drain_task_queue {
     my $self = shift;
-    my $idle = shift;
+
+    #TODO: Ensure that draining does not recurse
 
     my $worker = $self->{_WORKER};
+    my $client = $self->{_CLIENT};
     my $task;
 
     # When jobs or notifications are received they are not executed immediately
@@ -445,15 +458,21 @@ sub __drain_task_queue {
                     return;
                 }
 
-                #TODO: authorize
-
                 my $cb = $worker->{callbacks}->{"msg.$1.$2"} || 
                          $worker->{callbacks}->{"msg.$1.*"};
+
+                unless (($self->authorize_request($request) || "") eq REQUEST_AUTHORIZED) {
+                    log_warn "Notification $method was not authorized";
+                    return;
+                }
 
                 unless ($cb) {
                     log_warn "No callback found for method $method";
                     return;
                 }
+
+                local $client->{auth_tokens} = $msg_headers->{'x-auth-tokens'};
+                local $client->{session_id}  = $msg_headers->{'x-session'};
 
                 $cb->($self, $request->{params}, $request);
             };
@@ -489,13 +508,19 @@ sub __drain_task_queue {
                 my $cb = $worker->{callbacks}->{"req.$1.$2"} || 
                          $worker->{callbacks}->{"req.$1.*"};
 
+                unless (($self->authorize_request($request) || "") eq REQUEST_AUTHORIZED) {
+                    log_warn "Request $method was not authorized";
+                    return Beekeeper::JSONRPC::Error->request_not_authorized
+                        unless ($method =~ m/_sync.\w+.dump/); #TODO: fix shared hash
+                }
+
                 unless ($cb) {
                     log_warn "No callback found for method $method";
                     return Beekeeper::JSONRPC::Error->method_not_found;
                 }
 
-                #TODO: authorize
-                #$worker->{authorize_cb}->($requ) || Beekeeper::JSONRPC::Error->not_authorized
+                local $client->{auth_tokens} = $msg_headers->{'x-auth-tokens'};
+                local $client->{session_id}  = $msg_headers->{'x-session'};
 
                 # Execute job
                 $cb->($self, $request->{params}, $request);
@@ -511,6 +536,7 @@ sub __drain_task_queue {
             }
             elsif (ref $result eq 'Beekeeper::JSONRPC::Error') {
                 # Worker returned an error object
+                #TODO: allow to die( Beekeeper::JSONRPC::Error )
                 $response = { %$result }; #TODO: unbless ?
             }
             else {
@@ -533,7 +559,6 @@ sub __drain_task_queue {
                     'destination'     => $msg_headers->{'reply-to'},
                   # 'content-type'    => 'application/json;charset=utf-8',
                     'x-forward-reply' => $msg_headers->{'x-forward-reply'} || '',
-                    'x-session-id'    => $msg_headers->{'x-session-id'} || '',
                     'body'            => \$json,
                   # 'buffer_id' => $id
 
@@ -650,15 +675,7 @@ sub __work_forever {
 
         $self->on_shutdown;
 
-        $self->do_background_job(
-            method => '_bkpr.supervisor.worker_exit',
-            params => {
-                class => ref($self),
-                host  => $worker->{hostname},
-                pool  => $worker->{pool_id},
-                pid   => $$,
-            },
-        );
+        $self->__report_exit;
     };
 
     if ($@) {
@@ -706,15 +723,15 @@ sub __report_status {
 
     # Queues
     my %queues;
-    foreach my $q (keys %{$worker->{callbacks}}) {
-        next unless $q =~ m/^req\.(.*)\./;
-        next if $q =~ m/^req\.shared-/; #TODO: fix
-        $queues{$1} = 1;
+    foreach my $queue (keys %{$worker->{callbacks}}) {
+        next unless $queue =~ m/^req\.(?!_sync)(.*)\./;
+        $queues{$queue} = 1;
     }
-    
+
     #
     $self->do_background_job(
         method => '_bkpr.supervisor.worker_status',
+        _auth_ => '0,BKPR_SYSTEM',
         params => {
             class => ref($self),
             host  => $worker->{hostname},
@@ -724,6 +741,23 @@ sub __report_status {
             nps   => $nps,
             load  => $load,
             queue => [ keys %queues ],
+        },
+    );
+}
+
+sub __report_exit {
+    my $self = shift;
+
+    my $worker = $self->{_WORKER};
+
+    $self->do_background_job(
+        method => '_bkpr.supervisor.worker_exit',
+        _auth_ => '0,BKPR_SYSTEM',
+        params => {
+            class => ref($self),
+            host  => $worker->{hostname},
+            pool  => $worker->{pool_id},
+            pid   => $$,
         },
     );
 }

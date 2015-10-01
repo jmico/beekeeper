@@ -35,6 +35,12 @@ use Beekeeper::Worker::Util 'shared_hash';
 use constant BIND_TIMEOUT => 300;
 
 
+sub authorize_request {
+    my ($self, $req) = @_;
+
+    $req->has_auth_tokens('BKPR_ROUTER');
+}
+
 sub on_startup {
     my $self = shift;
 
@@ -192,7 +198,7 @@ sub pull_frontend_requests {
 
             $backend_bus->send(
                 'destination'     => $destination,
-                'x-session-id'    => $session_id,
+                'x-session'       => $session_id,
                 'reply-to'        => "/queue/res.$frontend_id",
                 'x-forward-reply' => "$reply_to\@$frontend_id",
               # 'content-type'    => $msg_headers->{'content-type'},

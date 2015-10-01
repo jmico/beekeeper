@@ -29,6 +29,7 @@ sub restart_pool {
 
     $client->send_notification(
         method => '_bkpr.supervisor.restart_pool',
+        _auth_ => '0,BKPR_ADMIN',
         params => {
             host  => $args{'host'},
             pool  => $args{'pool'},
@@ -44,6 +45,7 @@ sub restart_workers {
 
     $client->send_notification(
         method => '_bkpr.supervisor.restart_workers',
+        _auth_ => '0,BKPR_ADMIN',
         params => {
             host  => $args{'host'},
             pool  => $args{'pool'},
@@ -60,6 +62,7 @@ sub get_workers_status {
 
     my $resp = $client->do_job(
         method => '_bkpr.supervisor.get_workers_status',
+        _auth_ => '0,BKPR_ADMIN',
         params => {
             host  => $args{'host'},
             pool  => $args{'pool'},
@@ -78,6 +81,7 @@ sub get_services_status {
 
     my $resp = $client->do_job(
         method => '_bkpr.supervisor.get_services_status',
+        _auth_ => '0,BKPR_ADMIN',
         params => {
             host  => $args{'host'},
             pool  => $args{'pool'},

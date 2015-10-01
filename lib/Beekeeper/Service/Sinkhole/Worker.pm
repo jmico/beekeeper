@@ -26,6 +26,12 @@ use Beekeeper::JSONRPC::Error;
 use JSON::XS;
 
 
+sub authorize_request {
+    my ($self, $req) = @_;
+
+    $req->has_auth_tokens('BKPR_SYSTEM');
+}
+
 sub on_startup {
     my $self = shift;
 

@@ -33,6 +33,7 @@ sub tail {
 
     my $resp = $client->do_job(
         method => '_bkpr.logtail.tail',
+        _auth_ => '0,BKPR_ADMIN',
         params => \%filters,
     );
 

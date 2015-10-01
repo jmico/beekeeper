@@ -33,6 +33,21 @@ use Beekeeper::Worker::Util 'shared_hash';
 use constant CHECK_PERIOD => 5; #TODO: should be 20 or something
 
 
+sub authorize_request {
+    my ($self, $req) = @_;
+    my $required;
+
+    if ($req->{method} eq '_bkpr.supervisor.worker_status' ||
+        $req->{method} eq '_bkpr.supervisor.worker_exit' ) {
+        $required = 'BKPR_SYSTEM';
+    }
+    else {
+        $required = 'BKPR_ADMIN';
+    }
+
+    $req->has_auth_tokens($required);
+}
+
 sub on_startup {
     my $self = shift;
 
@@ -233,8 +248,10 @@ sub check_queues {
     return unless @unserviced;
 
     # Tell sinkhole service to drain...
+
     $self->send_notification(
         method => '_bkpr.sinkhole.unserviced_queues',
+        _auth_ => '0,BKPR_SYSTEM',
         params => { queues => \@unserviced },
     );
 }
