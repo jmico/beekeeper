@@ -25,41 +25,54 @@ Version 0.01
 
 =cut
 
+use Exporter 'import';
 
-use Beekeeper::Client;
+our @EXPORT_OK = qw(
+    bind_session
+    unbind_session
+    unbind_address
+);
 
-sub bind {
-    my ($class, %args) = @_;
+our %EXPORT_TAGS = ('all' => \@EXPORT_OK );
 
-    my $addr = $args{'address'};
-    my $req  = $args{'request'};
 
-    my $client = Beekeeper::Client->instance;
+sub bind_session {
+    my ($self, $request, $address) = @_;
 
-    $client->do_background_job(
+    my $reply_queue = $request ? $request->{_headers}->{'x-forward-reply'} : undef;
+
+    $self->do_job(
         method => '_bkpr.router.bind',
         _auth_ => '0,BKPR_ROUTER',
         params => {
-            addr  => $addr, 
-            queue => $req->{_headers}->{'x-forward-reply'},
-            sid   => $req->{_headers}->{'x-session'},
+            address     => $address, 
+            reply_queue => $reply_queue,
+            session_id  => $self->{_CLIENT}->{session_id},
+            auth_tokens => $self->{_CLIENT}->{auth_tokens},
         },
     );
 }
 
-sub unbind {
-    my ($class, %args) = @_;
+sub unbind_session {
+    my $self = shift;
 
-    my $addr = $args{'address'};
-    my $req  = $args{'request'};
-
-    my $client = Beekeeper::Client->instance;
-
-    $client->do_background_job(
+    $self->do_job(
         method => '_bkpr.router.unbind',
         _auth_ => '0,BKPR_ROUTER',
         params => {
-            queue => $req->{_headers}->{'x-forward-reply'},
+            session_id => $self->{_CLIENT}->{session_id},
+        },
+    );
+}
+
+sub unbind_address {
+    my ($self, $address) = @_;
+
+    $self->do_job(
+        method => '_bkpr.router.unbind',
+        _auth_ => '0,BKPR_ROUTER',
+        params => {
+            address => $address, 
         },
     );
 }

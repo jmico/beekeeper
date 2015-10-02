@@ -23,8 +23,6 @@ Version 0.01
 
 - Calculate and report worker load.
 
-- GC
-
 =cut
 
 use Beekeeper::Worker ':log';
@@ -32,7 +30,7 @@ use base 'Beekeeper::Worker';
 
 use Beekeeper::Worker::Util 'shared_hash';
 
-use constant BIND_TIMEOUT => 300;
+use constant SESSION_TIMEOUT => 1800;
 
 
 sub authorize_request {
@@ -162,11 +160,12 @@ sub pull_frontend_requests {
     my $backend_bus  = $args{backend};
 
     my $frontend_id = $frontend_bus->bus_id;
-    my $backend_id  = $backend_bus->bus_id;
+    my $backend_id = $backend_bus->bus_id;
+    my $RabbitMQ = $frontend_bus->{is_rabbit};
 
     my $backend_cluster  = $self->{backend_cluster};
 
-    my ($body_ref, $msg_headers, $destination, $session_id, $reply_to, $expiration);
+    my ($body_ref, $msg_headers);
 
     $frontend_bus->subscribe(
         destination    => "/queue/req.$backend_cluster",
@@ -176,38 +175,51 @@ sub pull_frontend_requests {
 
             # (!) UNTRUSTED REQUEST
 
-            $destination = $msg_headers->{'x-forward-to'} || '';
+            my $destination = $msg_headers->{'x-forward-to'} || '';
             return unless $destination =~ m|^/queue/req(\.(?!_)[\w-]+)+$|;
             $destination =~ s|/req\.|/req.$backend_id.|;
             $destination =~ s|\.[\w-]+$||;
 
-            $expiration = $msg_headers->{'expiration'} || 60000;
-            return unless $expiration =~ m|^\d+$|;
+            my $reply_to = $msg_headers->{'reply-to'} || '';
+            my $session_id;
 
-            # RabbitMQ message-id: T_sub-1@@session-yceVI9Lec0sAg2dyq2gGng@@101
-            $session_id = $msg_headers->{'message-id'} || '';
-            ($session_id) = ($session_id =~ m|\@\@session-([\w-]{22})\@\@|);
-            return unless defined $session_id;
-
-            # RabbitMQ reply-to: /reply-queue/amq.gen-B9LY-y22H8K9RLADnEh0Ww
-            $reply_to = $msg_headers->{'reply-to'} || '';
-            return unless $reply_to =~ m|^/reply-queue/amq\.gen-[\w-]+$| ||
-                          $reply_to =~ m|^/temp-queue/tmp\.[\w-]+$|;
+            if ($RabbitMQ) {
+                # RabbitMQ reply-to: /reply-queue/amq.gen-B9LY-y22H8K9RLADnEh0Ww
+                return unless $reply_to =~ m|^/reply-queue/amq\.gen-([\w-]{22})$|;
+                $session_id = $1;
+            }
+            else {
+                return unless $reply_to =~ m|^/temp-queue/tmp\.([\w-]{22})$|;
+                $session_id = $1;
+            }
 
             #TODO: we could check that $body_ref is a valid JSON-RPC request
+
+            my @opt_headers;
+
+            my $session = $self->{Sessions}->get( $session_id );
+
+            if ($session) {
+                $self->{Sessions}->touch( $session_id );
+                if ( $session->[2] ) {
+                    push @opt_headers, ( 'x-auth-tokens' => $session->[2] );
+                }
+            }
+
+            my $expiration = $msg_headers->{'expiration'} || '';
+            if ($expiration =~ m|^\d+$|) {
+                push @opt_headers, ( 'expiration' => $expiration );
+            }
 
             $backend_bus->send(
                 'destination'     => $destination,
                 'x-session'       => $session_id,
                 'reply-to'        => "/queue/res.$frontend_id",
                 'x-forward-reply' => "$reply_to\@$frontend_id",
-              # 'content-type'    => $msg_headers->{'content-type'},
-                'expiration'      => $expiration,
                 'body'            => $body_ref,
+                 @opt_headers
             );
 
-            $self->touch("$reply_to\@$frontend_id");
-            
             $self->{_WORKER}->{jobs_count}++;
         },
     );
@@ -233,14 +245,11 @@ sub pull_backend_responses {
         on_receive_msg => sub {
             ($body_ref, $msg_headers) = @_;
 
-            $destination = $msg_headers->{'x-forward-reply'};
-            $destination =~ s/\@([\w-]+)$//;
+            ($destination) = split('@', $msg_headers->{'x-forward-reply'}, 2);
 
             $frontend_bus->send(
-                'destination'  => $destination,
-              # 'content-type' => $msg_headers->{'content-type'},
-                'expiration'   => 60000,
-                'body'         => $body_ref,
+                'destination' => $destination,
+                'body'        => $body_ref,
             );
         },
     );
@@ -251,14 +260,14 @@ sub pull_backend_notifications {
 
     # Get notifications from backend and broadcast them to frontend
 
-return if ($self->{done}); $self->{done} = 1;
+return if ($self->{done}); $self->{done} = 1; #TODO
 
     my $frontend_bus = $args{frontend};
     my $backend_bus  = $args{backend};
 
     my $frontend_cluster = $self->{frontend_cluster};
 
-    my ($body_ref, $msg_headers, $destination);
+    my ($body_ref, $msg_headers, $destination, $address);
 
     $backend_bus->subscribe(
 
@@ -267,26 +276,22 @@ return if ($self->{done}); $self->{done} = 1;
         on_receive_msg => sub {
             ($body_ref, $msg_headers) = @_;
 
-            $destination = $msg_headers->{'x-forward-to'};
+            ($destination, $address) = split('@', $msg_headers->{'x-forward-to'}, 2);
 
-            if ($destination =~ s/\@([\w-]+)$//) {
+            if (defined $address) {
 
                 # Unicast
-                my $addr = $1;
-                my $dest_queues = $self->{Addr_to_queues}->{$addr};
+                my $dest_queues = $self->{Addr_to_queues}->{$address} || return;
 
-                foreach my $aa (@$dest_queues) {
+                foreach my $queue (@$dest_queues) {
 
-                    my $dest = $aa; #TODO: cleanup
-                    $dest =~ s/\@([\w-]+)$//;
-                    my $bus_id = $1;
+                    my ($destination, $bus_id) = split('@', $queue, 2);
 
                     my $frontend_bus = $self->{FRONTEND}->{$bus_id} || next;
-                    
+
                     $frontend_bus->send(
-                        'destination'  => $dest,
-                      # 'content-type' => $msg_headers->{'content-type'},
-                        'body'         => $body_ref,
+                        'destination' => $destination,
+                        'body'        => $body_ref,
                     );
                 }
             }
@@ -296,9 +301,8 @@ return if ($self->{done}); $self->{done} = 1;
                 foreach my $frontend_bus (values %{$self->{FRONTEND}}) {
 
                     $frontend_bus->send(
-                        'destination'  => $destination,
-                      # 'content-type' => $msg_headers->{'content-type'},
-                        'body'         => $body_ref,
+                        'destination' => $destination,
+                        'body'        => $body_ref,
                     );
                 }
             }
@@ -311,22 +315,31 @@ return if ($self->{done}); $self->{done} = 1;
 sub _init_routing_table {
     my $self = shift;
 
+    my $worker_config = $self->{_WORKER}->{config};
+    my $sess_timeout = $worker_config->{'session_timeout'} ||  SESSION_TIMEOUT;
+
     $self->{Addr_to_queues} = {};
 
-    $self->{Queue_to_addr} = $self->shared_hash( 
+    $self->{Sessions} = $self->shared_hash( 
         id => "router",
-        on_update => sub { 
-            my ($queue, $value, $old_value) = @_;
+        persist => 1,
+        max_age => $sess_timeout,
+        on_update => sub {
+            my ($session, $value, $old_value) = @_;
+
+            # Keep an address -> relpy queues index
 
             if (defined $value) {
                 # Bind
-                my $addr = $value->[1];
+                my $addr  = $value->[0];
+                my $queue = $value->[1];
                 my $dest_queues = $self->{Addr_to_queues}->{$addr} ||= [];
                 push @$dest_queues, $queue;
             }
             elsif (defined $old_value) {
                 # Unbind
-                my $addr = $old_value->[1];
+                my $addr  = $old_value->[0];
+                my $queue = $old_value->[1];
                 my $dest_queues = $self->{Addr_to_queues}->{$addr} || return;
                 @$dest_queues = grep { $_ ne $queue } @$dest_queues;
                 delete $self->{Addr_to_queues}->{$addr} unless @$dest_queues;
@@ -343,45 +356,82 @@ sub _init_routing_table {
 sub bind {
     my ($self, $params) = @_;
 
-    my $address = $params->{addr};
-    my $queue   = $params->{queue};
+    my $session_id  = $params->{session_id};
+    my $address     = $params->{address};
+    my $reply_queue = $params->{reply_queue};
+    my $auth_tokens = $params->{auth_tokens};
 
     my $frontend_cluster = $self->{frontend_cluster};
-    $address =~ s|\@$frontend_cluster\.([\w-]+)$|$1|; #TODO: or warn...
 
-    $self->{Queue_to_addr}->set( $queue => [ time(), $address ] );
+    unless (defined $session_id && $session_id =~ m/^[\w-]{8,}$/) {
+        # eg: B9LY-y22H8K9RLADnEh0Ww
+        die ( $session_id ? "Invalid session $session_id" : "Session not specified");
+    }
+
+    if (defined $address && $address !~ m/^\@$frontend_cluster\.[\w-]+$/) {
+        # eg: @frontend.user-1234
+        die "Invalid address $address";
+    }
+
+    if (defined $reply_queue && $reply_queue !~ m!^/(reply|temp)-queue/\w+\.[\w-]+\@[\w-]+$!) {
+        # eg: /reply-queue/amq.gen-B9LY-y22H8K9RLADnEh0Ww@frontend-1
+        die "Invalid reply queue $reply_queue";
+    }
+
+    if ($address xor $reply_queue) {
+        die "Both address and reply queue must be specified";
+    }
+
+    if (defined $auth_tokens && $auth_tokens !~ m/^[\w-]+(?:,[\w-]+)*$/) {
+        # eg: 101,USER
+        die "Invalid auth tokens $auth_tokens";
+    }
+
+    $address =~ s/^\@$frontend_cluster\.//;
+
+    $self->{Sessions}->set( $session_id => [ $address, $reply_queue, $auth_tokens ] );
 }
 
 sub unbind {
     my ($self, $params) = @_;
 
-    my $queue = $params->{queue};
+    my $session_id = $params->{session_id};
+    my $address    = $params->{address};
 
-    $self->{Queue_to_addr}->delete( $queue ); 
-}
+    my $frontend_cluster = $self->{frontend_cluster};
 
-sub touch {
-    my ($self, $queue) = @_;
+    if (defined $session_id && $session_id !~ m/^[\w-]{8,}$/) {
+        # eg: B9LY-y22H8K9RLADnEh0Ww
+        die "Invalid session $session_id";
+    }
 
-    my $bind = $self->{Queue_to_addr}->get( $queue );
-    my $now = time();
+    if (defined $address && $address !~ m/^\@$frontend_cluster\.[\w-]+$/) {
+        # eg: @frontend.user-1234
+        die "Invalid address $address";
+    }
 
-    return unless ($bind && $bind->[0] < $now - BIND_TIMEOUT * .3 );
+    unless ($session_id || $address) {
+        die "No session nor address were specified";
+    }
 
-    $bind->[0] = $now;
+    if ($session_id) {
+        # Remove single session
+        $self->{Sessions}->delete( $session_id );
+    }
 
-    $self->{Queue_to_addr}->set( $queue => $bind );
-}
+    if ($address) {
 
-sub gc {
-    my $self = shift;
+        #TODO: Iterating over entire cache as it is not indexed by address
 
-    my $all = $self->{Queue_to_addr}->raw_data;
-    my $limit = time() - BIND_TIMEOUT * 1.3;
+        $address =~ s/^\@$frontend_cluster\.//;
 
-    foreach my $queue (keys %$all) {
-        return unless ($all->{$queue}->[0] && $all->{$queue}->[0] < $limit);
-        $self->{Queue_to_addr}->delete( $queue );
+        my $all_sessions = $self->{Sessions}->raw_data;
+
+        # Remove all sessions binded to address
+        foreach my $session_id (keys %$all_sessions) {
+            next unless ($all_sessions->{$session_id}->[0] eq $address);
+            $self->{Sessions}->delete( $session_id );
+        }
     }
 }
 

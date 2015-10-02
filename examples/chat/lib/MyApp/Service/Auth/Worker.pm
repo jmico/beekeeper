@@ -6,7 +6,7 @@ use warnings;
 use Beekeeper::Worker ':log';
 use base 'Beekeeper::Worker';
 
-use Beekeeper::Service::Router;
+use Beekeeper::Service::Router ':all';
 
 
 sub authorize_request {
@@ -23,8 +23,9 @@ sub on_startup {
     my $self = shift;
 
     $self->accept_jobs(
-        'myapp.auth.login' => 'login',
+        'myapp.auth.login'  => 'login',
         'myapp.auth.logout' => 'logout',
+        'myapp.auth.kick'   => 'kick',
     );
 }
 
@@ -34,35 +35,48 @@ sub login {
     my $user = $params->{username};
     my $pass = $params->{password};
 
-    # In this example user credentials are not verified at all, 
-    # but it should be done here in any real application
+    # In this example user credentials are not verified at all
     my $uuid = $user;
 
     $self->set_credentials( 
-        uuid   => $uuid, 
+        uuid   => $uuid,
         tokens => [ "USER" ],
     );
 
-    # Create a virtual destination that will be routed to caller
-    Beekeeper::Service::Router->bind( 
-        address => "\@frontend.user-$uuid",
-        request => $req,
-    );
+    # ...
+    $self->bind_session( $req, "\@frontend.user-$uuid" );
 
     $self->send_notification(
         method => "myapp.chat.message\@frontend.user-$uuid",
-        params => { from => '', message => "Welcome!" },
+        params => { message => "Welcome!" },
     );
 }
 
 sub logout {
     my ($self, $params, $req) = @_;
 
-    Beekeeper::Service::Router->unbind( 
-        #address     => "\@frontend.user-$login",
-        #destination => $req->sender_address,
-        request => $req,
+    my $uuid = $req->uuid;
+
+    $self->send_notification(
+        method => "myapp.chat.message\@frontend.user-$uuid",
+        params => { message => "Bye!" },
     );
+
+    $self->unbind_session;
+}
+
+sub kick {
+    my ($self, $params) = @_;
+
+    my $user = $params->{username};
+    my $uuid = $user;
+
+    $self->send_notification(
+        method => "myapp.chat.message\@frontend.user-$uuid",
+        params => { message => "You were kicked" },
+    );
+
+    $self->unbind_address( "\@frontend.user-$uuid" );
 }
 
 1;

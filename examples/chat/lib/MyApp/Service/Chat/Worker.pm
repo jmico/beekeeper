@@ -24,10 +24,10 @@ sub on_startup {
 }
 
 sub message {
-    my ($self, $params) = @_;
+    my ($self, $params, $req) = @_;
 
     my $msg = $params->{'message'};
-    my $from = 'me';
+    my $from = $req->uuid;
 
     return unless (defined $msg && length $msg);
 
@@ -41,12 +41,11 @@ sub message {
 }
 
 sub private_message {
-    my ($self, $params) = @_;
+    my ($self, $params, $req) = @_;
 
     my $user = $params->{'username'};
     my $msg = $params->{'message'};
-
-    #$from = $req->uuid;
+    my $from = $req->uuid;
 
     # Unicast
     $self->send_notification(
