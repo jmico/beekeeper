@@ -1,5 +1,7 @@
 package Beekeeper::Worker::Util::SharedHash;
 
+#TODO: rename SharedCache
+
 use strict;
 use warnings;
 
@@ -21,6 +23,7 @@ my $p = $self->shared_hash( ... );
 
 =cut
 
+use Fcntl qw(:DEFAULT :flock);
 use JSON::XS;
 use Carp;
 
@@ -37,6 +40,9 @@ sub new {
         uid       => int(rand(90000000)+10000000),
         resolver  => $args{'resolver'},
         on_update => $args{'on_update'},
+        persist   => $args{'persist'},
+        max_age   => $args{'max_age'},
+        synced    => 0,
         data      => {},
         vers      => {},
         time      => {},
@@ -44,6 +50,8 @@ sub new {
 
     bless $self, $class;
     my $_self = $self;
+
+    $self->_load_state if $self->{persist};
 
     $self->{_init} = $worker->do_async_job(
         method     => "_sync.$id.dump",
@@ -53,10 +61,12 @@ sub new {
             $_self->_merge_dump(@_);
             $worker->accept_jobs("_sync.$id.dump" => sub { $_self->dump });
             delete $_self->{_init};
+            $_self->{synced} = 1;
         },
         on_error => sub {
             $worker->accept_jobs("_sync.$id.dump" => sub { $_self->dump });
             delete $_self->{_init};
+            $_self->{synced} = 1;
         }
     );
 
@@ -75,9 +85,16 @@ sub new {
         }
     );
 
+    if ($self->{max_age}) {
+        $self->{gc_timer} = AnyEvent->timer(
+            after    => rand( $self->{max_age} ), 
+            interval => $self->{max_age},
+            cb       => sub { $_self->_gc },
+        );
+    }
+
     return $self;
 }
-
 
 sub set {
     my ($self, $key, $value) = @_;
@@ -156,7 +173,7 @@ sub _merge {
     }
     elsif ($version < $self->{vers}->{$key}) {
 
-        # Received an stale value (we have a newest version)
+        # Received a stale value (we have a newest version)
         return;
     }
     else {
@@ -229,6 +246,89 @@ sub _merge_dump {
     foreach my $entry (@{$resp->result->{dump}}) {
         $self->_merge($entry);
     }
+}
+
+sub touch {
+    my ($self, $key) = @_;
+
+    return unless defined $self->{data}->{$key};
+
+    croak "No max_age specified (gc is disabled)" unless $self->{max_age};
+
+    my $age = time() - $self->{time}->{$key};
+
+    return unless ( $age > $self->{max_age} * 0.3);
+    return unless ( $age < $self->{max_age} * 1.3);
+
+    # Set to current value but without increasing version
+    $self->{vers}->{$key}--;
+
+    $self->set( $key => $self->{data}->{$key} );
+}
+
+sub _gc {
+    my $self = shift;
+
+    my $min_time = time() - $self->{max_age} * 1.3;
+
+    foreach my $key (keys %{$self->{data}}) {
+
+        next unless ( $self->{time}->{$key} < $min_time );
+        next unless ( defined $self->{data}->{$key} );
+
+        $self->delete( $key );
+    }
+}
+
+
+sub _save_state {
+    my $self = shift;
+
+    return unless ($self->{synced});
+
+    my $id = $self->{id};
+    my $tmp_file = "/tmp/beekeeper-cache-$id.dump";
+
+    # Avoid stampede when several workers are exiting simultaneously
+    return if (-e $tmp_file && (stat($tmp_file))[9] == time());
+
+    # Lock file because several workers may try to write simultaneously to it
+    sysopen(my $fh, $tmp_file, O_RDWR|O_CREAT) or return;
+    flock($fh, LOCK_EX | LOCK_NB) or return;
+    truncate($fh, 0) or return;
+
+    print $fh encode_json( $self->dump );
+
+    close($fh);
+}
+
+sub _load_state {
+    my $self = shift;
+
+    my $id = $self->{id};
+    my $tmp_file = "/tmp/beekeeper-cache-$id.dump";
+    return unless (-e $tmp_file);
+
+    # Do not load stale dumps
+    return if ($self->{max_age} && (stat($tmp_file))[9] < time() - $self->{max_age});
+
+    local($/);
+    open(my $fh, '<', $tmp_file) or die "Couldn't read $tmp_file: $!";
+    my $data = <$fh>;
+    close($fh);
+
+    local $@;
+    my $dump = eval { decode_json($data) };
+    return if $@;
+
+    foreach my $entry (@{$dump->{dump}}) {
+        $self->_merge($entry);
+    }
+}
+
+sub DESTROY {
+    my $self = shift;
+    $self->_save_state if $self->{persist};
 }
 
 1;
