@@ -28,7 +28,7 @@ Track state of workers.
 use Beekeeper::Worker ':log';
 use base 'Beekeeper::Worker';
 
-use Beekeeper::Worker::Util 'shared_hash';
+use Beekeeper::Worker::Util 'shared_cache';
 
 use constant CHECK_PERIOD => 5; #TODO: should be 20 or something
 
@@ -54,7 +54,7 @@ sub on_startup {
     $self->{host} = $self->{_WORKER}->{hostname};
     $self->{pool} = $self->{_WORKER}->{pool_id};
 
-    $self->{Workers} = $self->shared_hash( id => "workers" );
+    $self->{Workers} = $self->shared_cache( id => "workers" );
     $self->{Queues} = {};
 
     $self->accept_notifications(

@@ -28,7 +28,7 @@ Version 0.01
 use Beekeeper::Worker ':log';
 use base 'Beekeeper::Worker';
 
-use Beekeeper::Worker::Util 'shared_hash';
+use Beekeeper::Worker::Util 'shared_cache';
 
 use constant SESSION_TIMEOUT => 1800;
 
@@ -320,7 +320,7 @@ sub _init_routing_table {
 
     $self->{Addr_to_queues} = {};
 
-    $self->{Sessions} = $self->shared_hash( 
+    $self->{Sessions} = $self->shared_cache( 
         id => "router",
         persist => 1,
         max_age => $sess_timeout,

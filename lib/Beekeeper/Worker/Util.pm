@@ -17,21 +17,21 @@ Version 0.01
 
 =head1 DESCRIPTION
 
-my $p = $self->shared_hash( ... );
+my $p = $self->shared_cache( ... );
 
 =cut
 
-use Beekeeper::Worker::Util::SharedHash;
+use Beekeeper::Worker::Util::SharedCache;
 
 use Exporter 'import';
 
-our @EXPORT = qw( shared_hash );
+our @EXPORT = qw( shared_cache );
 
 
-sub shared_hash {
+sub shared_cache {
     my ($self, %args) = @_;
 
-    my $shared = Beekeeper::Worker::Util::SharedHash->new( worker => $self, %args );
+    my $shared = Beekeeper::Worker::Util::SharedCache->new( worker => $self, %args );
 
     return $shared;
 }

@@ -1,6 +1,4 @@
-package Beekeeper::Worker::Util::SharedHash;
-
-#TODO: rename SharedCache
+package Beekeeper::Worker::Util::SharedCache;
 
 use strict;
 use warnings;
@@ -9,7 +7,7 @@ our $VERSION = '0.01';
 
 =head1 NAME
 
-Beekeeper::Worker::Util::SharedHash - ...
+Beekeeper::Worker::Util::SharedCache - ...
 
 =head1 VERSION
 
@@ -19,7 +17,7 @@ Version 0.01
 
 =head1 DESCRIPTION
 
-my $p = $self->shared_hash( ... );
+my $p = $self->shared_cache( ... );
 
 =cut
 
