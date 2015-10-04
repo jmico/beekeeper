@@ -74,7 +74,7 @@ use Carp;
 #TODO: our @CARP_NOT = ('AnyEvent', 'Beekeeper::Bus::STOMP');
 
 use constant COMPILE_ERROR_EXIT_CODE => 99;
-use constant REPORT_STATUS_PERIOD    => 2; # should be 5 or something
+use constant REPORT_STATUS_PERIOD    => 5;
 use constant REQUEST_AUTHORIZED      => int(rand(90000000)+10000000);
 
 use Exporter 'import';
@@ -108,6 +108,8 @@ sub log_notice    (@) { $Logger->( LOG_NOTICE, @_ ) }
 sub log_info      (@) { $Logger->( LOG_INFO,   @_ ) }
 sub log_debug     (@) { $Logger->( LOG_DEBUG,  @_ ) }
 sub log_trace     (@) { $Logger->( LOG_TRACE,  @_ ) }
+
+our $JSON;
 
 
 sub new {
@@ -145,6 +147,10 @@ sub new {
         busy_time       => 0,
         busy_since      => 0,
     };
+
+    $JSON = JSON::XS->new;
+    $JSON->utf8;             # encode result as utf8
+    $JSON->convert_blessed;  # use TO_JSON methods to serialize objects
 
     eval {
 
@@ -447,9 +453,16 @@ sub __drain_task_queue {
             $worker->{notif_count}++;
 
             eval {
+
                 my $request = decode_json($$body_ref);
-                $request->{_headers} = $msg_headers;
+
+                unless (ref $request eq 'HASH' && $request->{jsonrpc} eq '2.0') {
+                    log_warn "Invalid JSON-RPC 2.0 request";
+                    return;
+                }
+
                 bless $request, 'Beekeeper::JSONRPC::Notification';
+                $request->{_headers} = $msg_headers;
 
                 my $method = $request->{method};
 
@@ -490,18 +503,25 @@ sub __drain_task_queue {
             my ($body_ref, $msg_headers) = @$task;
 
             $worker->{jobs_count}++;
-            my ($request, $result, $response);
+            my ($request, $request_id, $result, $response);
 
             $result = eval {
 
                 $request = decode_json($$body_ref);
-                $request->{_headers} = $msg_headers;
-                bless $request, 'Beekeeper::JSONRPC::Request';
 
-                my $method = $request->{method};
+                unless (ref $request eq 'HASH' && $request->{jsonrpc} eq '2.0') {
+                    log_warn "Invalid JSON-RPC 2.0 request";
+                    return Beekeeper::JSONRPC::Error->invalid_request;
+                }
+
+                $request_id = $request->{id};
+                my $method  = $request->{method};
+
+                bless $request, 'Beekeeper::JSONRPC::Request';
+                $request->{_headers} = $msg_headers;
 
                 unless (defined $method && $method =~ m/^([\.\w-]+)\.([\w-]+)$/) {
-                    log_warn "Invalid job method";
+                    log_warn "Invalid request method";
                     return Beekeeper::JSONRPC::Error->method_not_found;
                 }
 
@@ -528,16 +548,9 @@ sub __drain_task_queue {
 
             if ($@) {
                 # Got an exception while executing job
-                my $errmsg = $@; $errmsg =~ s/ at .*? line \d+(\.|, at EOF)\s*$//s;
-
-                $response = Beekeeper::JSONRPC::Error->server_error( data => $errmsg );
-                $response = { %$response }; #TODO: unbless ?
                 log_error $@;
-            }
-            elsif (ref $result eq 'Beekeeper::JSONRPC::Error') {
-                # Worker returned an error object
-                #TODO: allow to die( Beekeeper::JSONRPC::Error )
-                $response = { %$result }; #TODO: unbless ?
+                $response = Beekeeper::JSONRPC::Error->server_error;
+                $response = $@ if $@->isa('Beekeeper::JSONRPC::Error');
             }
             else {
                 # Build a success response
@@ -547,34 +560,46 @@ sub __drain_task_queue {
                 };
             }
 
-            if ($request->{id}) { #TODO: This will fail if $request is trash
+            if ($request_id) {
 
-                # Background jobs doesn't expect responses
+                # Send response back to caller
 
-                $response->{id} = $request->{id};
+                $response->{id} = $request_id;
 
-                my $json = encode_json($response); #TODO: This will fail if $response contains objects
+                my $json = eval { $JSON->encode( $response ) };
+
+                if ($@) {
+                    # Probably response contains blessed references 
+                    log_error "Couldn't serialize response as JSON: $@";
+                    $response = Beekeeper::JSONRPC::Error->server_error;
+                    $response->{id} = $request_id;
+                    $json = $JSON->encode( $response );
+                }
+
+                $self->{_BUS}->ack(
+                    'id'           => $msg_headers->{'message-id'},
+                    'subscription' => $msg_headers->{'subscription'},  # not needed in STOMP 1.2
+                    'buffer_id'    => "txn-$request_id",
+                );
 
                 $self->{_BUS}->send(
                     'destination'     => $msg_headers->{'reply-to'},
-                  # 'content-type'    => 'application/json;charset=utf-8',
-                    'x-forward-reply' => $msg_headers->{'x-forward-reply'} || '',
+                    'x-forward-reply' => $msg_headers->{'x-forward-reply'},
+                    'buffer_id'       => "txn-$request_id",
                     'body'            => \$json,
-                  # 'buffer_id' => $id
-
-                    #TODO: add expires to avoid hanging replies
                 );
 
-                #TODO: enclose within transaction
+                $self->{_BUS}->flush_buffer( 'buffer_id' => "txn-$request_id", );
             }
+            else {
 
-            $self->{_BUS}->ack(
-                'id'           => $msg_headers->{'message-id'},
-                'subscription' => $msg_headers->{'subscription'},  # not needed in STOMP 1.2
-              # 'buffer_id' => $id
-            );
-            
-          # $self->{_BUS}->flush( 'buffer_id' => $id );
+                # Background jobs doesn't expect responses
+
+                $self->{_BUS}->ack(
+                    'id'           => $msg_headers->{'message-id'},
+                    'subscription' => $msg_headers->{'subscription'},
+                );
+            }
         }
 
         redo DRAIN if (@{$worker->{job_queue_high}} || @{$worker->{job_queue_low}})
@@ -616,7 +641,7 @@ sub stop_accepting_notifications {
         $self->{_BUS}->unsubscribe(
             destination => "/topic/msg.$local_bus.$service.$method",
             on_success  => sub {
-                #BUG: Can have some buffered
+                #BUG: Some notifications may be still queued, which will cause warnings
                 delete $self->{_WORKER}->{callbacks}->{"msg.$fq_meth"};
             }
         );
@@ -652,7 +677,7 @@ sub stop_accepting_jobs {
         $self->{_BUS}->unsubscribe(
             destination => "/queue/req.$local_bus.$service",
             on_success  => sub {
-                #BUG: Can have some buffered
+                #BUG: A single job may still be queued, NACK it
                 delete $self->{_WORKER}->{callbacks}->{"req.$fq_meth"};
             }
         );
@@ -679,7 +704,7 @@ sub __work_forever {
     };
 
     if ($@) {
-        log_error "Died: $@";
+        log_error "Worker died: $@";
         CORE::exit(255);
     }
 
@@ -725,7 +750,7 @@ sub __report_status {
     my %queues;
     foreach my $queue (keys %{$worker->{callbacks}}) {
         next unless $queue =~ m/^req\.(?!_sync)(.*)\./;
-        $queues{$queue} = 1;
+        $queues{$1} = 1;
     }
 
     #

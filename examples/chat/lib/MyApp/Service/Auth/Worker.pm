@@ -50,6 +50,8 @@ sub login {
         method => "myapp.chat.message\@frontend.user-$uuid",
         params => { message => "Welcome!" },
     );
+
+    return 1;
 }
 
 sub logout {
@@ -63,6 +65,8 @@ sub logout {
     );
 
     $self->unbind_session;
+
+    return 1;
 }
 
 sub kick {
@@ -77,6 +81,8 @@ sub kick {
     );
 
     $self->unbind_address( "\@frontend.user-$uuid" );
+
+    return 1;
 }
 
 1;

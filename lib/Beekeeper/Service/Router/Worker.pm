@@ -390,6 +390,8 @@ sub bind {
     $address =~ s/^\@$frontend_cluster\.//;
 
     $self->{Sessions}->set( $session_id => [ $address, $reply_queue, $auth_tokens ] );
+
+    return 1;
 }
 
 sub unbind {
@@ -433,6 +435,8 @@ sub unbind {
             $self->{Sessions}->delete( $session_id );
         }
     }
+
+    return 1;
 }
 
 1;

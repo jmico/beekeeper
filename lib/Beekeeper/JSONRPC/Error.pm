@@ -77,6 +77,8 @@ sub data    { $_[0]->{error}->{data}    }
 
 sub success { 0 }
 
+sub TO_JSON { return { %{$_[0]} } }
+
 
 =head1 Predefined errors
 
