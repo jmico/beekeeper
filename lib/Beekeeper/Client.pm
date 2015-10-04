@@ -174,11 +174,11 @@ sub send_notification {
     }
 
     if (exists $args{'_auth_'}) {
-        $send_args{'x-auth-tokens'} = $args{'_auth_'} if ($args{'_auth_'});
+        $send_args{'x-auth-tokens'} = $args{'_auth_'};
     }
     else {
-        $send_args{'x-auth-tokens'} = $self->{_CLIENT}->{auth_tokens} if ($self->{_CLIENT}->{auth_tokens});
-        $send_args{'x-session'}     = $self->{_CLIENT}->{session_id}  if ($self->{_CLIENT}->{session_id});
+        $send_args{'x-auth-tokens'} = $self->{_CLIENT}->{auth_tokens};
+        $send_args{'x-session'}     = $self->{_CLIENT}->{session_id};
     }
 
     if ($self->{transaction}) {
@@ -186,11 +186,7 @@ sub send_notification {
         $send_args{$hdr} = $self->{transaction_id};
     }
 
-    $self->{_BUS}->send(
-     # 'content-type' => 'application/json;charset=utf-8',
-        body          => \$json,
-        %send_args
-    );
+    $self->{_BUS}->send( body => \$json, %send_args );
 }
 
 
@@ -280,11 +276,11 @@ sub __do_rpc_request {
     }
 
     if (exists $args{'_auth_'}) {
-        $send_args{'x-auth-tokens'} = $args{'_auth_'} if ($args{'_auth_'});
+        $send_args{'x-auth-tokens'} = $args{'_auth_'};
     }
     else {
-        $send_args{'x-auth-tokens'} = $client->{auth_tokens} if ($client->{auth_tokens});
-        $send_args{'x-session'}     = $client->{session_id}  if ($client->{session_id});
+        $send_args{'x-auth-tokens'} = $client->{auth_tokens};
+        $send_args{'x-session'}     = $client->{session_id};
     }
 
     my $timeout = $args{'timeout'} || REQ_TIMEOUT;
@@ -314,7 +310,6 @@ sub __do_rpc_request {
     }
 
     my $json = encode_json($req);
-    $send_args{'body'} = \$json;
 
     if ($BACKGROUND && $self->{transaction}) {
         my $hdr = $self->{transaction} == TXN_CLIENT_SIDE ? 'buffer_id' : 'transaction';
@@ -322,7 +317,7 @@ sub __do_rpc_request {
     }
 
     # Send request
-    $self->{_BUS}->send( %send_args );
+    $self->{_BUS}->send( body => \$json, %send_args );
 
     if ($BACKGROUND) {
          # Nothing else to do

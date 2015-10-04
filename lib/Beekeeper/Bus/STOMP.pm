@@ -679,11 +679,9 @@ sub send {
 
     my $buffer_id = delete $headers{'buffer_id'};
 
-    # foreach (values %headers) { $_ = '' unless defined $_ }
-
     my $raw_stomp = join( "",
         "SEND\n",
-         map( "$_:$headers{$_}\n", keys %headers),
+         map( defined $headers{$_} ? "$_:$headers{$_}\n" : "", keys %headers),
         "\n",
          $$body_ref,
         "\x00",
@@ -703,7 +701,7 @@ sub send {
         # push_write could not send all data to the handle because the kernel
         # write buffer is full. The size of kernel write bufer (which can be 
         # queried with 'sysctl net.ipv4.tcp_wmem') is choosed by the kernel
-        # based on available memory, and is 4MB in our production servers.
+        # based on available memory, and is 4MB in known production servers.
         # This will happen after sending more that 4MB of data very quickly.
         # As client may be syncronous, wait until entire message is sent.
         my $flushed = AnyEvent->condvar;
@@ -745,14 +743,14 @@ sub ack {
 
     croak "Missing 'id' header" unless $headers{'id'};
 
-    if ($self->{version} eq '1.1') {
+    if ($self->{version} >= 1.2) {
+        # STOMP 1.2 requires only 'id' header
+        delete $headers{'subscription'};
+    }
+    else {
         # STOMP 1.1 requires 'subscription' and 'message-id' headers
         croak "Missing 'subscription' header" unless $headers{'subscription'};
         $headers{'message-id'} = delete $headers{'id'};
-    }
-    else {
-        # STOMP 1.2 requires only 'id' header
-        delete $headers{'subscription'};
     }
 
     my $buffer_id = delete $headers{'buffer_id'};
@@ -789,14 +787,14 @@ sub nack {
 
     croak "Missing 'id' header" unless $headers{'id'};
 
-    if ($self->{version} eq '1.1') {
+    if ($self->{version} >= 1.2) {
+        # STOMP 1.2 requires only 'id' header
+        delete $headers{'subscription'};
+    }
+    else {
         # STOMP 1.1 requires 'subscription' and 'message-id' headers
         croak "Missing 'subscription' header" unless $headers{'subscription'};
         $headers{'message-id'} = delete $headers{'id'};
-    }
-    else {
-        # STOMP 1.2 requires only 'id' header
-        delete $headers{'subscription'};
     }
 
     my $buffer_id = delete $headers{'buffer_id'};
