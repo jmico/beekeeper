@@ -39,6 +39,8 @@ A value of any type, which is used to match the response with the request that i
 
 =cut
 
+use Beekeeper::JSONRPC::AuthHeaders ':all';
+
 sub new {
     my $class = shift;
     bless {
@@ -66,41 +68,6 @@ sub result {
 sub success {
     # Shortcut for $job->response->success
     return ($_[0]->{_response}) ? $_[0]->{_response}->success : undef;
-}
-
-
-sub session_id {
-    $_[0]->{_headers}->{'x-session'};
-}
-
-sub uuid {
-    $_[0]->{_auth} ? $_[0]->{_auth}->{uuid} : $_[0]->_auth->{uuid};
-}
-
-sub auth_tokens {
-    $_[0]->{_auth} ? $_[0]->{_auth}->{tokens} : $_[0]->_auth->{tokens};
-}
-
-sub _auth {
-    my $auth = $_[0]->{_headers}->{'x-auth-tokens'};
-    return {} unless $auth && $auth =~ m/^ ([\w-]+) (,\w+)* $/x;
-    $_[0]->{_auth} = { uuid => $1, tokens => $2 };
-}
-
-sub has_auth_tokens {
-    my ($self, @tokens) = @_;
-
-    my $auth = $self->auth_tokens;
-
-    return unless $auth;
-    return unless @tokens;
-
-    foreach my $token (@tokens) {
-        return unless defined $token;
-        return unless $auth =~ m/\b$token\b/;
-    }
-
-    return Beekeeper::Worker::REQUEST_AUTHORIZED();
 }
 
 1;

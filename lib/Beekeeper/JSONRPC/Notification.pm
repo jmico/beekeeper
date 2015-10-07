@@ -39,6 +39,8 @@ Always null.
 
 =cut
 
+use Beekeeper::JSONRPC::AuthHeaders ':all';
+
 sub new {
     my $class = shift;
 
