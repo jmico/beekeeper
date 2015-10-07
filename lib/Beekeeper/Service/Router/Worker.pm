@@ -334,6 +334,7 @@ sub _init_routing_table {
                 my $addr  = $value->[0];
                 my $queue = $value->[1];
                 my $dest_queues = $self->{Addr_to_queues}->{$addr} ||= [];
+                return if grep { $_ eq $queue } @$dest_queues;
                 push @$dest_queues, $queue;
             }
             elsif (defined $old_value) {
