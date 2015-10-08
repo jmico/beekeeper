@@ -15,13 +15,13 @@ Version 0.01
 
 =head1 SYNOPSIS
 
+  use Beekeeper::Service::Supervisor;
+
 =head1 DESCRIPTION
 
 Track state of workers.
 
-=head1 TODO:
-
-- Security
+A Supervisor worker is created automatically in every worker pool.
 
 =cut
 
@@ -30,7 +30,7 @@ use base 'Beekeeper::Worker';
 
 use Beekeeper::Worker::Util 'shared_cache';
 
-use constant CHECK_PERIOD => 5; #TODO: should be 20 or something
+use constant CHECK_PERIOD => Beekeeper::Worker::REPORT_STATUS_PERIOD;
 
 
 sub authorize_request {
@@ -54,7 +54,7 @@ sub on_startup {
     $self->{host} = $self->{_WORKER}->{hostname};
     $self->{pool} = $self->{_WORKER}->{pool_id};
 
-    $self->{Workers} = $self->shared_cache( id => "workers" );
+    $self->{Workers} = $self->shared_cache( id => "workers", max_age => CHECK_PERIOD * 4 );
     $self->{Queues} = {};
 
     $self->accept_notifications(
@@ -69,7 +69,6 @@ sub on_startup {
         '_bkpr.supervisor.get_services_status' => 'get_services_status',
     );
 
-    #
     $self->{check_status_tmr} = AnyEvent->timer(
         after    => rand(CHECK_PERIOD), 
         interval => CHECK_PERIOD, 
@@ -92,9 +91,10 @@ sub log_handler {
 Handler for 'supervisor.worker_status' job.
 
 This job is sent by workers every few seconds and acts as a heart-beat.
-It contains also statistical data about worker performance.
+It contains statistical data about worker performance.
 
-Note that workers doing long jobs may not call this method timely.
+Note that workers doing long jobs (like slow SQL queries) may not send 
+this request timely.
 
 =cut
 
@@ -108,8 +108,8 @@ sub worker_status {
 
 Handler for 'supervisor.worker_exit' job.
 
-This job is sent by workers just before exiting gracefully.
-It is not sent if worker is terminated abruptly, as it has no chance to do so. 
+This job is sent by workers just before exiting gracefully. It is not sent 
+when worker is terminated abruptly (as process has no chance to do so).
 
 =cut
 
@@ -143,6 +143,18 @@ sub set_worker_status {
     }
 }
 
+sub touch_worker_status {
+    my ($self, %args) = @_;
+
+    my $pool = $args{'pool'} || die;
+    my $host = $args{'host'} || die;
+    my $pid  = $args{'pid'}  || die;
+
+    my $worker_id = "$host:$pool:$pid";
+
+    $self->{Workers}->touch( $worker_id );
+}
+
 sub remove_worker_status {
     my ($self, %args) = @_;
 
@@ -172,7 +184,16 @@ sub _get_workers {
 }
 
 
-=pod
+=item check_workers
+
+Check every worker process in this host (even workers in other pools) to
+ensure that they are running, and measure their memory usage.
+
+This is needed as workers with long blocking procedures may not report its 
+status timely, and abruptly terminated workers has no chance to report that 
+they had exited.
+
+It would be nice to measure CPU usage too.
 
 =cut
 
@@ -195,14 +216,25 @@ sub check_workers {
             # Apache::SizeLimit uses $VIRT + $SHARE but that doensn't look useful
             my $msize = $RES - $SHARE;
 
-            next if ($worker->{msize} && $worker->{msize} eq $msize);
+            my $old_size = $worker->{msize};
 
-            $self->set_worker_status(
-                pool  => $worker->{pool},
-                host  => $worker->{host},
-                pid   => $worker->{pid},
-                msize => $msize,
-            );
+            if ($old_size && abs($msize - $old_size) / $old_size < .05) {
+                # Avoid sending messages when memory changes are below 5%
+                $self->touch_worker_status(
+                    pool  => $worker->{pool},
+                    host  => $worker->{host},
+                    pid   => $worker->{pid},
+                );
+            }
+            else {
+                # Update worker memory usage
+                $self->set_worker_status(
+                    pool  => $worker->{pool},
+                    host  => $worker->{host},
+                    pid   => $worker->{pid},
+                    msize => $msize,
+                );
+            }
         }
         else {
             # Worker is not running anymore
@@ -215,9 +247,17 @@ sub check_workers {
     }
 }
 
-=pod
+=item check_queues
 
-# If queue is empty, activate Rejector/Sinkhole/Drainer
+In the case of all workers of a given service being down, all requests sent to
+the service will timeout as no one is serving them. This may cause a serious
+disruption in the application, as any other service depending of the broken
+one will halt too for the duration of the timeout.
+
+In order to mitigate this situation the Sinkhole service will be notified
+when unserviced queues are detected, making it to respond immediately to 
+all requests with an error response. Then callers will quickly receive an
+error response instead of timing out.
 
 =cut
 
@@ -242,12 +282,10 @@ sub check_queues {
 
     my @unserviced = grep { $Queues->{$_} == 0 } keys %$Queues;
 
-    # Do not drain SharedHash synchronization queue
-    @unserviced = grep { $_ !~ m/^_sync\./ } @unserviced;
-
     return unless @unserviced;
 
-    # Tell sinkhole service to drain...
+    # Tell Sinkhole to respond immediately to all requests sent to 
+    # unserviced queues with a "Method not available" error response
 
     $self->send_notification(
         method => '_bkpr.sinkhole.unserviced_queues',
@@ -260,7 +298,7 @@ sub check_queues {
 
 Handler for 'supervisor.get_workers_status' job.
 
-Used by monitor command line tool.
+Used by bkpr-top command line tool.
 
 =cut
 
@@ -280,7 +318,7 @@ sub get_workers_status {
 
 Handler for 'supervisor.get_services_status' job.
 
-Used by monitor command line tool.
+Used by bkpr-top command line tool.
 
 =cut
 
@@ -311,13 +349,11 @@ sub get_services_status {
     return \%services;
 }
 
-
-
 =item restart_workers
 
 Handler for 'supervisor.restart_workers' notification.
 
-This notification is sent by restart-workers command line tool.
+This request is sent by bkpr-restart command line tool.
 
 =cut
 
@@ -368,12 +404,11 @@ sub restart_workers {
     }
 }
 
-
 =item restart_pool
 
 Handler for 'supervisor.restart_pool' notification.
 
-This notification is sent by restart-pool command line tool.
+This request is sent by bkpr-restart command line tool.
 
 =cut
 
@@ -406,7 +441,8 @@ sub restart_pool {
 sub _get_pool_index {
     my ($self, $host, $pool) = @_;
 
-    # Sort all pools by name, then return the index of the requested one
+    # Sort all pools by name, then return the index of the requested one.
+    # Used by restart_pool() to determine restart order across hosts
 
     my %pools;
 

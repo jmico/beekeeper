@@ -530,8 +530,7 @@ sub __drain_task_queue {
 
                 unless (($self->authorize_request($request) || "") eq REQUEST_AUTHORIZED) {
                     log_warn "Request $method was not authorized";
-                    return Beekeeper::JSONRPC::Error->request_not_authorized
-                        unless ($method =~ m/_sync.\w+.dump/); #TODO: fix shared hash
+                    return Beekeeper::JSONRPC::Error->request_not_authorized;
                 }
 
                 unless ($cb) {
