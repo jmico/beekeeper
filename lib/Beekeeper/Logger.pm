@@ -19,7 +19,7 @@ Version 0.01
 
 =cut
 
-use constant LOG_EMERG  => 1;
+use constant LOG_FATAL  => 1;
 use constant LOG_ALERT  => 2;
 use constant LOG_CRIT   => 3;
 use constant LOG_ERROR  => 4;
@@ -34,7 +34,7 @@ use Exporter 'import';
 use Time::HiRes;
 
 our @EXPORT_OK = qw(
-    LOG_EMERG
+    LOG_FATAL
     LOG_ALERT
     LOG_CRIT
     LOG_ERROR
@@ -49,7 +49,7 @@ our @EXPORT_OK = qw(
 our %EXPORT_TAGS = ('log_levels' => \@EXPORT_OK );
 
 our %Label = (
-    &LOG_EMERG  => 'emergency',
+    &LOG_FATAL  => 'fatal',
     &LOG_ALERT  => 'alert',
     &LOG_CRIT   => 'critical',
     &LOG_ERROR  => 'error',
@@ -134,6 +134,9 @@ sub log {
     return unless $bus && $bus->{is_connected};
 
     # JSON-RPC notification
+
+    #TODO: this will fail if $msg contains blessed references
+
     my $json = encode_json({
         jsonrpc => '2.0',
         method  => $Label{$level},
@@ -149,6 +152,7 @@ sub log {
     });
 
     local $@;
+
     eval {
         $bus->send(
             'destination' => "/topic/log.$level.$self->{service}",

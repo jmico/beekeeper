@@ -82,7 +82,7 @@ use Exporter 'import';
 our @EXPORT = qw( REQUEST_AUTHORIZED );
 
 our @EXPORT_OK = qw(
-    log_emergency
+    log_fatal
     log_alert
     log_critical
     log_error
@@ -97,17 +97,18 @@ our @EXPORT_OK = qw(
 our %EXPORT_TAGS = ('log' => [ @EXPORT_OK, @EXPORT ]);
 
 our $Logger = sub { warn(@_) }; # redefined later by __init_logger
+our $LogLevel = LOG_WARN;
 
-sub log_emergency (@) { $Logger->( LOG_EMERG,  @_ ) }
-sub log_alert     (@) { $Logger->( LOG_ALERT,  @_ ) }
-sub log_critical  (@) { $Logger->( LOG_CRIT,   @_ ) }
-sub log_error     (@) { $Logger->( LOG_ERROR,  @_ ) }
-sub log_warn      (@) { $Logger->( LOG_WARN,   @_ ) }
-sub log_warning   (@) { $Logger->( LOG_WARN,   @_ ) }
-sub log_notice    (@) { $Logger->( LOG_NOTICE, @_ ) }
-sub log_info      (@) { $Logger->( LOG_INFO,   @_ ) }
-sub log_debug     (@) { $Logger->( LOG_DEBUG,  @_ ) }
-sub log_trace     (@) { $Logger->( LOG_TRACE,  @_ ) }
+sub log_fatal    (@) { $LogLevel >= LOG_FATAL  && $Logger->( LOG_FATAL,  @_ ) }
+sub log_alert    (@) { $LogLevel >= LOG_ALERT  && $Logger->( LOG_ALERT,  @_ ) }
+sub log_critical (@) { $LogLevel >= LOG_CRIT   && $Logger->( LOG_CRIT,   @_ ) }
+sub log_error    (@) { $LogLevel >= LOG_ERROR  && $Logger->( LOG_ERROR,  @_ ) }
+sub log_warn     (@) { $LogLevel >= LOG_WARN   && $Logger->( LOG_WARN,   @_ ) }
+sub log_warning  (@) { $LogLevel >= LOG_WARN   && $Logger->( LOG_WARN,   @_ ) }
+sub log_notice   (@) { $LogLevel >= LOG_NOTICE && $Logger->( LOG_NOTICE, @_ ) }
+sub log_info     (@) { $LogLevel >= LOG_INFO   && $Logger->( LOG_INFO,   @_ ) }
+sub log_debug    (@) { $LogLevel >= LOG_DEBUG  && $Logger->( LOG_DEBUG,  @_ ) }
+sub log_trace    (@) { $LogLevel >= LOG_TRACE  && $Logger->( LOG_TRACE,  @_ ) }
 
 our $JSON;
 
@@ -548,6 +549,7 @@ sub __drain_task_queue {
                 log_error $@;
                 $response = Beekeeper::JSONRPC::Error->server_error;
                 $response = $@ if $@->isa('Beekeeper::JSONRPC::Error');
+                #TODO: set $response->{error}->{data} = $@ for local callers
             }
             else {
                 # Build a success response
