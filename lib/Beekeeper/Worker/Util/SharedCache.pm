@@ -104,13 +104,18 @@ sub new {
     return $self;
 }
 
-sub _connect_to_all_brokers {
+sub _cluster_config {
     my ($self, $worker) = @_;
-    weaken($self);
 
     my $bus_config = $worker->{_WORKER}->{bus_config};
     my $bus_id = $worker->{_BUS}->bus_id;
     my $cluster_id = $bus_config->{$bus_id}->{'cluster'};
+
+    unless ($cluster_id) {
+        # No clustering defined, just a single backend broker
+        return [ $bus_config->{$bus_id} ];
+    }
+
     my @cluster_config;
 
     foreach my $config (values %$bus_config) {
@@ -118,14 +123,18 @@ sub _connect_to_all_brokers {
         push @cluster_config, $config;
     }
 
-    unless (@cluster_config) {
-        # No clustering defined, just a single backend broker
-        push @cluster_config, $bus_config->{$bus_id};
-    }
+    return \@cluster_config;
+}
+
+sub _connect_to_all_brokers {
+    my ($self, $worker) = @_;
+    weaken($self);
+
+    my $cluster_config = $self->_cluster_config($worker);
 
     my $connected = AnyEvent->condvar;
 
-    foreach my $config (@cluster_config) {
+    foreach my $config (@$cluster_config) {
 
         my $bus_id = $config->{'bus-id'};
 
@@ -145,10 +154,11 @@ sub _connect_to_all_brokers {
                 my $errmsg = $_[0] || ""; $errmsg =~ s/\s+/ /sg;
                 warn "Error on bus $bus_id: $errmsg";
                 delete $self->{ready}->{$bus_id};
-                AnyEvent::postpone {
-                    warn "Reconnecting to $bus_id\n"; 
-                    $bus->connect;
-                };
+                my $delay = $self->{connect_err}->{$bus_id}++;
+                $self->{reconnect_tmr}->{$bus_id} = AnyEvent->timer(
+                    after => ($delay < 10 ? $delay * 3 : 30),
+                    cb    => sub { $bus->connect },
+                );
             },
         );
 
