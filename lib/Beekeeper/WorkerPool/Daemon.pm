@@ -23,8 +23,8 @@ Version 0.01
       my $self = shift;
       my $quit = 0;
   
-      $SIG{'INT'}  = sub { $quit = 1 };
       $SIG{'TERM'} = sub { $quit = 1 };
+      $SIG{'INT'}  = sub { $quit = 1 };
   
       while (!$quit) {
           # Do something here...
@@ -517,26 +517,26 @@ sub stop_daemon {
     # Nothing to do if daemon is not running
     return unless ($pid);
 
-    my $send_SIGTERM = 15; # seconds
+    my $send_SIGINT  = 15; # seconds
     my $send_SIGKILL = 30; # seconds
     my $give_up      = 90; # seconds
 
     my $start_time = time();
     local $| = 1;
 
-    # Send SIGINT (interrupt request, Ctrl-C) signal
-    if (kill( SIGINT, $pid )) {
+    # Send SIGTERM (terminate request) signal
+    if (kill( SIGTERM, $pid )) {
         WAIT: {
             sleep(1);
             return unless kill(0, $pid);
             my $elapsed = time() - $start_time;
-            redo if ($elapsed < $send_SIGTERM);
+            redo if ($elapsed < $send_SIGINT);
         }
     }
 
-    # Send SIGTERM (terminate request) signal
-    if (kill( SIGTERM, $pid )) {
-        print "\nSending SIGTERM to process $pid...";
+    # Send SIGINT (interrupt request) signal
+    if (kill( SIGINT, $pid )) {
+        print "\nSending SIGINT to process $pid...";
         WAIT: {
             sleep(1);
             return unless kill(0, $pid);
@@ -591,8 +591,8 @@ sub main {
 
     my $quit = 0;
 
-    $SIG{'INT'}  = sub { $quit = 1 };  # SIGINT   interrupt request, Ctrl-C
     $SIG{'TERM'} = sub { $quit = 1 };  # SIGTERM  terminate request
+    $SIG{'INT'}  = sub { $quit = 1 };  # SIGINT   interrupt request, Ctrl-C
 
     while (!$quit) {
         # Do something here...

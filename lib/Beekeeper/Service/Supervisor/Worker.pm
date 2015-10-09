@@ -384,7 +384,7 @@ sub restart_workers {
     if (!$args->{delay}) {
         # Restart all workers at once
         foreach my $pid (@worker_pids) {
-            kill( 'INT', $pid );
+            kill( 'TERM', $pid );
         }
     }
     else {
@@ -397,7 +397,7 @@ sub restart_workers {
                 after => $delay * $count++, 
                 cb => sub {
                     delete $self->{restart_worker_tmr}->{$pid};
-                    kill( 'INT', $pid );
+                    kill( 'TERM', $pid );
                 },
             );
         }

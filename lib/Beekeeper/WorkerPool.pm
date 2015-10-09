@@ -222,14 +222,14 @@ sub main {
     # Install signal handlers to control this daemon and forked workers.
     # The supported signals and related actions are:
     #
-    # INT   tell workers to quit after finishing their current jobs, then quit
-    # TERM  tell workers to quit immediately (even in the middle of a job), then quit
-    # HUP   reloaded workers after finishing their current jobs
+    # TERM  tell workers to quit after finishing their current jobs, then quit
+    # INT   tell workers to quit immediately (even in the middle of a job), then quit
+    # HUP   restart workers after finishing their current jobs
 
     my $mode = '';
 
-    $SIG{INT}  = sub { $mode = 'QUIT_GRACEFULLY'  };
-    $SIG{TERM} = sub { $mode = 'QUIT_IMMEDIATELY' };
+    $SIG{TERM} = sub { $mode = 'QUIT_GRACEFULLY'  };
+    $SIG{INT}  = sub { $mode = 'QUIT_IMMEDIATELY' };
     $SIG{HUP}  = sub { $mode = 'RESTART_POOL' unless $mode };
 
 
@@ -285,21 +285,21 @@ sub main {
 
             warn "[info] Quitting gracefully...\n";
 
-            # SIGINT received, propagate signal to all workers to quit gracefully.
+            # SIGTERM received, propagate signal to all workers to quit gracefully.
             # Then wait until all workers are gone and quit.
     
             $mode = 'WAIT_CHILDS_TO_QUIT';
-            kill 'INT', keys %workers;
+            kill 'TERM', keys %workers;
         }
         elsif ($mode eq 'QUIT_IMMEDIATELY') {
 
             warn "[info] Quitting...\n";
 
-            # SIGTERM received, propagate signal to all al workers to quit immediately.
+            # SIGINT received, propagate signal to all al workers to quit immediately.
             # Then wait until all workers are gone and quit.
 
             $mode = 'WAIT_CHILDS_TO_QUIT';
-            kill 'TERM', keys %workers;
+            kill 'INT', keys %workers;
         }
         elsif ($mode eq 'RESTART_POOL') {
 
@@ -309,7 +309,7 @@ sub main {
             # Workers will be automatically respawned again.
 
             $mode = '';
-            kill 'INT', keys %workers;
+            kill 'TERM', keys %workers;
         }
         elsif ($mode eq 'WAIT_CHILDS_TO_QUIT') {
 
@@ -378,8 +378,8 @@ sub spawn_worker {
     # Forked child
 
     $SIG{CHLD} = 'IGNORE';
-    $SIG{INT}  = 'DEFAULT';
     $SIG{TERM} = 'DEFAULT';
+    $SIG{INT}  = 'DEFAULT';
     $SIG{HUP}  = 'DEFAULT';
 
     # Ensure that workers don't get the same random numbers

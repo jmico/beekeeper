@@ -208,12 +208,10 @@ sub __init_worker {
 
     $self->on_startup;
 
-    if (defined $SIG{INT} && $SIG{INT} eq 'DEFAULT') {
-        # Stop working when INT signal is received
-        $SIG{INT} = sub { $self->stop_working };
+    if (defined $SIG{TERM} && $SIG{TERM} eq 'DEFAULT') {
+        # Stop working when TERM signal is received
+        $SIG{TERM} = sub { $self->stop_working };
     }
-
-    #TODO: (0, 15) SIGTERM on VM shutdown not handled by childs
 
     $self->__report_status;
 
