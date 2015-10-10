@@ -81,6 +81,7 @@ sub init_backend_connection {
         timeout    => 60,
         on_connect => sub {
             # Setup routing
+            log_debug "Connected to $bus_id";
             $self->{BACKEND}->{$bus_id} = $backend_bus;
             foreach my $frontend_bus (values %{$self->{FRONTEND}}) {
                 $self->setup_routing( backend => $backend_bus, frontend => $frontend_bus );
@@ -90,11 +91,12 @@ sub init_backend_connection {
             # Reconnect
             #TODO: cancel all routing
             #$self->suspend_routing();
-            my $errmsg = shift;
             delete $self->{BACKEND}->{$bus_id};
-            log_error "Bus $bus_id: $errmsg";
-            $self->{"reconnect_$bus_id"} = AnyEvent->timer(
-                after => 30,
+            my $errmsg = $_[0] || ""; $errmsg =~ s/\s+/ /sg;
+            log_error "Connection to $bus_id failed: $errmsg";
+            my $delay = $self->{connect_err}->{$bus_id}++;
+            $self->{reconnect_tmr}->{$bus_id} = AnyEvent->timer(
+                after => ($delay < 10 ? $delay * 3 : 30),
                 cb    => sub { $backend_bus->connect },
             );
         },
@@ -115,6 +117,7 @@ sub init_frontend_connection {
         timeout    => 60,
         on_connect => sub {
             # Setup routing
+            log_debug "Connected to $bus_id";
             $self->{FRONTEND}->{$bus_id} = $frontend_bus;
             foreach my $backend_bus (values %{$self->{BACKEND}}) {
                 $self->setup_routing( backend => $backend_bus, frontend => $frontend_bus );
@@ -123,12 +126,13 @@ sub init_frontend_connection {
         on_error => sub {
             # Reconnect
             #TODO: cancel routing
-            my $errmsg = shift;
-            delete $self->{FRONTEND}->{$bus_id};
             #$self->suspend_routing();
-            log_error "Bus $bus_id: $errmsg";
-            $self->{"reconnect_$bus_id"} = AnyEvent->timer(
-                after => 30,
+            delete $self->{FRONTEND}->{$bus_id};
+            my $errmsg = $_[0] || ""; $errmsg =~ s/\s+/ /sg;
+            log_error "Connection to $bus_id failed: $errmsg";
+            my $delay = $self->{connect_err}->{$bus_id}++;
+            $self->{reconnect_tmr}->{$bus_id} = AnyEvent->timer(
+                after => ($delay < 10 ? $delay * 3 : 30),
                 cb    => sub { $frontend_bus->connect },
             );
         },

@@ -697,7 +697,7 @@ sub send {
 
     $self->{handle}->push_write( $raw_stomp );
 
-    if (length $self->{handle}->{wbuf} > 0) {
+    if (defined $self->{handle}->{wbuf} && length $self->{handle}->{wbuf} > 0) {
         # push_write could not send all data to the handle because the kernel
         # write buffer is full. The size of kernel write bufer (which can be 
         # queried with 'sysctl net.ipv4.tcp_wmem') is choosed by the kernel
@@ -835,7 +835,7 @@ sub flush_buffer {
 
     $self->{handle}->push_write( $buffer->{raw_stomp} );
 
-    if (length $self->{handle}->{wbuf} > 0) {
+    if (defined $self->{handle}->{wbuf} && length $self->{handle}->{wbuf} > 0) {
         # Kernel write buffer is full, see send() above
         my $flushed = AnyEvent->condvar;
         $self->{handle}->on_drain( $flushed );

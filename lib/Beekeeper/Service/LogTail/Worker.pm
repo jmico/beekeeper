@@ -100,7 +100,7 @@ sub _connect_to_all_brokers {
             on_error => sub {
                 # Reconnect
                 my $errmsg = $_[0] || ""; $errmsg =~ s/\s+/ /sg;
-                warn "Error on bus $bus_id: $errmsg";
+                log_error "Connection to $bus_id failed: $errmsg";
                 my $delay = $self->{connect_err}->{$bus_id}++;
                 $self->{reconnect_tmr}->{$bus_id} = AnyEvent->timer(
                     after => ($delay < 10 ? $delay * 3 : 30),

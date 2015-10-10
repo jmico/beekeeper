@@ -46,13 +46,12 @@ a plain DB) are a better alternative.
 
 =cut
 
+use Beekeeper::Worker ':log';
 use AnyEvent;
 use JSON::XS;
 use Fcntl qw(:DEFAULT :flock);
 use Scalar::Util 'weaken';
 use Carp;
-
-use constant DEBUG => 0;
 
 
 sub new {
@@ -132,11 +131,16 @@ sub _connect_to_all_brokers {
 
     my $cluster_config = $self->_cluster_config($worker);
 
-    my $connected = AnyEvent->condvar;
-
     foreach my $config (@$cluster_config) {
 
         my $bus_id = $config->{'bus-id'};
+
+        if ($bus_id eq $worker->{_BUS}->bus_id) {
+            # Already connected to our own bus
+            $self->_setup_sync_listeners($worker->{_BUS});
+            $self->_send_sync_request($worker->{_BUS}) unless $self->{synced};
+            next;
+        }
 
         my $bus; $bus = Beekeeper::Bus::STOMP->new( 
             %$config,
@@ -144,15 +148,14 @@ sub _connect_to_all_brokers {
             timeout    => 300,
             on_connect => sub {
                 # Setup
-                DEBUG && warn "Connected to $bus_id\n";
+                log_debug "Connected to $bus_id";
                 $self->_setup_sync_listeners($bus);
                 $self->_send_sync_request($bus) unless $self->{synced};
-                $connected->send;
             },
             on_error => sub {
                 # Reconnect
                 my $errmsg = $_[0] || ""; $errmsg =~ s/\s+/ /sg;
-                warn "Error on bus $bus_id: $errmsg";
+                log_error "Connection to $bus_id failed: $errmsg";
                 delete $self->{ready}->{$bus_id};
                 my $delay = $self->{connect_err}->{$bus_id}++;
                 $self->{reconnect_tmr}->{$bus_id} = AnyEvent->timer(
@@ -166,8 +169,6 @@ sub _connect_to_all_brokers {
 
         $bus->connect;
     }
-
-    $connected->recv;
 }
 
 sub _setup_sync_listeners {
@@ -248,7 +249,7 @@ sub _sync_completed {
 
     $self->{synced} = 1;
 
-    DEBUG && warn ($success ? "Sync completed\n" : "Acting as master\n");
+    log_debug( $success ? "Sync completed" : "Acting as master" );
 
     foreach my $bus ( @{$self->{cluster}} ) {
 
@@ -268,7 +269,7 @@ sub _accept_sync_requests {
     return if $self->{ready}->{$bus_id};
     $self->{ready}->{$bus_id} = 1;
 
-    DEBUG && warn "Accepting $cache_id sync requests from $bus_id\n";
+    log_debug "Accepting $cache_id sync requests from $bus_id";
 
     $bus->subscribe(
         destination     => "/queue/req.$bus_id._sync.$cache_id.dump",
@@ -535,6 +536,7 @@ sub _load_state {
 
 sub DESTROY {
     my $self = shift;
+
     $self->_save_state if $self->{persist};
 }
 

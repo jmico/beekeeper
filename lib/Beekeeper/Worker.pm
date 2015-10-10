@@ -153,6 +153,11 @@ sub new {
     $JSON->utf8;             # encode result as utf8
     $JSON->convert_blessed;  # use TO_JSON methods to serialize objects
 
+    if (defined $SIG{TERM} && $SIG{TERM} eq 'DEFAULT') {
+        # Stop working when TERM signal is received
+        $SIG{TERM} = sub { $self->stop_working };
+    }
+
     eval {
 
         # Init logger as soon as possible
@@ -193,9 +198,16 @@ sub __init_logger {
 sub __init_client {
     my $self = shift;
 
+    my $bus_id = $self->{_WORKER}->{bus_id};
+
     my $client = Beekeeper::Client->new(
-        bus_id  => $self->{_WORKER}->{bus_id},
-        timeout => 0,  # retry forever
+        bus_id   => $bus_id,
+        timeout  => 0,  # retry forever
+        on_error => sub { 
+            my $errmsg = $_[0] || ""; $errmsg =~ s/\s+/ /sg;
+            log_fatal "Connection to $bus_id failed: $errmsg";
+            $self->stop_working;
+        },
     );
 
     $self->{_CLIENT} = $client->{_CLIENT};
@@ -208,11 +220,6 @@ sub __init_worker {
     my $self = shift;
 
     $self->on_startup;
-
-    if (defined $SIG{TERM} && $SIG{TERM} eq 'DEFAULT') {
-        # Stop working when TERM signal is received
-        $SIG{TERM} = sub { $self->stop_working };
-    }
 
     $self->__report_status;
 
@@ -713,7 +720,9 @@ sub __work_forever {
         CORE::exit(255);
     }
 
-    $self->{_BUS}->disconnect( blocking => 1 );
+    if ($self->{_BUS}->{is_connected}) {
+        $self->{_BUS}->disconnect( blocking => 1 );
+    }
 }
 
 =item stop_working 
@@ -722,6 +731,11 @@ sub __work_forever {
 
 sub stop_working {
     my $self = shift;
+
+    unless ($self->{_WORKER}->{stop_cv}) {
+        # Worker was not fully initialized
+        CORE::exit(0);
+    }
 
     $self->{_WORKER}->{stop_cv}->send;
 }
@@ -777,6 +791,8 @@ sub __report_status {
 
 sub __report_exit {
     my $self = shift;
+
+    return unless $self->{_BUS}->{is_connected};
 
     my $worker = $self->{_WORKER};
 
