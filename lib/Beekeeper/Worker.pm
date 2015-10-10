@@ -510,7 +510,7 @@ sub __drain_task_queue {
 
                 unless (ref $request eq 'HASH' && $request->{jsonrpc} eq '2.0') {
                     log_warn "Invalid JSON-RPC 2.0 request";
-                    return Beekeeper::JSONRPC::Error->invalid_request;
+                    die Beekeeper::JSONRPC::Error->invalid_request;
                 }
 
                 $request_id = $request->{id};
@@ -521,7 +521,7 @@ sub __drain_task_queue {
 
                 unless (defined $method && $method =~ m/^([\.\w-]+)\.([\w-]+)$/) {
                     log_warn "Invalid request method";
-                    return Beekeeper::JSONRPC::Error->method_not_found;
+                    die Beekeeper::JSONRPC::Error->method_not_found;
                 }
 
                 my $cb = $worker->{callbacks}->{"req.$1.$2"} || 
@@ -529,12 +529,12 @@ sub __drain_task_queue {
 
                 unless (($self->authorize_request($request) || "") eq REQUEST_AUTHORIZED) {
                     log_warn "Request $method was not authorized";
-                    return Beekeeper::JSONRPC::Error->request_not_authorized;
+                    die Beekeeper::JSONRPC::Error->request_not_authorized;
                 }
 
                 unless ($cb) {
                     log_warn "No callback found for method $method";
-                    return Beekeeper::JSONRPC::Error->method_not_found;
+                    die Beekeeper::JSONRPC::Error->method_not_found;
                 }
 
                 local $client->{auth_tokens} = $msg_headers->{'x-auth-tokens'};
@@ -546,10 +546,16 @@ sub __drain_task_queue {
 
             if ($@) {
                 # Got an exception while executing job
-                log_error $@;
-                $response = Beekeeper::JSONRPC::Error->server_error;
-                $response = $@ if $@->isa('Beekeeper::JSONRPC::Error');
-                #TODO: set $response->{error}->{data} = $@ for local callers
+                if ($@->isa('Beekeeper::JSONRPC::Error')) {
+                    $response = $@;
+                }
+                else {
+                    # Unhandled exception
+                    log_error $@;
+                    $response = Beekeeper::JSONRPC::Error->server_error;
+                    # Sending exact error to caller is very handy, but also a risk
+                    $response->{error}->{data} = $@ if $self->{_WORKER}->{debug};
+                }
             }
             else {
                 # Build a success response
