@@ -7,7 +7,7 @@ our $VERSION = '0.01';
 
 =head1 NAME
  
-Beekeeper::Service::Router::Worker - Route messages between buses
+Beekeeper::Service::Router::Worker - Route messages between backend and frontend
 
 =head1 VERSION
  
@@ -18,8 +18,6 @@ Version 0.01
 =head1 DESCRIPTION
 
 =head1 TODO
-
-- Delay routing until both backend and frontend connections are up.
 
 - Calculate and report worker load.
 
@@ -48,111 +46,106 @@ sub on_startup {
     my $bus_config    = $self->{_WORKER}->{bus_config};
     my @frontends;
 
-    $self->{frontend_cluster} = $worker_config->{'frontend_cluster'} || 'frontend';
+    # Determine name of backend cluster
     $self->{backend_cluster}  = $worker_config->{'backend_cluster'}  || 'backend'; #TODO
+    $self->{frontend_cluster} = $worker_config->{'frontend_cluster'} || 'frontend';
 
     foreach my $config (values %$bus_config) {
         next unless $config->{'cluster'} && $config->{'cluster'} eq $self->{frontend_cluster};
-        push @frontends, $config->{'bus-id'};
+        push @frontends, $config;
     }
 
     unless (@frontends) {
         die "No bus in cluster '$self->{frontend_cluster}' found into config file bus.config.json\n";
     }
 
-    # Create another connection to backend
-    $self->init_backend_connection( $self->{_BUS}->bus_id );
+    $self->{wait_frontends_up} = AnyEvent->condvar;
 
     # Create a connection to every frontend
-    foreach my $bus_id (@frontends) {
-        $self->init_frontend_connection( $bus_id );
+    foreach my $config (@frontends) {
+        $self->init_frontend_connection( $config );
     }
 }
 
-sub init_backend_connection {
-    my ($self, $bus_id) = @_;
-
-    my $bus_config = $self->{_WORKER}->{bus_config}->{$bus_id};
-    my $backend_bus;
-
-    $backend_bus = Beekeeper::Bus::STOMP->new( 
-        %$bus_config,
-        bus_id     => $bus_id,
-        timeout    => 60,
-        on_connect => sub {
-            # Setup routing
-            log_debug "Connected to $bus_id";
-            $self->{BACKEND}->{$bus_id} = $backend_bus;
-            foreach my $frontend_bus (values %{$self->{FRONTEND}}) {
-                $self->setup_routing( backend => $backend_bus, frontend => $frontend_bus );
-            }
-        },
-        on_error => sub {
-            # Reconnect
-            #TODO: cancel all routing
-            #$self->suspend_routing();
-            delete $self->{BACKEND}->{$bus_id};
-            my $errmsg = $_[0] || ""; $errmsg =~ s/\s+/ /sg;
-            log_error "Connection to $bus_id failed: $errmsg";
-            my $delay = $self->{connect_err}->{$bus_id}++;
-            $self->{reconnect_tmr}->{$bus_id} = AnyEvent->timer(
-                after => ($delay < 10 ? $delay * 3 : 30),
-                cb    => sub { $backend_bus->connect },
-            );
-        },
-    );
-
-    $backend_bus->connect;
-}
-
 sub init_frontend_connection {
-    my ($self, $bus_id) = @_;
+    my ($self, $config) = @_;
 
-    my $bus_config = $self->{_WORKER}->{bus_config}->{$bus_id};
-    my $frontend_bus;
+    my $bus_id = $config->{'bus-id'};
 
-    $frontend_bus = Beekeeper::Bus::STOMP->new( 
-        %$bus_config,
+    $self->{wait_frontends_up}->begin;
+
+    my $bus; $bus = Beekeeper::Bus::STOMP->new( 
+        %$config,
         bus_id     => $bus_id,
         timeout    => 60,
         on_connect => sub {
             # Setup routing
             log_debug "Connected to $bus_id";
-            $self->{FRONTEND}->{$bus_id} = $frontend_bus;
-            foreach my $backend_bus (values %{$self->{BACKEND}}) {
-                $self->setup_routing( backend => $backend_bus, frontend => $frontend_bus );
-            }
+            $self->{FRONTEND}->{$bus_id} = $bus;
+            $self->{wait_frontends_up}->end;
+            $self->pull_frontend_requests( frontend => $bus );
+            $self->pull_backend_responses( frontend => $bus );
+            $self->pull_backend_notifications;
         },
         on_error => sub {
             # Reconnect
-            #TODO: cancel routing
-            #$self->suspend_routing();
-            delete $self->{FRONTEND}->{$bus_id};
             my $errmsg = $_[0] || ""; $errmsg =~ s/\s+/ /sg;
-            log_error "Connection to $bus_id failed: $errmsg";
+            log_alert "Connection to $bus_id failed: $errmsg";
+            delete $self->{FRONTEND}->{$bus_id};
+            $self->{wait_frontends_up}->end;
             my $delay = $self->{connect_err}->{$bus_id}++;
             $self->{reconnect_tmr}->{$bus_id} = AnyEvent->timer(
                 after => ($delay < 10 ? $delay * 3 : 30),
-                cb    => sub { $frontend_bus->connect },
+                cb    => sub { $bus->connect },
             );
         },
     );
 
-    $frontend_bus->connect;
+    $bus->connect;
 }
 
-sub setup_routing {
+sub on_shutdown {
     my ($self, %args) = @_;
 
-    $self->pull_backend_notifications( %args );
-    $self->pull_backend_responses( %args );
-    $self->pull_frontend_requests( %args );
-}
+    $self->stop_accepting_jobs('_bkpr.router.*');
 
-sub suspend_routing {
-    my ($self, %args) = @_;
+    my $frontend_cluster = $self->{frontend_cluster};
+    my $backend_cluster  = $self->{backend_cluster};
 
-    #TODO
+    my $backend_bus = $self->{_BUS};
+
+    my $cv = AnyEvent->condvar;
+    $cv->begin;
+
+    $backend_bus->unsubscribe(
+        destination => "/queue/msg.$frontend_cluster",
+        on_success  => sub { $cv->end },
+    );
+
+    foreach my $frontend_bus (values %{$self->{FRONTEND}}) {
+
+        $cv->begin;
+        $cv->begin;
+
+        my $frontend_id = $frontend_bus->bus_id;
+
+        $backend_bus->unsubscribe(
+            destination => "/queue/res.$frontend_id",
+            on_success  => sub { $cv->end },
+        );
+
+        $frontend_bus->unsubscribe(
+            destination => "/queue/req.$backend_cluster",
+            on_success  => sub { $cv->end },
+        );
+    }
+
+    my $timeout = AnyEvent->timer(
+        after => 10,
+        cb    => sub { $cv->send },
+    );
+
+    $cv->recv;
 }
 
 sub pull_frontend_requests {
@@ -161,13 +154,13 @@ sub pull_frontend_requests {
     # Get requests from frontend and forward them to backend
 
     my $frontend_bus = $args{frontend};
-    my $backend_bus  = $args{backend};
+    my $backend_bus  = $self->{_BUS};
 
     my $frontend_id = $frontend_bus->bus_id;
     my $backend_id = $backend_bus->bus_id;
     my $RabbitMQ = $frontend_bus->{is_rabbit};
 
-    my $backend_cluster  = $self->{backend_cluster};
+    my $backend_cluster = $self->{backend_cluster};
 
     my ($body_ref, $msg_headers);
 
@@ -235,7 +228,7 @@ sub pull_backend_responses {
     # Get responses from backend and send them back to frontend
 
     my $frontend_bus = $args{frontend};
-    my $backend_bus  = $args{backend};
+    my $backend_bus  = $self->{_BUS};
 
     my $frontend_id = $frontend_bus->bus_id;
     my $backend_id  = $backend_bus->bus_id;
@@ -264,10 +257,14 @@ sub pull_backend_notifications {
 
     # Get notifications from backend and broadcast them to frontend
 
-return if ($self->{done}); $self->{done} = 1; #TODO
+    unless (keys %{$self->{FRONTEND}} && $self->{wait_frontends_up}->ready) {
+        # Wait until connected to all (working) frontends before pulling 
+        # notifications otherwise messages cannot be broadcasted properly
+        return;
+    }
 
     my $frontend_bus = $args{frontend};
-    my $backend_bus  = $args{backend};
+    my $backend_bus  = $self->{_BUS};
 
     my $frontend_cluster = $self->{frontend_cluster};
 
@@ -393,6 +390,8 @@ sub bind {
     }
 
     $address =~ s/^\@$frontend_cluster\.//;
+
+    #TODO: $self->{Sessions}->delete( $session_id )
 
     $self->{Sessions}->set( $session_id => [ $address, $reply_queue, $auth_tokens ] );
 

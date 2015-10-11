@@ -681,7 +681,16 @@ sub stop_accepting_jobs {
         my ($service, $method) = ($1, $2);
         my $local_bus = $self->{_BUS}->{bus_id};
 
-        unless (defined $self->{_WORKER}->{callbacks}->{"req.$fq_meth"}) {
+        unless ($method eq '*') {
+            #TODO: Known limitation
+            croak "Cannot cancel individual job subscription to $fq_meth";
+        }
+
+        my $callbacks = $self->{_WORKER}->{callbacks};
+
+        my @cb_keys = grep { $_ =~ m/^req.\Q$service\E\b/ } keys %$callbacks;
+
+        unless (@cb_keys) {
             carp "Not previously accepting jobs $fq_meth";
             next;
         }
@@ -690,7 +699,7 @@ sub stop_accepting_jobs {
             destination => "/queue/req.$local_bus.$service",
             on_success  => sub {
                 #BUG: A single job may still be queued, NACK it
-                delete $self->{_WORKER}->{callbacks}->{"req.$fq_meth"};
+                delete $callbacks->{$_} foreach @cb_keys;
             }
         );
     }
