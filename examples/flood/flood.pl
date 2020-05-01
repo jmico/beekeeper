@@ -5,15 +5,6 @@ use warnings;
 
 $ENV{PATH} = '/bin'; # untaint
 
-BEGIN {
-
-    unless (eval { require Beekeeper }) {
-        # Modules not installed yet
-        my $script_dir = (__FILE__ =~ m|^(.*)/|) ? $1 : ".";
-        unshift @INC, "$script_dir/../lib";
-    }
-}
-
 use Beekeeper::Client;
 use Time::HiRes qw( time sleep );
 use Getopt::Long;
@@ -32,7 +23,7 @@ GetOptions(
 ) or exit;
 
 my $Help = "
-Usage: bkpr-flood [OPTIONS]
+Usage: flood [OPTIONS]
 Tool for benchmarking the STOMP framework.
 
   -t, --type str   type of requests to be made (N, J, B or A)
@@ -45,15 +36,15 @@ Tool for benchmarking the STOMP framework.
 
 To create a burst of 5000 notifications:
 
-  bkpr-flood --type N --count 5000
+  flood --type N --count 5000
 
 To create a constant load of 100 jobs per second:
 
-  bkpr-flood --type J --rate 100
+  flood --type J --rate 100
 
 Run a predefined set of benchmarks
 
-  bkpr-flood --benchmark
+  flood --benchmark
 
 ";
 
@@ -101,7 +92,7 @@ sub time_this {
         $type = 'notification';
         $code = sub {
             $client->send_notification(
-                method => 'test.flood', 
+                method => 'myapp.test.flood', 
                 params => $payload,
             );
         };
@@ -110,7 +101,7 @@ sub time_this {
         $type = 'sync job';
         $code = sub {
             $client->do_job(
-                method => 'test.echo', 
+                method => 'myapp.test.echo', 
                 params => $payload,
             );
         };
@@ -119,7 +110,7 @@ sub time_this {
         $type = 'background job';
         $code = sub {
             $client->do_background_job(
-                method => 'test.echo', 
+                method => 'myapp.test.echo', 
                 params => $payload,
             );
         };
@@ -128,7 +119,7 @@ sub time_this {
         $type = 'async job';
         $code = sub {
             push @async_jobs, $client->do_async_job(
-                method => 'test.echo', 
+                method => 'myapp.test.echo', 
                 params => $payload,
             );
         };
@@ -235,7 +226,7 @@ __END__
 
 =head1 NAME
 
-bkpr-flood - ...
+flood - ...
 
 =head1 VERSION
 
@@ -264,24 +255,25 @@ see the full text of the license in the file LICENSE.
 
 Sample output:
 
-# wpool-flood --benchmark --count 100
+# flood -b -c 1000
 
-100 notifications    of   0 Kb  in  0.009 sec   10669 /sec   0.09 ms each
-100 notifications    of   1 Kb  in  0.013 sec    7645 /sec   0.13 ms each
-100 notifications    of   5 Kb  in  0.024 sec    4149 /sec   0.24 ms each
-100 notifications    of  10 Kb  in  0.025 sec    3970 /sec   0.25 ms each
+1000 notifications    of   0 Kb  in  0.057 sec   17673 /sec   0.06 ms each
+1000 notifications    of   1 Kb  in  0.075 sec   13299 /sec   0.08 ms each
+1000 notifications    of   5 Kb  in  0.084 sec   11850 /sec   0.08 ms each
+1000 notifications    of  10 Kb  in  0.109 sec    9157 /sec   0.11 ms each
 
-100 sync jobs        of   0 Kb  in  0.164 sec     610 /sec   1.64 ms each
-100 sync jobs        of   1 Kb  in  0.216 sec     463 /sec   2.16 ms each
-100 sync jobs        of   5 Kb  in  0.241 sec     415 /sec   2.41 ms each
-100 sync jobs        of  10 Kb  in  0.255 sec     392 /sec   2.55 ms each
+1000 sync jobs        of   0 Kb  in  1.533 sec     652 /sec   1.53 ms each
+1000 sync jobs        of   1 Kb  in  1.542 sec     649 /sec   1.54 ms each
+1000 sync jobs        of   5 Kb  in  1.692 sec     591 /sec   1.69 ms each
+1000 sync jobs        of  10 Kb  in  1.920 sec     521 /sec   1.92 ms each
 
-100 async jobs       of   0 Kb  in  0.098 sec    1025 /sec   0.98 ms each
-100 async jobs       of   1 Kb  in  0.098 sec    1023 /sec   0.98 ms each
-100 async jobs       of   5 Kb  in  0.100 sec    1003 /sec   1.00 ms each
-100 async jobs       of  10 Kb  in  0.113 sec     884 /sec   1.13 ms each
+1000 async jobs       of   0 Kb  in  0.403 sec    2480 /sec   0.40 ms each
+1000 async jobs       of   1 Kb  in  0.424 sec    2357 /sec   0.42 ms each
+1000 async jobs       of   5 Kb  in  0.445 sec    2246 /sec   0.45 ms each
+1000 async jobs       of  10 Kb  in  0.473 sec    2115 /sec   0.47 ms each
 
-100 background jobs  of   0 Kb  in  0.018 sec    5676 /sec   0.18 ms each
-100 background jobs  of   1 Kb  in  0.016 sec    6449 /sec   0.16 ms each
-100 background jobs  of   5 Kb  in  0.023 sec    4338 /sec   0.23 ms each
-100 background jobs  of  10 Kb  in  0.032 sec    3143 /sec   0.32 ms each
+1000 background jobs  of   0 Kb  in  0.161 sec    6198 /sec   0.16 ms each
+1000 background jobs  of   1 Kb  in  0.172 sec    5829 /sec   0.17 ms each
+1000 background jobs  of   5 Kb  in  0.193 sec    5173 /sec   0.19 ms each
+1000 background jobs  of  10 Kb  in  0.279 sec    3586 /sec   0.28 ms each
+

@@ -1,0 +1,24 @@
+[
+
+# This file is in relaxed JSON format (it allows comments and trailing commas).
+#
+# All logical buses used by your application must be defined here, specifying
+# the conection parameters to the STOMP broker that will service them. In this
+# example only one logical bus (named "backend") is defined.
+#
+# Each bus definition must contain the following parameters:
+#
+#  - bus-id : unique identifier of the logical bus
+#  - host   : hostname or IP address of the STOMP broker
+#  - user   : username used to connect to the STOMP broker
+#  - pass   : password used to connect to the STOMP broker
+#  - vhost  : virtual host of STOMP broker (may be omitted)
+
+    {
+        "bus-id" : "backend",
+        "host"   : "localhost",
+        "user"   : "test",
+        "pass"   : "abc123",
+        "vhost"  : "/test",
+    },
+]
