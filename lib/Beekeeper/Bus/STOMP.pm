@@ -201,6 +201,7 @@ sub _connect {
         # Initialize the list of cluster hosts
         my $hosts = $config->{'host'} || 'localhost';
         my @hosts = (ref $hosts eq 'ARRAY') ? @$hosts : ( $hosts );
+        @hosts = map { $_=~ m/^([\w\-\.]+)$/s } @hosts; # untaint
         $self->{hosts} = [ shuffle @hosts ];
     }
 
@@ -286,7 +287,7 @@ sub _connect {
                     $fh->{rbuf} =~ s/ ^.*?          # ignore heading garbage (just in case)
                                       \n*           # ignore server heartbeats
                                       ([A-Z]+)\n    # frame command
-                                      (.*?)         # possibly several lines of headers
+                                      (.*?)         # one or more lines of headers
                                       \n\n          # end of headers
                                     //sx or return;
 
