@@ -69,11 +69,12 @@ sub new {
         persist   => $args{'persist'},
         max_age   => $args{'max_age'},
         refresh   => $args{'refresh'},
-        cluster   => [],
         synced    => 0,
         data      => {},
         vers      => {},
         time      => {},
+        _BUS      => undef,
+        _CLUSTER  => undef,
     };
 
     bless $self, $class;
@@ -131,14 +132,19 @@ sub _connect_to_all_brokers {
 
     my $cluster_config = $self->_cluster_config($worker);
 
+    my $cluster = $self->{_CLUSTER} = [];
+
     foreach my $config (@$cluster_config) {
 
         my $bus_id = $config->{'bus-id'};
 
         if ($bus_id eq $worker->{_BUS}->bus_id) {
             # Already connected to our own bus
-            $self->_setup_sync_listeners($worker->{_BUS});
-            $self->_send_sync_request($worker->{_BUS}) unless $self->{synced};
+            my $bus = $worker->{_BUS};
+            $self->_setup_sync_listeners($bus);
+            $self->_send_sync_request($bus) unless $self->{synced};
+            $self->{_BUS} = $bus;
+            weaken($self->{_BUS});
             next;
         }
 
@@ -165,7 +171,7 @@ sub _connect_to_all_brokers {
             },
         );
 
-        push @{$self->{cluster}}, $bus;
+        push @$cluster, $bus;
 
         $bus->connect;
     }
@@ -251,7 +257,7 @@ sub _sync_completed {
 
     log_debug( $success ? "Sync completed" : "Acting as master" );
 
-    foreach my $bus ( @{$self->{cluster}} ) {
+    foreach my $bus ( @{$self->{_CLUSTER}} ) {
 
         $self->_accept_sync_requests( $bus );
     }
@@ -296,6 +302,7 @@ sub _accept_sync_requests {
 
 sub set {
     my ($self, $key, $value) = @_;
+    weaken($self);
 
     croak "Key value is undefined" unless (defined $key);
 
@@ -315,17 +322,20 @@ sub set {
 
     $self->{on_update}->($key, $value, $old) if $self->{on_update};
 
-    my @cluster = grep { $_->{is_connected} } @{$self->{cluster}};
-    croak "Not connected to broker" unless @cluster;
+    # Notify all workers in every cluster about the change
+    my @cluster = grep { $_->{is_connected} } @{$self->{_CLUSTER}};
 
-    my $bus = $cluster[rand @cluster];
-    my $bus_id = $bus->{bus_id};
-    my $cache_id = $self->{id};
+    unshift @cluster, $self->{_BUS};
 
-    $bus->send(
-        destination => "/topic/msg.$bus_id._sync.$cache_id.set",
-        body        => \$json,
-    );
+    foreach my $bus (@cluster) {
+        my $bus_id = $bus->{bus_id};
+        my $cache_id = $self->{id};
+
+        $bus->send(
+            destination => "/topic/msg.$bus_id._sync.$cache_id.set",
+            body        => \$json,
+        );
+    }
 
     unless (defined $value) {
         # Postpone delete because it is necessary to keep the versioning 
