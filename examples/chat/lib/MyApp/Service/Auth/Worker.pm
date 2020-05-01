@@ -43,12 +43,12 @@ sub login {
         tokens => [ "USER" ],
     );
 
-    # ...
+    #TODO: remove @
     $self->bind_session( $req, "\@frontend.user-$uuid" );
 
     $self->send_notification(
-        method => "myapp.chat.message\@frontend.user-$uuid",
-        params => { message => "Welcome!" },
+        method => "myapp.chat.pmessage\@frontend.user-$uuid",
+        params => { message => "Welcome $user" },
     );
 
     return 1;
@@ -60,8 +60,8 @@ sub logout {
     my $uuid = $req->uuid;
 
     $self->send_notification(
-        method => "myapp.chat.message\@frontend.user-$uuid",
-        params => { message => "Bye!" },
+        method => "myapp.chat.pmessage\@frontend.user-$uuid",
+        params => { message => "Bye $uuid" },
     );
 
     $self->unbind_session;
@@ -70,17 +70,19 @@ sub logout {
 }
 
 sub kick {
-    my ($self, $params) = @_;
+    my ($self, $params, $req) = @_;
+
+    my $uuid = $req->uuid;
 
     my $user = $params->{username};
-    my $uuid = $user;
+    my $uuid_to_kick = $user;
 
     $self->send_notification(
-        method => "myapp.chat.message\@frontend.user-$uuid",
-        params => { message => "You were kicked" },
+        method => "myapp.chat.pmessage\@frontend.user-$uuid_to_kick",
+        params => { message => "You were kicked by $uuid" },
     );
 
-    $self->unbind_address( "\@frontend.user-$uuid" );
+    $self->unbind_address( "\@frontend.user-$uuid_to_kick" );
 
     return 1;
 }

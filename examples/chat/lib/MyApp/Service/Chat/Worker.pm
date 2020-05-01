@@ -50,7 +50,7 @@ sub private_message {
     # Unicast
     $self->send_notification(
         method => "myapp.chat.pmessage\@frontend.user-$user",
-        params => { from => 'me', message => $msg },
+        params => { from => $from, message => $msg },
     );
 }
 

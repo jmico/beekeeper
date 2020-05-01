@@ -10,13 +10,11 @@ function Chat () { return {
         this.rpc = new JSON_RPC;
         this.rpc.connect({
 
-         // url:      "ws://localhost:61633/test",               // plain websocket
-         // url:      "http://jessie.local:15674/stomp",         // SockJS emulation
-            url:      "ws://jessie.local:15674/stomp/websocket", // RabbitMQ websocket
-            vhost:    "/frontend-1",
-            login:    "frontend",
-            password: "abc123",
-            debug:    true,
+            url:      CONFIG.url,       // "ws://localhost:15674/ws"
+            login:    CONFIG.login,     // "frontend"
+            password: CONFIG.password,  // "abc123"
+            vhost:    CONFIG.vhost,     // "/frontend"
+            debug:    CONFIG.debug,
 
             on_ready: function() {
                 This.echo_info( 'Connected to ' + This.rpc.server + ' at ' + This.rpc.stomp.ws.url );
@@ -35,7 +33,7 @@ function Chat () { return {
             on_receive: function(params) {
                 var msg = params.message;
                 var from = params.from;
-                This.echo_msg( from + ": " + msg );
+                This.echo_mcast( from ? from + ": " + msg : msg );
             }
         });
 
@@ -44,7 +42,7 @@ function Chat () { return {
             on_receive: function(params) {
                 var msg = params.message;
                 var from = params.from;
-                This.echo_msg( "PM " + from + ": " + msg );
+                This.echo_ucast( from ? from + ": " + msg : msg );
             }
         });
 
@@ -65,16 +63,33 @@ function Chat () { return {
         div.scrollTop = div.scrollHeight;
     },
 
-    echo_msg: function(msg) {
-        this.echo(msg,'msg');
-    },
-
     echo_info: function(msg) {
         this.echo(msg,'info');
     },
 
     echo_error: function(msg) {
         this.echo(msg,'error');
+    },
+
+    echo_mcast: function(msg) {
+        this.echo(msg,'mcast');
+    },
+
+    echo_ucast: function(msg) {
+        this.echo(msg,'ucast');
+    },
+
+    login_user: function() {
+        this.rpc.call({
+            method: 'myapp.auth.login', 
+            params: {
+                "username": document.getElementById('username').value,
+                "password": document.getElementById('password').value
+            },
+            on_error: function(error) {
+                This.echo_error( "Error : " + error.data );
+            }
+        });
     },
 
     exec_command: function() {
@@ -85,43 +100,34 @@ function Chat () { return {
         cmdInput.value = "";
         var This = this;
 
-        if (params = cmd.match(/^LOGIN\s+(.*)/i)) {
-            this.rpc.call({
-                method: 'myapp.auth.login', 
-                params: { "username": params[1] },
-            });
-        }
-        else if (params = cmd.match(/^LOGOUT/i)) {
+        if (params = cmd.match(/^\/logout\b/i)) {
             this.rpc.call({
                 method: 'myapp.auth.logout', 
                 params: { },
-            });
-        }
-        else if (params = cmd.match(/^KICK\s+(.*)/i)) {
-            this.rpc.call({
-                method: 'myapp.auth.kick', 
-                params: { "username": params[1] },
-            });
-        }
-        else if (params =  cmd.match(/^PM\s+(\w+)(.*)/i)) {
-            this.rpc.call({
-                method: 'myapp.chat.pmessage', 
-                params: { "username": params[1], "message": params[2] },
-            });
-        }
-        else if (params = cmd.match(/^=(.*)$/)) {
-            this.rpc.call({
-                method: 'myapp.math.calculate', 
-                params: { "expr": params[1] },
-                on_success: function(result) {
-                    This.echo_msg( params[1] + " = " + result );
-                },
                 on_error: function(error) {
-                    This.echo_error( params[1] + " : " + error.data );
+                    This.echo_error( "Error : " + error.data );
                 }
             });
         }
-        else if (params = cmd.match(/^PING/i)) {
+        else if (params = cmd.match(/^\/kick\s+(.*)/i)) {
+            this.rpc.call({
+                method: 'myapp.auth.kick', 
+                params: { "username": params[1] },
+                on_error: function(error) {
+                    This.echo_error( "Error : " + error.data );
+                }
+            });
+        }
+        else if (params =  cmd.match(/^\/pm\s+(\w+)(.*)/i)) {
+            this.rpc.call({
+                method: 'myapp.chat.pmessage', 
+                params: { "username": params[1], "message": params[2] },
+                on_error: function(error) {
+                    This.echo_error( "Error : " + error.data );
+                }
+            });
+        }
+        else if (params = cmd.match(/^\/ping\b/i)) {
             var t0 = performance.now();
             this.rpc.call({
                 method: 'myapp.chat.ping', 
@@ -129,6 +135,9 @@ function Chat () { return {
                 on_success: function(result) {
                     var took = Math.round(performance.now() - t0);
                     This.echo_info( 'Ping: ' + took + " ms" );
+                },
+                on_error: function(error) {
+                    This.echo_error( "Error : " + error.data );
                 }
             });
         }
@@ -136,6 +145,9 @@ function Chat () { return {
             this.rpc.call({
                 method: 'myapp.chat.message', 
                 params: { "message": cmd },
+                on_error: function(error) {
+                    This.echo_error( "Error : " + error.data );
+                }
             });
         }
     }

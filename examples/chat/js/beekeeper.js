@@ -2,20 +2,22 @@
 
     Beekeeper client (JSON-RPC over STOMP)
 
-    Copyright (C) 2015 José Micó
+    Copyright (C) 2020 José Micó
 
     For protocol references see: 
-    - http://www.jmesnil.net/stomp-websocket/doc/
     - http://www.jsonrpc.org/specification
     - http://stomp.github.com/stomp-specification-1.2.html
 
+    This uses the STOMP.js library originally written by Jeff Mesnil
+    - http://www.jmesnil.net/stomp-websocket/doc/
+    - https://github.com/stomp-js/stomp-websocket
 
     var rpc = new JSON_RPC;
 
     rpc.connect({
         login:    "test",
         password: "abc123",
-        url:      "ws://localhost:61633",
+        url:      "ws://localhost:15674/ws",
         on_ready: function() {
             console.log('Connected');
         }
@@ -65,28 +67,22 @@ function JSON_RPC () { return {
 
         var This = this;
 
-        if (args.url.match(/^ws:/)) {
-             // Connect to STOMP broker using websockets
-             this.stomp = Stomp.client(args.url);
-        }
-        else {
-            // Use SockJS emulation
-            var ws = new SockJS(args.url);
-            this.stomp = Stomp.over(ws);
-        }
+        // Connect to STOMP broker using websockets
+        this.stomp = Stomp.client(args.url);
 
         if (args.debug) {
             this.stomp.debug = function(str) { console.log(str) }
         }
 
-        // RabbitMQ web stomp doesn't support websocket PING frame message,
-        // as server doesn't send PONG frame back (fixed only in trunk as 3.5.4)
         this.stomp.heartbeat.outgoing = 10000;
         this.stomp.heartbeat.incoming = 0;
 
         this.stomp.connect(
-            args.login    || 'guest', 
-            args.password || 'guest', 
+            {
+                "login":    args.login    || 'guest', 
+                "passcode": args.password || 'guest',
+                "host":     args.vhost    || '/'
+            },
             function(frame) {
                 // Connect success
                 clearTimeout(This.reconnTout);
@@ -103,8 +99,7 @@ function JSON_RPC () { return {
                 This.reconnTout = setTimeout( function() {
                     This.connect(args);
                 }, 1000);
-            },
-            args.vhost
+            }
         );
 
         window.addEventListener("unload", function(evt) {
@@ -153,7 +148,7 @@ function JSON_RPC () { return {
         this.callbacks[args.method] = args.on_receive;
 
         this.stomp.subscribe(
-            "/topic/msg.frontend." + args.method, 
+            "/topic/msg.frontend." + args.method,
             function(message) {
                 var msg = JSON.parse(message.body);  //TODO: catch parse exceptions
                 try { args.on_receive(msg.params) }
