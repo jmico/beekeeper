@@ -17,8 +17,8 @@
     {
         "bus-id" : "backend",
         "host"   : "localhost",
-        "user"   : "backend",
-        "pass"   : "def456",
-        "vhost"  : "/backend-1",
+        "user"   : "test",
+        "pass"   : "abc123",
+        "vhost"  : "/test",
     },
 ]

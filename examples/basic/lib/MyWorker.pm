@@ -3,6 +3,7 @@ package MyWorker;
 use strict;
 use warnings;
 
+use Beekeeper::Worker;
 use base 'Beekeeper::Worker';
 
 
@@ -12,6 +13,12 @@ sub on_startup {
     $self->accept_jobs(
         'myapp.str.uc' => 'uppercase',
     );
+}
+
+sub authorize_request {
+    my ($self, $req) = @_;
+
+    return REQUEST_AUTHORIZED;
 }
 
 sub uppercase {
