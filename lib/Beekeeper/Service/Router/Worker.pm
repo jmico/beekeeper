@@ -47,7 +47,7 @@ sub on_startup {
     my @frontends;
 
     # Determine name of backend cluster
-    $self->{backend_cluster}  = $worker_config->{'backend_cluster'}  || 'backend'; #TODO
+    $self->{backend_cluster}  = $worker_config->{'backend_cluster'}  || 'backend';
     $self->{frontend_cluster} = $worker_config->{'frontend_cluster'} || 'frontend';
 
     foreach my $config (values %$bus_config) {
@@ -63,6 +63,11 @@ sub on_startup {
 
     # Create a connection to every frontend
     foreach my $config (@frontends) {
+
+        # Connect to frontend using backend user and pass 
+        $config->{'user'} = $self->{_BUS}->{config}->{user};
+        $config->{'pass'} = $self->{_BUS}->{config}->{pass};
+
         $self->init_frontend_connection( $config );
     }
 }
@@ -151,7 +156,10 @@ sub on_shutdown {
 sub pull_frontend_requests {
     my ($self, %args) = @_;
 
-    # Get requests from frontend and forward them to backend
+    # Get requests from frontend bus and forward them to backend bus
+    #
+    # src:  frontend /queue/req.backend
+    # dest: backend  /queue/req.class.method
 
     my $frontend_bus = $args{frontend};
     my $backend_bus  = $self->{_BUS};
@@ -190,7 +198,7 @@ sub pull_frontend_requests {
                 $session_id = $1;
             }
 
-            #TODO: we could check that $body_ref is a valid JSON-RPC request
+            #TODO: do basic sanity checks on $body_ref before sending request to backend
 
             my @opt_headers;
 
