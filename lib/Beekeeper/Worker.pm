@@ -69,6 +69,7 @@ use Beekeeper::JSONRPC;
 use JSON::XS;
 use Time::HiRes;
 use Sys::Hostname;
+use Scalar::Util 'blessed';
 use Carp;
 
 #TODO: our @CARP_NOT = ('AnyEvent', 'Beekeeper::Bus::STOMP');
@@ -553,16 +554,21 @@ sub __drain_task_queue {
 
             if ($@) {
                 # Got an exception while executing job
-                if ($@->isa('Beekeeper::JSONRPC::Error')) {
+                if (blessed($@) && $@->isa('Beekeeper::JSONRPC::Error')) {
+                    # Handled exception
                     $response = $@;
                 }
                 else {
                     # Unhandled exception
                     log_error $@;
                     $response = Beekeeper::JSONRPC::Error->server_error;
-                    # Sending exact error to caller is very handy, but also a risk
+                    # Sending exact error to caller is very handy, but it is also a security risk
                     $response->{error}->{data} = $@ if $self->{_WORKER}->{debug};
                 }
+            }
+            elsif (blessed($result) && $result->isa('Beekeeper::JSONRPC::Error')) {
+                # Explicit error response
+                $response = $result;
             }
             else {
                 # Build a success response
