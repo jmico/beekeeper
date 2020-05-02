@@ -114,8 +114,8 @@ sub new {
         server          => undef,    # server name and version
         version         => undef,    # stomp protocol version
         is_connected    => undef,    # true once connected
-        is_rabbit       => undef,    # true if server is RabbitMQ
-        is_apollo       => undef,    # true if server is Apache Apollo
+        is_rabbitmq     => undef,    # true if server is RabbitMQ
+        is_activemq     => undef,    # true if server is Apache ActiveMQ
         connect_cb      => undef,    # user defined on_connect callback
         error_cb        => undef,    # user defined on_error callback
         try_hosts       => undef,    # list of hosts to try to connect
@@ -337,10 +337,10 @@ sub _connect {
                     $self->{connect_err}   = undef;
                     $self->{connect_cv} && $self->{connect_cv}->send;
                     # Extract server properties
-                    $self->{version}   = $frame_hdr{'version'};
-                    $self->{server}    = $frame_hdr{'server'};
-                    $self->{is_rabbit} = 1 if ($self->{server} =~ m/RabbitMQ/i);
-                    $self->{is_apollo} = 1 if ($self->{server} =~ m/apollo/i);
+                    $self->{version} = $frame_hdr{'version'};
+                    $self->{server}  = $frame_hdr{'server'};
+                    $self->{is_rabbitmq} = 1 if ($self->{server} =~ m/RabbitMQ/i);
+                    $self->{is_activemq} = 1 if ($self->{server} =~ m/ActiveMQ/i);
                     # Call the user defined callback
                     my $cb = $self->{connect_cb};
                     $cb->(\%frame_hdr) if $cb;
@@ -436,10 +436,10 @@ sub _reset_connection {
     $self->{subscr_cb}     = {};
     $self->{receipt_cb}    = {};
     
-    $self->{version}   = undef;
-    $self->{server}    = undef;
-    $self->{is_rabbit} = undef;
-    $self->{is_apollo} = undef;
+    $self->{version}     = undef;
+    $self->{server}      = undef;
+    $self->{is_rabbitmq} = undef;
+    $self->{is_activemq} = undef;
 }
 
 =pod
@@ -500,16 +500,16 @@ sub subscribe {
 
     my $destination = $headers{'destination'};
 
-    if ($self->{is_rabbit} && $destination =~ m|^/temp-queue/|) {
+    if ($self->{is_rabbitmq} && $destination =~ m|^/temp-queue/|) {
         # RabbitMQ automagically create temp-queues when used in reply-to headers,
         # and subscribe to it with a subscription id equal to destination
         $headers{'id'} = $destination;
     }
 
-    if ($self->{is_apollo}) {
-        # Prefetch syntax is different in Apache Apollo
+    if ($self->{is_activemq}) {
+        # Prefetch syntax is different in ActiveMQ
         my $prefetch = delete $headers{'prefetch-count'};
-        $headers{'credit'} = "$prefetch,0" if ($prefetch);
+        $headers{'prefetchSize'} = "$prefetch" if ($prefetch);
     }
 
     # Determine subscription id
@@ -521,7 +521,7 @@ sub subscribe {
     my $subscr_cb = delete $headers{'on_receive_msg'};
     $self->{subscr_cb}->{$subscr_id} = $subscr_cb;
 
-    if ($self->{is_rabbit} && $destination =~ m|^/temp-queue/|) {
+    if ($self->{is_rabbitmq} && $destination =~ m|^/temp-queue/|) {
         # RabbitMQ will automagically create temp queues subscriptions server-side
         my $cb = delete $headers{'on_success'};
         AnyEvent::postpone { $cb->() } if ($cb);

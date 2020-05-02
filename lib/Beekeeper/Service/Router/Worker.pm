@@ -166,7 +166,7 @@ sub pull_frontend_requests {
 
     my $frontend_id = $frontend_bus->bus_id;
     my $backend_id = $backend_bus->bus_id;
-    my $RabbitMQ = $frontend_bus->{is_rabbit};
+    my $RabbitMQ = $frontend_bus->{is_rabbitmq};
 
     my $backend_cluster = $self->{backend_cluster};
 
