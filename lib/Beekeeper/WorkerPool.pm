@@ -255,7 +255,7 @@ sub main {
 
             if ($exit_code || $signal) {
                 warn "[error] $worker_class #$worker_pid exited abormally ($exit_code, $signal)\n"
-                    unless ($mode eq 'WAIT_CHILDS_TO_QUIT' && $signal == 15);
+                    unless ($mode ne '' && $exit_code == 0 && ($signal == 2 || $signal == 15));
             }
 
             if ($mode eq 'QUIT_IMMEDIATELY' || $mode eq 'QUIT_GRACEFULLY') {
