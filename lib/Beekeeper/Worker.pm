@@ -155,8 +155,13 @@ sub new {
     $JSON->convert_blessed;  # use TO_JSON methods to serialize objects
 
     if (defined $SIG{TERM} && $SIG{TERM} eq 'DEFAULT') {
-        # Stop working when TERM signal is received
+        # Stop working gracefully when TERM signal is received
         $SIG{TERM} = sub { $self->stop_working };
+    }
+
+    if (defined $SIG{INT} && $SIG{INT} eq 'DEFAULT' && $args{'foreground'}) {
+        # In foreground mode also stop working gracefully when INT signal is received
+        $SIG{INT} = sub { $self->stop_working };
     }
 
     eval {
