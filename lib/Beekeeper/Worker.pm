@@ -433,10 +433,14 @@ sub accept_jobs {
     }
 }
 
+my $_TASK_QUEUE_DEPTH = 0;
+
 sub __drain_task_queue {
     my $self = shift;
 
-    #TODO: Ensure that draining does not recurse
+    # Ensure that draining does not recurse
+    die "Task queue processing is recursing" if ($_TASK_QUEUE_DEPTH);
+    $_TASK_QUEUE_DEPTH++;
 
     my $worker = $self->{_WORKER};
     my $client = $self->{_CLIENT};
@@ -623,6 +627,8 @@ sub __drain_task_queue {
         redo DRAIN if (@{$worker->{job_queue_high}} || @{$worker->{job_queue_low}})
     }
 
+    $_TASK_QUEUE_DEPTH--;
+
     # tack
     $worker->{busy_time} += Time::HiRes::time - $worker->{busy_since};
     $worker->{busy_since} = 0;
@@ -774,11 +780,11 @@ sub __report_status {
     my $nps = sprintf("%.2f", $worker->{notif_count} / $period);
     $worker->{notif_count} = 0;
 
-    # Average load
+    # Average load as percentage of busy wall clock time (not cpu usage)
     my $load = sprintf("%.2f", $worker->{busy_time} / $period * 100);
     $worker->{busy_time} = 0;
 
-    #TODO: errors count
+    #ENHACEMENT: report handled and unhandled errors count
 
     # Queues
     my %queues;
