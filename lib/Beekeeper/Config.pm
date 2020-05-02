@@ -69,10 +69,11 @@ sub read_config_file {
     my $file = $args{'config_file'};
     my $cdir = $args{'config_dir'};
 
+    die "Couldn't read config files: $cdir does not exist\n" if ($cdir && ! -d $cdir);
+
     $cdir = $ENV{'BEEKEEPER_CONFIG_DIR'} unless ($cdir && -d $cdir);
     $cdir = '~/.config/beekeeper' unless ($cdir && -d $cdir);
     $cdir = '/etc/beekeeper' unless ($cdir && -d $cdir);
-    $cdir = '.' unless ($cdir && -d $cdir);
 
     $file = "$cdir/$file";
 

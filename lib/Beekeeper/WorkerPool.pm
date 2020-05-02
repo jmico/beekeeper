@@ -129,7 +129,7 @@ sub new {
 
     unless ($pool_id) {
         print "Mandatory parameter --pool-id was not specified.\n\n";
-        # Enhancement: list available pools
+        #ENHACEMENT: list available pools
         $self->cmd_help;
         CORE::exit(1);
     }
@@ -163,12 +163,11 @@ sub cmd_help {
 sub load_config {
     my $self = shift;
 
-    #TODO: $self->{options}->{'config-dir'}
+    my $pool_id  = $self->{config}->{'pool-id'};
+    my $conf_dir = $self->{options}->{'config-dir'};
 
-    my $pool_id = $self->{config}->{'pool-id'};
-
-    my $pool_cfg = Beekeeper::Config->get_pool_config( pool_id => $pool_id );
-    my $bus_cfg  = Beekeeper::Config->get_bus_config( bus_id => '*' );
+    my $pool_cfg = Beekeeper::Config->get_pool_config( pool_id => $pool_id, config_dir => $conf_dir );
+    my $bus_cfg  = Beekeeper::Config->get_bus_config(  bus_id  => '*',      config_dir => $conf_dir );
 
     unless ($pool_cfg) {
         die "Worker pool '$pool_id' is not defined into config file pool.config.json\n";
