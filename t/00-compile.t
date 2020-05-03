@@ -3,9 +3,16 @@
 use strict;
 use warnings;
 
+BEGIN {
+    use Cwd 'abs_path';
+    my ($dir) = abs_path(__FILE__);
+    ($dir) = $dir =~ m|(.*)/|;
+    unshift @INC, "$dir/lib", "$dir/../lib";
+}
+
 use Test::More;
 
-plan tests => 15;
+plan tests => 17;
 
 use_ok $_ for qw(
     Beekeeper
@@ -23,6 +30,8 @@ use_ok $_ for qw(
     Beekeeper::Service::Sinkhole::Worker
     Beekeeper::Service::LogTail
     Beekeeper::Service::LogTail::Worker
+    Beekeeper::Service::Router
+    Beekeeper::Service::Router::Worker
 );
 
 diag( "Testing Beekeeper $Beekeeper::VERSION, Perl $]" );

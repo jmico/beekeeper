@@ -7,28 +7,15 @@ use JSON::XS;
 
 my $bus_config_json = qq<
 [
-    # Mock config file used by tests
+    # Mock bus.config.json file used by tests
 
     {
-        "bus-id" : "backend",
+        "bus-id" : "test",
         "host"   : "localhost",
         "user"   : "test",
         "pass"   : "abc123",
         "vhost"  : "/test",
-    },
-    {
-        "bus-id" : "frontend-1",
-        "host"   : "localhost",
-        "user"   : "test",
-        "pass"   : "abc123",
-        "vhost"  : "/test",
-    },
-    {
-        "bus-id" : "frontend-2",
-        "host"   : "localhost",
-        "user"   : "test",
-        "pass"   : "abc123",
-        "vhost"  : "/test",
+        "default": 1,
     },
 ]>;
 

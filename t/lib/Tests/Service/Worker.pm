@@ -34,6 +34,12 @@ sub on_startup {
     );
 }
 
+sub authorize_request {
+    my ($self, $req) = @_;
+
+    return REQUEST_AUTHORIZED;
+}
+
 sub catchall {
     my ($self, $params) = @_;
     $self->signal($params);
@@ -56,6 +62,8 @@ sub fail {
     warn $params->{warn} if $params->{warn};
 
     die $params->{die} if $params->{die};
+
+    die Beekeeper::JSONRPC::Error->server_error( message => $params->{error}) if $params->{error};
 }
 
 sub echo {

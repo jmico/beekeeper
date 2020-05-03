@@ -43,7 +43,7 @@ sub test_01_notifications : Test(2) {
     is( $var, $expected, "Catchall notifications received by 2 workers");
 }
 
-sub test_02_sync_jobs : Test(12) {
+sub test_02_sync_jobs : Test(14) {
     my $self = shift;
     
     my $cli = Beekeeper::Client->instance;
@@ -65,27 +65,40 @@ sub test_02_sync_jobs : Test(12) {
     is( $resp->success, 1 );
     is_deeply( $resp->result, [ 1, { a => 2 }, "" ]);
 
+    # Unhandled exception with no raise_error
     $resp = $cli->do_job(
         method => 'test.fail',
-        params => { 'die' => "error message" },
+        params => { 'die' => "error message 123" },
         raise_error => 0,
     );
 
     isa_ok($resp, 'Beekeeper::JSONRPC::Error');
     is( $resp->success, 0 );
     is( $resp->code, -32000);
-    is( $resp->message, "Server error");
-    is( $resp->data, "error message");
+    is( $resp->message, "Server error"); # hidden error
+    is( $resp->data, undef);
 
+    # Unhandled exception dies
     $resp = eval {
         $cli->do_job(
             method => 'test.fail',
-            params => { 'die' => "error message" },
+            params => { 'die' => "error message 456" },
         );
     };
 
     is( $resp, undef );
-    like( $@, qr/Call to 'test.fail' failed: Server error: error message/);
+    like( $@, qr/Call to 'test.fail' failed: Server error at /); # hidden error
+
+    # Handled exception
+    $resp = eval {
+        $cli->do_job(
+            method => 'test.fail',
+            params => { 'error' => "error message 678" },
+        );
+    };
+
+    is( $resp, undef );
+    like( $@, qr/Call to 'test.fail' failed: error message 678 at /); # explicit error
 }
 
 sub test_03_background_jobs : Test(1) {

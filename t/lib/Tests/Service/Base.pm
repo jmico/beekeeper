@@ -37,7 +37,7 @@ sub check_broker_connection : Test(startup => 1) {
     my $class = shift;
 
     # Ensure that tests can connect to broker
-    my $config = Beekeeper::Config->get_bus_config( bus_id => 'backend' );
+    my $config = Beekeeper::Config->get_bus_config( bus_id => 'test' );
     my $bus = Beekeeper::Bus::STOMP->new( %$config, timeout => 1 );
     eval { $bus->connect( blocking => 1 ) };
     $class->BAILOUT("Could not connect to STOMP broker: $@") if $@;
@@ -75,7 +75,7 @@ sub start_workers {
         my $pid = $class->_spawn_worker('Beekeeper::Service::Supervisor::Worker');
         push @forked_pids, $pid;
 
-        # Wait until supervisor is running
+        # Wait until supervisor is running (this blocks for few seconds)
         diag "Waiting for supervisor" if DEBUG;
         my $max_wait = 100;
         while ($max_wait--) {
@@ -169,7 +169,7 @@ sub _spawn_worker {
         CORE::exit(99);
     };
 
-    # Mocked pool config
+    # Mocked pool.config.json config
     my $pool_config = {
          'daemon_name' => 'test-pool',
          'description' => 'Temp pool used for run tests',
@@ -177,6 +177,9 @@ sub _spawn_worker {
          'bus_id'      => 'test',
          'workers'     => { },
     };
+
+    # Mocked bus.config.json config
+    my $bus_cfg  = Beekeeper::Config->get_bus_config( bus_id => '*' );
 
     # Mocked worker config
     my $worker_config = {
@@ -189,8 +192,10 @@ sub _spawn_worker {
 
     my $worker = $worker_class->new(
         pool_config => $pool_config,
+        bus_config  => $bus_cfg,
         parent_pid  => $parent_pid,
         pool_id     => $pool_config->{pool_id},
+        bus_id      => $pool_config->{bus_id},
         config      => $worker_config,
         foreground  => $foreground,
     );
