@@ -27,21 +27,21 @@ sub eval_expr {
     my $expr = $params->{"expr"};
 
     unless (defined $expr) {
-        # Return explicit error response. It will be not logged
-        return Beekeeper::JSONRPC::Error->invalid_params;
+        # Explicit error response. It will be not logged
+        return Beekeeper::JSONRPC->error( message => 'No expression given' );
     }
 
     ($expr) = $expr =~ m/^([ \d \. \+\-\*\/ ]*)$/x;
 
     unless (defined $expr) {
         # Throw a handled exception. It will be not logged
-        die Beekeeper::JSONRPC::Error->invalid_params( message => 'Syntax error');
+        die Beekeeper::JSONRPC->error( message => 'Invalid expression' );
     }
 
     my $result = eval $expr;
 
     if ($@) {
-        # Throw an unhandled exception. It will be logged
+        # Throw an unhandled exception which will be automatically logged
         # The client will receive a generic error response
         die $@;
     }

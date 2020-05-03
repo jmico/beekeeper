@@ -6,6 +6,11 @@ use warnings;
 use Beekeeper::Client;
 
 
+sub new {
+    my ($class) = @_;
+    bless {}, $class;
+}
+
 sub eval_expr {
     my ($self, $str) = @_;
 

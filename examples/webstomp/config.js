@@ -1,8 +1,8 @@
 
 var CONFIG = {
     url:      "ws://localhost:15674/ws",
-    login:    "backend",
+    login:    "test",
     password: "abc123",
-    vhost:    "/backend",
+    vhost:    "/test",
     debug:    true
 }

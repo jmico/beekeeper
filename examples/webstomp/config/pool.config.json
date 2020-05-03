@@ -23,7 +23,6 @@
 
         "workers" : {
             "MyApp::Service::Calculator"           : { "workers_count" : 4 },
-            "MyApp::Service::AdServer"             : { "workers_count" : 1 },
             "Beekeeper::Service::LogTail::Worker"  : { "workers_count" : 1 },
         },
     },

@@ -2,7 +2,7 @@
 
     Beekeeper client (JSON-RPC over STOMP)
 
-    Copyright (C) 2020 José Micó
+    Copyright (C) 2015 José Micó
 
     For protocol references see: 
     - http://www.jsonrpc.org/specification
@@ -234,9 +234,6 @@ function JSON_RPC () { return {
                 if (req.on_error) {
                     try { req.on_error(resp.error) }
                     catch(e) { console.log("RPC: Exception into on_error callback of '" + req.method + "': " + e) }
-                }
-                else if (resp.error.code && resp.error.code ==  -32603) {
-                    console.log("RPC: Got error from '" + req.method + "' call: " + resp.error.data);
                 }
                 else {
                     console.log("RPC: Got error from '" + req.method + "' call: " + resp.error.message);
