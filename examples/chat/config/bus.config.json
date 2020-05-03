@@ -26,6 +26,7 @@
         "user"    : "backend",
         "pass"    : "def456",
         "vhost"   : "/backend-1",
+        "default" : 1,
     },
     {
         "bus-id"  : "backend-2",

@@ -180,10 +180,14 @@ sub load_config {
         die "Bus '$bus_id' is not defined into config file bus.config.json\n";
     }
 
-    # Merge loaded pool config with daemon existing one
+    # Merge pool.config.json contents
     $self->{config}->{$_} = $pool_cfg->{$_} foreach (keys %$pool_cfg);
 
+    # Keep bus.config.json
     $self->{bus_config} = $bus_cfg;
+
+    # Remove unused inherited entry
+    delete $self->{config}->{get_options};
 
     return 1;
 }

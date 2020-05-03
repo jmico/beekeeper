@@ -15,10 +15,11 @@
 #  - vhost  : virtual host of STOMP broker (may be omitted)
 
     {
-        "bus-id" : "backend",
-        "host"   : "localhost",
-        "user"   : "test",
-        "pass"   : "abc123",
-        "vhost"  : "/test",
+        "bus-id"  : "backend",
+        "host"    : "localhost",
+        "user"    : "test",
+        "pass"    : "abc123",
+        "vhost"   : "/test",
+        "default" : 1,
     },
 ]

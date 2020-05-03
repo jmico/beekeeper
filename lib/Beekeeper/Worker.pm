@@ -132,8 +132,8 @@ sub new {
         parent_pid      => $args{'parent_pid'},
         foreground      => $args{'foreground'},   # --foreground option
         debug           => $args{'debug'},        # --debug option
-        bus_config      => $args{'bus_config'},   # from bus.config.json
-        pool_config     => $args{'pool_config'},  # from pool.config.json
+        bus_config      => $args{'bus_config'},   # content of bus.config.json
+        pool_config     => $args{'pool_config'},  # content of pool.config.json
         pool_id         => $args{'pool_id'},
         bus_id          => $args{'bus_id'},
         config          => $args{'config'},
