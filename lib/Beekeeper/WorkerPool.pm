@@ -37,8 +37,8 @@ to manage worker pools: it start, stop and monitor pools of persistent
 Beekeeper::Worker processes which receive JSON-RPC requests from the STOMP bus.
 
 When started it daemonize itself (unless C<--foreground> option is passed) and
-fork all worker processes, then monitor those forked processes and B<immediately
-respawn defunct ones>.
+fork all worker processes, then monitor those forked processes and B<immediately>
+respawn defunct ones.
 
 =head1 CONFIGURATION
 
@@ -227,14 +227,15 @@ sub main {
     #
     # TERM  tell workers to quit after finishing their current jobs, then quit
     # INT   tell workers to quit immediately (even in the middle of a job), then quit
+    # PWR   received when system is being shut down, it is handled the same as TERM
     # HUP   restart workers after finishing their current jobs
 
     my $mode = '';
 
     $SIG{TERM} = sub { $mode = 'QUIT_GRACEFULLY'  };
     $SIG{INT}  = sub { $mode = 'QUIT_IMMEDIATELY' };
+    $SIG{PWR}  = sub { $mode = 'QUIT_GRACEFULLY'  };
     $SIG{HUP}  = sub { $mode = 'RESTART_POOL' unless $mode };
-
 
     # Install a SIGCHLD handler to reap or respawn forked workers. This is
     # executed when one or more subprocess exits, either normally or abnormally.
