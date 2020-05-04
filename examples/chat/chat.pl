@@ -3,10 +3,12 @@
 use strict;
 use warnings;
 
-use MyApp::Calculator;
+BEGIN { unshift @INC, ($ENV{'PERL5LIB'} =~ m/([^:]+)/g); }
 
-my $expr = "2+2";
 
-my $result = MyApp::Calculator->eval_expr( $expr );
+use MyApp::Chat;
+use MyApp::Auth;
 
-print "$expr = $result\n";
+#TODO
+
+1;

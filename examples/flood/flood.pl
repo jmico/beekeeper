@@ -3,7 +3,8 @@
 use strict;
 use warnings;
 
-$ENV{PATH} = '/bin'; # untaint
+BEGIN { unshift @INC, ($ENV{'PERL5LIB'} =~ m/([^:]+)/g); }
+
 
 use Beekeeper::Client;
 use Time::HiRes qw( time sleep );

@@ -7,7 +7,7 @@ use Beekeeper::Client;
 
 
 sub uppercase {
-    my ($self, $str) = @_;
+    my ($class $str) = @_;
 
     my $client = Beekeeper::Client->instance;
 

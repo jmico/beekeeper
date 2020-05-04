@@ -3,17 +3,10 @@
 use strict;
 use warnings;
 
-$ENV{PATH} = '/bin'; # untaint
+BEGIN { unshift @INC, ($ENV{'PERL5LIB'} =~ m/([^:]+)/g); }
 
-BEGIN {
-    unless (eval { require Beekeeper }) {
-        # Modules not installed yet
-        unshift @INC, ($ENV{'PERL5LIB'} =~ m/([^:]+)/g);
-    }
-}
 
 use MyApp::Calculator;
-
 
 my $calc = MyApp::Calculator->new;
 
