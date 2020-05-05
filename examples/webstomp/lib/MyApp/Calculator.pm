@@ -7,7 +7,7 @@ use Beekeeper::Client;
 
 
 sub new {
-    my ($class) = @_;
+    my $class = shift;
     bless {}, $class;
 }
 

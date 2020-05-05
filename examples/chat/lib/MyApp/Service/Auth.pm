@@ -6,42 +6,49 @@ use warnings;
 use Beekeeper::Client;
 
 
-sub on_startup {
-    my $self = shift;
-
-    $self->accept_jobs(
-        'myapp.auth.login' => 'login',
-        'myapp.auth.logout' => 'logout',
-    );
+sub new {
+    my $class = shift;
+    bless {}, $class;
 }
 
-sub login {
-    my ($self, $params, $job) = @_;
+sub do_job {
+    my $self = shift;
 
-    my $uname = $params->{username};
+    Beekeeper::Client->instance->do_job(@_);
+}
+
+
+# This is the API of service MyApp::Service::Auth
+
+sub login {
+    my ($self, %args) = @_;
 
     $self->do_job(
-        method => "_bkpr.frontend.bind",
+        method => 'myapp.auth.login',
         params => {
-             address => "frontend.user-$uname",
-             queue   =>  $job->{_headers}->{'x-forward-reply'},
-        }
+            username => $args{'username'},
+            password => $args{'password'},
+        },
     );
-
-    warn "$uname ok! ". $job->{_headers}->{'x-forward-reply'};
-
-    # Create a virtual destination that will be routed to caller queue
-
-    #$self->bind_session( bus => "frontend.user-$uid" );
-
-    #$self->route( "frontend.user-$uid" => $job->sender_address );
-
-    #$self->bind( $job->sender_address => "frontend.user-$uid" );
-
-    #$self->aaa( "frontend.user-$uid" );
 }
 
 sub logout {
+    my ($self) = @_;
+
+    $self->do_job(
+        method => 'myapp.auth.logout',
+    );
+}
+
+sub kick {
+    my ($self, %args) = @_;
+
+    $self->do_job(
+        method => 'myapp.auth.kick',
+        params => { 
+            username => $args{'username'},
+        },
+    );
 }
 
 1;
