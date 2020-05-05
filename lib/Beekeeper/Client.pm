@@ -80,6 +80,7 @@ sub new {
     };
 
     $self->{_CLIENT} = {
+        callbacks      => {},
         reply_queue    => undef,
         correlation_id => undef,
         in_progress    => undef,
@@ -202,6 +203,95 @@ sub send_notification {
 }
 
 
+sub accept_notifications {
+    my ($self, %args) = @_;
+
+    my $callbacks = $self->{_CLIENT}->{callbacks};
+
+    foreach my $fq_meth (keys %args) {
+
+        $fq_meth =~ m/^  ( [\w-]+ (?: \.[\w-]+ )* ) 
+                      \. ( [\w-]+ | \* ) $/x or croak "Invalid notification method $fq_meth";
+
+        my ($service, $method) = ($1, $2);
+        my $local_bus = $self->{_BUS}->{bus_id};
+
+        my $callback = $args{$fq_meth};
+
+        unless (ref $callback eq 'CODE') {
+            croak "Invalid callback for '$method'";
+        }
+
+        croak "Already accepting notifications $fq_meth" if exists $callbacks->{"msg.$fq_meth"};
+        $callbacks->{"msg.$fq_meth"} = $callback;
+
+        #TODO: Allow to accept private notifications without subscribing
+
+        $self->{_BUS}->subscribe(
+            destination    => "/topic/msg.$local_bus.$service.$method",
+            ack            => 'auto', # means none
+            on_receive_msg => sub {
+                my ($body_ref, $msg_headers) = @_;
+
+                my $request = eval { decode_json($$body_ref) };
+
+                unless (ref $request eq 'HASH' && $request->{jsonrpc} eq '2.0') {
+                    warn "Received invalid JSON-RPC 2.0 notification";
+                    return;
+                }
+
+                bless $request, 'Beekeeper::JSONRPC::Notification';
+                $request->{_headers} = $msg_headers;
+
+                my $method = $request->{method};
+
+                unless (defined $method && $method =~ m/^([\.\w-]+)\.([\w-]+)$/) {
+                    warn "Received notification with invalid method $method";
+                    return;
+                }
+
+                my $cb = $callbacks->{"msg.$1.$2"} || 
+                         $callbacks->{"msg.$1.*"};
+
+                unless ($cb) {
+                    warn "No callback found for received notification $method";
+                    return;
+                }
+
+                $cb->($request->{params}, $request);
+            }
+        );
+    }
+}
+
+sub stop_accepting_notifications {
+    my ($self, @methods) = @_;
+
+    croak "No method specified" unless @methods;
+
+    foreach my $fq_meth (@methods) {
+
+        $fq_meth =~ m/^  ( [\w-]+ (?: \.[\w-]+ )* ) 
+                      \. ( [\w-]+ | \* ) $/x or croak "Invalid method $fq_meth";
+
+        my ($service, $method) = ($1, $2);
+        my $local_bus = $self->{_BUS}->{bus_id};
+
+        unless (defined $self->{_CLIENT}->{callbacks}->{"msg.$fq_meth"}) {
+            carp "Not previously accepting notifications $fq_meth";
+            next;
+        }
+
+        $self->{_BUS}->unsubscribe(
+            destination => "/topic/msg.$local_bus.$service.$method",
+            on_success  => sub {
+                #BUG: Some notifications may be still received, which will cause warnings
+                delete $self->{_CLIENT}->{callbacks}->{"msg.$fq_meth"};
+            }
+        );
+    }
+}
+
 =pod
 
 =item do_job
@@ -313,10 +403,11 @@ sub __do_rpc_request {
 
     unless ($BACKGROUND) {
 
-        # Subscribe to reply queue and assign an unique request id (unique for this client)
+        # Reuse or create a private reply queue which will receive the response
         my $reply_queue = $client->{reply_queue} || $self->__create_reply_queue;
         $send_args{'reply-to'} = $reply_queue;
 
+        # Assign an unique request id (unique only for this client)
         $req_id = int(rand(90000000)+10000000) . '-' . $client->{correlation_id}++;
         $req->{'id'} = $req_id;
     }
@@ -394,30 +485,64 @@ sub __create_reply_queue {
             my ($body_ref, $msg_headers) = @_;
 
             my $resp = eval { decode_json($$body_ref) };
-            return unless $resp && ref $resp eq 'HASH';
 
-            my $req_id = $resp->{'id'};
-            my $req = delete $client->{in_progress}->{$req_id};
+            unless (ref $resp eq 'HASH' && $resp->{jsonrpc} eq '2.0') {
+                warn "Received invalid JSON-RPC 2.0 message";
+                return;
+            }
 
-            # Ignore unexpected responses
-            return unless $req;
+            if (exists $resp->{'id'}) {
 
-            # Cancel request timeout
-            delete $req->{_timeout};
+                # Response of an RPC request
 
-            if (exists $resp->{'result'}) {
-                # Success response
-                $req->{_response} = bless $resp, 'Beekeeper::JSONRPC::Response';
-                $req->{_on_success_cb}->($resp) if $req->{_on_success_cb};
+                my $req_id = $resp->{'id'};
+                my $req = delete $client->{in_progress}->{$req_id};
+
+                # Ignore unexpected responses
+                return unless $req;
+
+                # Cancel request timeout
+                delete $req->{_timeout};
+
+                if (exists $resp->{'result'}) {
+                    # Success response
+                    $req->{_response} = bless $resp, 'Beekeeper::JSONRPC::Response';
+                    $req->{_on_success_cb}->($resp) if $req->{_on_success_cb};
+                }
+                else {
+                    # Error response
+                    $req->{_response} = bless $resp, 'Beekeeper::JSONRPC::Error';
+                    $req->{_on_error_cb}->($resp) if $req->{_on_error_cb};
+                }
+        
+                $req->{_waiting_response}->end;
             }
             else {
-                # Error response
-                $req->{_response} = bless $resp, 'Beekeeper::JSONRPC::Error';
-                $req->{_on_error_cb}->($resp) if $req->{_on_error_cb};
+
+                # Unicasted notification
+
+                bless $resp, 'Beekeeper::JSONRPC::Notification';
+                $resp->{_headers} = $msg_headers;
+
+                my $method = $resp->{method};
+
+                unless (defined $method && $method =~ m/^([\.\w-]+)\.([\w-]+)$/) {
+                    warn "Received notification with invalid method $method";
+                    return;
+                }
+
+                my $cb = $client->{callbacks}->{"msg.$1.$2"} || 
+                         $client->{callbacks}->{"msg.$1.*"};
+
+                unless ($cb) {
+                    warn "No callback found for received notification $method";
+                    return;
+                }
+
+                $cb->($resp->{params}, $resp);
             }
-    
-            $req->{_waiting_response}->end;
-        }
+
+        },
     );
 
     return $reply_queue;

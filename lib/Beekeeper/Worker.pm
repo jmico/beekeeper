@@ -309,7 +309,7 @@ sub accept_notifications {
 
         my $callback = $self->__get_cb_coderef($fq_meth, $args{$fq_meth});
 
-        croak "Method $fq_meth declared twice" if exists $callbacks->{"msg.$fq_meth"};
+        croak "Already accepting notifications $fq_meth" if exists $callbacks->{"msg.$fq_meth"};
         $callbacks->{"msg.$fq_meth"} = $callback;
 
         $self->{_BUS}->subscribe(
@@ -408,7 +408,7 @@ sub accept_jobs {
 
         my $callback = $self->__get_cb_coderef($fq_meth, $args{$fq_meth});
 
-        croak "Method $fq_meth declared twice" if exists $callbacks->{"req.$fq_meth"};
+        croak "Already accepting jobs $fq_meth" if exists $callbacks->{"req.$fq_meth"};
         $callbacks->{"req.$fq_meth"} = $callback;
 
         next if $subscribed_to{$service};
@@ -473,7 +473,7 @@ sub __drain_task_queue {
                 my $request = decode_json($$body_ref);
 
                 unless (ref $request eq 'HASH' && $request->{jsonrpc} eq '2.0') {
-                    log_warn "Invalid JSON-RPC 2.0 request";
+                    log_warn "Received invalid JSON-RPC 2.0 notification";
                     return;
                 }
 
@@ -483,7 +483,7 @@ sub __drain_task_queue {
                 my $method = $request->{method};
 
                 unless (defined $method && $method =~ m/^([\.\w-]+)\.([\w-]+)$/) {
-                    log_warn "Invalid notification method";
+                    log_warn "Received notification with invalid method $method";
                     return;
                 }
 
@@ -496,7 +496,7 @@ sub __drain_task_queue {
                 }
 
                 unless ($cb) {
-                    log_warn "No callback found for method $method";
+                    log_warn "No callback found for received notification $method";
                     return;
                 }
 
@@ -526,7 +526,7 @@ sub __drain_task_queue {
                 $request = decode_json($$body_ref);
 
                 unless (ref $request eq 'HASH' && $request->{jsonrpc} eq '2.0') {
-                    log_warn "Invalid JSON-RPC 2.0 request";
+                    log_warn "Received invalid JSON-RPC 2.0 request";
                     die Beekeeper::JSONRPC::Error->invalid_request;
                 }
 
@@ -537,7 +537,7 @@ sub __drain_task_queue {
                 $request->{_headers} = $msg_headers;
 
                 unless (defined $method && $method =~ m/^([\.\w-]+)\.([\w-]+)$/) {
-                    log_warn "Invalid request method";
+                    log_warn "Received request with invalid method $method";
                     die Beekeeper::JSONRPC::Error->method_not_found;
                 }
 
@@ -550,7 +550,7 @@ sub __drain_task_queue {
                 }
 
                 unless ($cb) {
-                    log_warn "No callback found for method $method";
+                    log_warn "No callback found for received request $method";
                     die Beekeeper::JSONRPC::Error->method_not_found;
                 }
 
