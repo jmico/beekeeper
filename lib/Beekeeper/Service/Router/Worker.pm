@@ -116,9 +116,9 @@ sub on_shutdown {
     $self->stop_accepting_jobs('_bkpr.router.*');
 
     my $frontend_cluster = $self->{frontend_cluster};
-    my $backend_cluster  = $self->{backend_cluster};
 
-    my $backend_bus = $self->{_BUS};
+    my $backend_bus     = $self->{_BUS};
+    my $backend_cluster = $self->{_BUS}->{cluster};
 
     my $cv = AnyEvent->condvar;
     $cv->begin;

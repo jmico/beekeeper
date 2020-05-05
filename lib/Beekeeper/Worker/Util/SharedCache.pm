@@ -41,8 +41,8 @@ Keep in mind that retrieved data may be stale due to latency in changes
 propagation through the bus (which involves two network operations).
 
 Even if you are using this cache for small data sets that do not change very
-often, please consider if a distributed cache like Memcache or Redis (or even
-a plain DB) are a better alternative.
+often, please consider if a distributed memory cache like Redis or such (or 
+even a plain DB) is a better alternative.
 
 =cut
 
@@ -142,7 +142,7 @@ sub _connect_to_all_brokers {
             # Already connected to our own bus
             my $bus = $worker->{_BUS};
             $self->_setup_sync_listeners($bus);
-            $self->_send_sync_request($bus) unless $self->{synced};
+            $self->_send_sync_request($bus);
             $self->{_BUS} = $bus;
             weaken($self->{_BUS});
             next;
@@ -156,13 +156,12 @@ sub _connect_to_all_brokers {
                 # Setup
                 log_debug "Connected to $bus_id";
                 $self->_setup_sync_listeners($bus);
-                $self->_send_sync_request($bus) unless $self->{synced};
+                $self->_accept_sync_requests($bus) if $self->{synced};
             },
             on_error => sub {
                 # Reconnect
                 my $errmsg = $_[0] || ""; $errmsg =~ s/\s+/ /sg;
                 log_error "Connection to $bus_id failed: $errmsg";
-                delete $self->{ready}->{$bus_id};
                 my $delay = $self->{connect_err}->{$bus_id}++;
                 $self->{reconnect_tmr}->{$bus_id} = AnyEvent->timer(
                     after => ($delay < 10 ? $delay * 3 : 30),
@@ -208,18 +207,14 @@ sub _setup_sync_listeners {
             $self->_sync_completed(1);
         }
     );
-
-    if ($self->{synced}) {
-
-        $self->_accept_sync_requests($bus);
-    }
 }
 
 sub _send_sync_request {
     my ($self, $bus) = @_;
     weaken($self);
 
-    return if $self->{_sync_wait};
+    # Do not send more than one sync request at the time
+    return if $self->{_sync_timeout};
 
     my $cache_id  = $self->{id};
     my $uid       = $self->{uid};
@@ -231,9 +226,9 @@ sub _send_sync_request {
         body        => "",
     );
 
-    # When a fresh pool is started nobody will answer, and determining which
+    # When a fresh cluster is started nobody will answer, and determining which
     # worker have the best data set is a complex task when persistence and
-    # clustering is involved. By now let the older workers act as masters
+    # clustering is involved. So just let the older workers act as masters
     my $timeout = 20 + rand();
 
     if ($self->{persist}) {
@@ -242,7 +237,7 @@ sub _send_sync_request {
         $timeout += 20 / (1 + log($size + 1));
     }
 
-    $self->{_sync_wait} = AnyEvent->timer(
+    $self->{_sync_timeout} = AnyEvent->timer(
         after => $timeout,
         cb    => sub { $self->_sync_completed(0) },
     );
@@ -251,15 +246,22 @@ sub _send_sync_request {
 sub _sync_completed {
     my ($self, $success) = @_;
 
-    delete $self->{_sync_wait};
+    delete $self->{_sync_timeout};
+
+    return if $self->{synced};
+
+    # On a fresh cluster, the first worker to timeout the sync request
+    # will act as a master and relpy all sync requests remaining
+    log_debug( $success ? "Sync completed" : "Acting as master" );
 
     $self->{synced} = 1;
 
-    log_debug( $success ? "Sync completed" : "Acting as master" );
-
     foreach my $bus ( @{$self->{_CLUSTER}} ) {
 
-        $self->_accept_sync_requests( $bus );
+        # Connections to other buses could have failed or be in progress
+        next unless $bus->{is_connected};
+
+        $self->_accept_sync_requests($bus);
     }
 }
 
@@ -272,10 +274,6 @@ sub _accept_sync_requests {
     my $uid       = $self->{uid};
     my $bus_id    = $bus->{bus_id};
     my $local_bus = $bus->{cluster};
-
-    #TODO: clean up logic
-    return if $self->{ready}->{$bus_id};
-    $self->{ready}->{$bus_id} = 1;
 
     log_debug "Accepting $cache_id sync requests from $local_bus";
 
