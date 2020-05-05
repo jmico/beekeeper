@@ -176,7 +176,7 @@ function JSON_RPC () { return {
             "/queue/req.backend",
             {
                 "reply-to": this.reply_queue,
-                "x-forward-to": "/queue/req." + args.method
+                "x-forward-to": "/queue/req.backend." + args.method.replace(/\.[\w-]+$/,''),
              // "content-type": "application/json;charset=utf-8",
             },
             JSON.stringify(req)

@@ -159,7 +159,7 @@ sub pull_frontend_requests {
     # Get requests from frontend bus and forward them to backend bus
     #
     # src:  frontend /queue/req.backend
-    # dest: backend  /queue/req.class.method
+    # dest: backend  /queue/req.backend.class
 
     my $frontend_bus = $args{frontend};
     my $backend_bus  = $self->{_BUS};
@@ -182,8 +182,7 @@ sub pull_frontend_requests {
 
             my $destination = $msg_headers->{'x-forward-to'} || '';
             return unless $destination =~ m|^/queue/req(\.(?!_)[\w-]+)+$|;
-            $destination =~ s|/req\.|/req.$backend_id.|;
-            $destination =~ s|\.[\w-]+$||;
+            $destination =~ s|/req\.[\w-]+\.|/req.$backend_id.|;
 
             my $reply_to = $msg_headers->{'reply-to'} || '';
             my $session_id;
@@ -194,7 +193,7 @@ sub pull_frontend_requests {
                 $session_id = $1;
             }
             else {
-                return unless $reply_to =~ m|^/temp-queue/tmp\.([\w-]{22})$|;
+                return unless $reply_to =~ m|^/temp-queue/tmp\.([\w-]{8,22})$|;
                 $session_id = $1;
             }
 

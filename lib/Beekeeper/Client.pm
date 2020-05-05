@@ -80,7 +80,7 @@ sub new {
     };
 
     $self->{_CLIENT} = {
-        callbacks      => {},
+        forward_to     => $args{'forward_to'},
         reply_queue    => undef,
         correlation_id => undef,
         in_progress    => undef,
@@ -89,6 +89,7 @@ sub new {
         auth_tokens    => undef,
         session_id     => undef,
         async_cv       => undef,
+        callbacks      => {},
     };
 
     unless (exists $args{'host'} && exists $args{'user'} && exists $args{'pass'}) {
@@ -167,7 +168,6 @@ sub send_notification {
                  (?: \@ ( [\w-]+ ) (\.[\w-]+)* )? $/x or croak "Invalid method $fq_meth";
 
     my ($service, $method, $bus, $addr) = ($1, $2, $3, $4);
-    my $local_bus = $self->{_BUS}->{bus_id};
 
     my $json = encode_json({
         jsonrpc => '2.0',
@@ -176,6 +176,10 @@ sub send_notification {
     });
 
     my %send_args;
+
+    my $local_bus = $self->{_BUS}->{bus_id};
+
+    $bus = $self->{_CLIENT}->{forward_to} unless (defined $bus);
 
     if (defined $bus) {
         $send_args{'destination'}  = "/queue/msg.$bus";
@@ -190,8 +194,8 @@ sub send_notification {
         $send_args{'x-auth-tokens'} = $args{'_auth_'};
     }
     else {
-        $send_args{'x-auth-tokens'} = $self->{_CLIENT}->{auth_tokens};
-        $send_args{'x-session'}     = $self->{_CLIENT}->{session_id};
+        $send_args{'x-auth-tokens'} = $self->{_CLIENT}->{auth_tokens}  if defined $self->{_CLIENT}->{auth_tokens};
+        $send_args{'x-session'}     = $self->{_CLIENT}->{session_id}   if defined $self->{_CLIENT}->{session_id};
     }
 
     if ($self->{transaction}) {
@@ -364,9 +368,12 @@ sub __do_rpc_request {
                  (?: \@ ( [\w-]+ ) (\.[\w-]+)* )? $/x or croak "Invalid method $fq_meth";
 
     my ($service, $method, $bus, $addr) = ($1, $2, $3, $4);
-    my $local_bus = $self->{_BUS}->{bus_id};
 
     my %send_args;
+
+    my $local_bus = $self->{_BUS}->{bus_id};
+
+    $bus = $client->{forward_to} unless (defined $bus);
 
     if (defined $bus) {
         $send_args{'destination'}  = "/queue/req.$bus";
@@ -381,8 +388,8 @@ sub __do_rpc_request {
         $send_args{'x-auth-tokens'} = $args{'_auth_'};
     }
     else {
-        $send_args{'x-auth-tokens'} = $client->{auth_tokens};
-        $send_args{'x-session'}     = $client->{session_id};
+        $send_args{'x-auth-tokens'} = $client->{auth_tokens}  if defined $client->{auth_tokens};
+        $send_args{'x-session'}     = $client->{session_id}   if defined $client->{session_id};
     }
 
     my $timeout = $args{'timeout'} || REQ_TIMEOUT;

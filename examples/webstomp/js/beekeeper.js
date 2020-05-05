@@ -173,10 +173,10 @@ function JSON_RPC () { return {
         };
 
         this.stomp.send(
-            "/queue/req.backend.myapp.calculator",
+            "/queue/req.backend."+ args.method.replace(/\.[\w-]+$/,''),
             {
                 "reply-to": this.reply_queue,
-                "x-forward-to": "/queue/req." + args.method
+                "x-forward-to": "/queue/req.backend." + args.method.replace(/\.[\w-]+$/,'')
              // "content-type": "application/json;charset=utf-8",
             },
             JSON.stringify(req)
