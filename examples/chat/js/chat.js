@@ -118,7 +118,7 @@ function Chat () { return {
                 }
             });
         }
-        else if (params =  cmd.match(/^\/pm\s+(\w+)(.*)/i)) {
+        else if (params =  cmd.match(/^\/pm\s+(\w+)\s+(.*)/i)) {
             this.rpc.call({
                 method: 'myapp.chat.pmessage', 
                 params: { "username": params[1], "message": params[2] },

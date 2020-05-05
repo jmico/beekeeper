@@ -67,11 +67,11 @@ sub process_cmd {
 
         last unless (length $line);
 
-        if ($line =~ m|^/login (\w+) (\w+)|i) {
+        if ($line =~ m|^/login \s+ (\w+) \s+ (\w+)|ix) {
 
             $resp = $auth->login( username => $1, password => $2 );
         }
-        elsif ($line =~ m|^/kick (\w+)|i) {
+        elsif ($line =~ m|^/kick \s+ (\w+)|ix) {
 
             $resp = $auth->kick( username => $1 );
         }
@@ -79,7 +79,7 @@ sub process_cmd {
 
             $resp = $auth->logout;
         }
-        elsif ($line =~ m|^/pm (\w+) (.+)|i) {
+        elsif ($line =~ m|^/pm \s+ (\w+) \s+ (.+)|ix) {
 
             $resp = $chat->send_private_message( username => $1, message => $2 );
         }
