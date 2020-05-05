@@ -97,8 +97,7 @@ allow errors, the connection was already closed when this is called.
 
 =cut
 
-use AnyEvent::Impl::Perl;
-#use AnyEvent;
+use AnyEvent::Impl::Perl;  #TODO: use AnyEvent?
 use AnyEvent::Handle;
 use List::Util 'shuffle';
 use Carp;
@@ -109,6 +108,7 @@ sub new {
 
     my $self = {
         bus_id          => undef,
+        cluster         => undef,
         handle          => undef,    # the socket
         hosts           => undef,    # list of all hosts in cluster
         server          => undef,    # server name and version
@@ -131,7 +131,8 @@ sub new {
         config          => \%args,
     };
 
-    $self->{bus_id} = delete $args{'bus_id'};
+    $self->{bus_id}  = delete $args{'bus_id'};
+    $self->{cluster} = delete $args{'cluster'} || $self->{bus_id};
 
     # User defined callbacks
     $self->{connect_cb} = delete $args{'on_connect'};
@@ -141,10 +142,8 @@ sub new {
     return $self;
 }
 
-sub bus_id {
-    my $self = shift;
-    $self->{bus_id};
-}
+sub bus_id  { shift->{bus_id}  }
+sub cluster { shift->{cluster} }
 
 =pod
 

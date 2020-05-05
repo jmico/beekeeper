@@ -17,6 +17,8 @@ Version 0.01
 
 =head1 DESCRIPTION
 
+Each router is connected to a single upstream bus, and to all downstream bus
+
 =head1 TODO
 
 - Calculate and report worker load.
@@ -46,8 +48,7 @@ sub on_startup {
     my $bus_config    = $self->{_WORKER}->{bus_config};
     my @frontends;
 
-    # Determine name of backend cluster
-    $self->{backend_cluster}  = $worker_config->{'backend_cluster'}  || 'backend';
+    # Determine name of frontend cluster
     $self->{frontend_cluster} = $worker_config->{'frontend_cluster'} || 'frontend';
 
     foreach my $config (values %$bus_config) {
@@ -162,13 +163,13 @@ sub pull_frontend_requests {
     # dest: backend  /queue/req.backend.class
 
     my $frontend_bus = $args{frontend};
-    my $backend_bus  = $self->{_BUS};
+    my $frontend_id  = $frontend_bus->bus_id;
 
-    my $frontend_id = $frontend_bus->bus_id;
-    my $backend_id = $backend_bus->bus_id;
+    my $backend_bus     = $self->{_BUS};
+    my $backend_id      = $backend_bus->bus_id;
+    my $backend_cluster = $backend_bus->cluster;
+
     my $RabbitMQ = $frontend_bus->{is_rabbitmq};
-
-    my $backend_cluster = $self->{backend_cluster};
 
     my ($body_ref, $msg_headers);
 
@@ -182,7 +183,6 @@ sub pull_frontend_requests {
 
             my $destination = $msg_headers->{'x-forward-to'} || '';
             return unless $destination =~ m|^/queue/req(\.(?!_)[\w-]+)+$|;
-            $destination =~ s|/req\.[\w-]+\.|/req.$backend_id.|;
 
             my $reply_to = $msg_headers->{'reply-to'} || '';
             my $session_id;
@@ -197,7 +197,7 @@ sub pull_frontend_requests {
                 $session_id = $1;
             }
 
-            #TODO: do basic sanity checks on $body_ref before sending request to backend
+            #TODO: Do basic sanity checks (like max size) on $body_ref before forwarding it to backend
 
             my @opt_headers;
 
@@ -235,10 +235,9 @@ sub pull_backend_responses {
     # Get responses from backend and send them back to frontend
 
     my $frontend_bus = $args{frontend};
-    my $backend_bus  = $self->{_BUS};
+    my $frontend_id  = $frontend_bus->bus_id;
 
-    my $frontend_id = $frontend_bus->bus_id;
-    my $backend_id  = $backend_bus->bus_id;
+    my $backend_bus  = $self->{_BUS};
 
     my ($body_ref, $msg_headers, $destination);
 

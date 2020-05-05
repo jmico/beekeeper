@@ -305,12 +305,13 @@ sub accept_notifications {
                       \. ( [\w-]+ | \* ) $/x or croak "Invalid notification method $fq_meth";
 
         my ($service, $method) = ($1, $2);
-        my $local_bus = $self->{_BUS}->{bus_id};
 
         my $callback = $self->__get_cb_coderef($fq_meth, $args{$fq_meth});
 
         croak "Already accepting notifications $fq_meth" if exists $callbacks->{"msg.$fq_meth"};
         $callbacks->{"msg.$fq_meth"} = $callback;
+
+        my $local_bus = $self->{_BUS}->{cluster};
 
         $self->{_BUS}->subscribe(
             destination    => "/topic/msg.$local_bus.$service.$method",
@@ -404,7 +405,6 @@ sub accept_jobs {
                       \. ( [\w-]+ | \* ) $/x or croak "Invalid job method $fq_meth";
 
         my ($service, $method) = ($1, $2);
-        my $local_bus = $self->{_BUS}->{bus_id};
 
         my $callback = $self->__get_cb_coderef($fq_meth, $args{$fq_meth});
 
@@ -415,8 +415,10 @@ sub accept_jobs {
         $subscribed_to{$service} = 1;
 
         if (keys %subscribed_to > 1) {
-            carp "Running multiple services within a single worker hurts load balancing";
+            carp "Running multiple services within a single worker hurts load balancing (don't do that)";
         }
+
+        my $local_bus = $self->{_BUS}->{cluster};
 
         $self->{_BUS}->subscribe(
             destination     => "/queue/req.$local_bus.$service",
@@ -660,17 +662,18 @@ sub stop_accepting_notifications {
                       \. ( [\w-]+ | \* ) $/x or croak "Invalid method $fq_meth";
 
         my ($service, $method) = ($1, $2);
-        my $local_bus = $self->{_BUS}->{bus_id};
 
         unless (defined $self->{_WORKER}->{callbacks}->{"msg.$fq_meth"}) {
             carp "Not previously accepting notifications $fq_meth";
             next;
         }
 
+        my $local_bus = $self->{_BUS}->{cluster};
+
         $self->{_BUS}->unsubscribe(
             destination => "/topic/msg.$local_bus.$service.$method",
             on_success  => sub {
-                #BUG: Some notifications may be still queued, which will cause warnings
+                #TODO: Some notifications may be still queued, which will cause warnings
                 delete $self->{_WORKER}->{callbacks}->{"msg.$fq_meth"};
             }
         );
@@ -696,7 +699,6 @@ sub stop_accepting_jobs {
                       \. ( [\w-]+ | \* ) $/x or croak "Invalid method $fq_meth";
 
         my ($service, $method) = ($1, $2);
-        my $local_bus = $self->{_BUS}->{bus_id};
 
         unless ($method eq '*') {
             #TODO: Known limitation
@@ -712,10 +714,12 @@ sub stop_accepting_jobs {
             next;
         }
 
+        my $local_bus = $self->{_BUS}->{cluster};
+
         $self->{_BUS}->unsubscribe(
             destination => "/queue/req.$local_bus.$service",
             on_success  => sub {
-                #BUG: A single job may still be queued, NACK it
+                #TODO: A single job may still be queued, NACK it
                 delete $callbacks->{$_} foreach @cb_keys;
             }
         );

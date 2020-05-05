@@ -167,7 +167,7 @@ sub send_notification {
                      \. ( [\w-]+ ) 
                  (?: \@ ( [\w-]+ ) (\.[\w-]+)* )? $/x or croak "Invalid method $fq_meth";
 
-    my ($service, $method, $bus, $addr) = ($1, $2, $3, $4);
+    my ($service, $method, $remote_bus, $addr) = ($1, $2, $3, $4);
 
     my $json = encode_json({
         jsonrpc => '2.0',
@@ -177,13 +177,13 @@ sub send_notification {
 
     my %send_args;
 
-    my $local_bus = $self->{_BUS}->{bus_id};
+    my $local_bus = $self->{_BUS}->{cluster};
 
-    $bus = $self->{_CLIENT}->{forward_to} unless (defined $bus);
+    $remote_bus = $self->{_CLIENT}->{forward_to} unless (defined $remote_bus);
 
-    if (defined $bus) {
-        $send_args{'destination'}  = "/queue/msg.$bus";
-        $send_args{'x-forward-to'} = "/topic/msg.$bus.$service.$method";
+    if (defined $remote_bus) {
+        $send_args{'destination'}  = "/queue/msg.$remote_bus";
+        $send_args{'x-forward-to'} = "/topic/msg.$remote_bus.$service.$method";
         $send_args{'x-forward-to'} .= "\@$addr" if (defined $addr && $addr =~ s/^\.//);
     }
     else {
@@ -218,7 +218,6 @@ sub accept_notifications {
                       \. ( [\w-]+ | \* ) $/x or croak "Invalid notification method $fq_meth";
 
         my ($service, $method) = ($1, $2);
-        my $local_bus = $self->{_BUS}->{bus_id};
 
         my $callback = $args{$fq_meth};
 
@@ -230,6 +229,8 @@ sub accept_notifications {
         $callbacks->{"msg.$fq_meth"} = $callback;
 
         #TODO: Allow to accept private notifications without subscribing
+
+        my $local_bus = $self->{_BUS}->{cluster};
 
         $self->{_BUS}->subscribe(
             destination    => "/topic/msg.$local_bus.$service.$method",
@@ -279,17 +280,18 @@ sub stop_accepting_notifications {
                       \. ( [\w-]+ | \* ) $/x or croak "Invalid method $fq_meth";
 
         my ($service, $method) = ($1, $2);
-        my $local_bus = $self->{_BUS}->{bus_id};
 
         unless (defined $self->{_CLIENT}->{callbacks}->{"msg.$fq_meth"}) {
             carp "Not previously accepting notifications $fq_meth";
             next;
         }
 
+        my $local_bus = $self->{_BUS}->{cluster};
+
         $self->{_BUS}->unsubscribe(
             destination => "/topic/msg.$local_bus.$service.$method",
             on_success  => sub {
-                #BUG: Some notifications may be still received, which will cause warnings
+                #TODO: Some notifications may be still received, which will cause warnings
                 delete $self->{_CLIENT}->{callbacks}->{"msg.$fq_meth"};
             }
         );
@@ -321,7 +323,7 @@ sub do_job {
 
     my $req = $self->__do_rpc_request( @_, req_type => 'SYNCHRONOUS' );
 
-    #HACK: Force AnyEvent to allow one level of recursive condvar blocking
+    #TODO: RELEASE Force AnyEvent to allow one level of recursive condvar blocking
     $WAITING && croak "Recursive condvar blocking wait attempted";
     local $WAITING = 1;
     local $AnyEvent::CondVar::Base::WAITING = 0;
@@ -357,6 +359,9 @@ sub do_background_job {
     return;
 }
 
+# Request to local bus sent to:   /queue/req.{local_bus}.{service_class}
+# Request to remote bus sent to:  /queue/req.{remote_bus}
+
 sub __do_rpc_request {
     my ($self, %args) = @_;
     my $client = $self->{_CLIENT};
@@ -367,17 +372,17 @@ sub __do_rpc_request {
                      \. ( [\w-]+ ) 
                  (?: \@ ( [\w-]+ ) (\.[\w-]+)* )? $/x or croak "Invalid method $fq_meth";
 
-    my ($service, $method, $bus, $addr) = ($1, $2, $3, $4);
+    my ($service, $method, $remote_bus, $addr) = ($1, $2, $3, $4);
 
     my %send_args;
 
-    my $local_bus = $self->{_BUS}->{bus_id};
+    my $local_bus = $self->{_BUS}->{cluster};
 
-    $bus = $client->{forward_to} unless (defined $bus);
+    $remote_bus = $client->{forward_to} unless (defined $remote_bus);
 
-    if (defined $bus) {
-        $send_args{'destination'}  = "/queue/req.$bus";
-        $send_args{'x-forward-to'} = "/queue/req.$bus.$service";
+    if (defined $remote_bus) {
+        $send_args{'destination'}  = "/queue/req.$remote_bus";
+        $send_args{'x-forward-to'} = "/queue/req.$remote_bus.$service";
         $send_args{'x-forward-to'} .= "\@$addr" if (defined $addr && $addr =~ s/^\.//);
     }
     else {
@@ -436,7 +441,7 @@ sub __do_rpc_request {
     elsif ($SYNCHRONOUS) {
 
         $req->{_raise_error} = (defined $raise_error) ? $raise_error : 1;
-        #TODO:
+        #TODO: RELEASE
         # $req->{_on_error_cb} = sub {
         #     my $resp = shift;
         #     my $errmsg = $resp->message . ( $resp->data ? ': ' . $resp->data : '' );

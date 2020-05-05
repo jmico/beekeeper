@@ -181,12 +181,12 @@ sub _setup_sync_listeners {
     my ($self, $bus) = @_;
     weaken($self);
 
-    my $cache_id = $self->{id};
-    my $uid      = $self->{uid};
-    my $bus_id   = $bus->{bus_id};
+    my $cache_id  = $self->{id};
+    my $uid       = $self->{uid};
+    my $local_bus = $bus->{cluster};
 
     $bus->subscribe(
-        destination    => "/topic/msg.$bus_id._sync.$cache_id.set",
+        destination    => "/topic/msg.$local_bus._sync.$cache_id.set",
         on_receive_msg => sub {
             my ($body_ref, $msg_headers) = @_;
 
@@ -221,12 +221,12 @@ sub _send_sync_request {
 
     return if $self->{_sync_wait};
 
-    my $cache_id = $self->{id};
-    my $uid      = $self->{uid};
-    my $bus_id   = $bus->{bus_id};
+    my $cache_id  = $self->{id};
+    my $uid       = $self->{uid};
+    my $local_bus = $bus->{cluster};
 
     $bus->send(
-        destination => "/queue/req.$bus_id._sync.$cache_id.dump",
+        destination => "/queue/req.$local_bus._sync.$cache_id.dump",
        'reply-to'   => "/temp-queue/reply-$uid",
         body        => "",
     );
@@ -268,17 +268,19 @@ sub _accept_sync_requests {
     weaken($self);
     weaken($bus);
 
-    my $cache_id = $self->{id};
-    my $uid      = $self->{uid};
-    my $bus_id   = $bus->{bus_id};
+    my $cache_id  = $self->{id};
+    my $uid       = $self->{uid};
+    my $bus_id    = $bus->{bus_id};
+    my $local_bus = $bus->{cluster};
 
+    #TODO: clean up logic
     return if $self->{ready}->{$bus_id};
     $self->{ready}->{$bus_id} = 1;
 
-    log_debug "Accepting $cache_id sync requests from $bus_id";
+    log_debug "Accepting $cache_id sync requests from $local_bus";
 
     $bus->subscribe(
-        destination     => "/queue/req.$bus_id._sync.$cache_id.dump",
+        destination     => "/queue/req.$local_bus._sync.$cache_id.dump",
         ack             => 'client', # manual ack
        'prefetch-count' => '1',
         on_receive_msg  => sub {
@@ -328,11 +330,11 @@ sub set {
     unshift @cluster, $self->{_BUS};
 
     foreach my $bus (@cluster) {
-        my $bus_id = $bus->{bus_id};
+        my $local_bus = $bus->{cluster};
         my $cache_id = $self->{id};
 
         $bus->send(
-            destination => "/topic/msg.$bus_id._sync.$cache_id.set",
+            destination => "/topic/msg.$local_bus._sync.$cache_id.set",
             body        => \$json,
         );
     }
