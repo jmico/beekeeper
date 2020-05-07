@@ -239,6 +239,9 @@ sub new {
 sub __init_logger {
     my $self = shift;
 
+    # Honor --debug command line option and 'debug' config option from pool.config.json
+    $LogLevel = LOG_DEBUG if $self->{_WORKER}->{debug} || $self->{_WORKER}->{config}->{debug};
+
     my $log_handler  = $self->log_handler;
     $self->{_LOGGER} = $log_handler;
 
