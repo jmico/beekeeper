@@ -43,12 +43,10 @@ respawn defunct ones.
 
 =head1 CONFIGURATION
 
-=over 4
-
 =item pool.config.json
 
 Workers pools are defined into a file named C<pool.config.json>, which is searched
-into C</etc/beekeeper>, C<~/.config/beekeeper> and C<$ENV{BEEKEEPER_CONFIG_DIR}>.
+for into ENV C<BEEKEEPER_CONFIG_DIR>, C<~/.config/beekeeper> and C</etc/beekeeper>.
 The file is in relaxed JSON format (so it allows comments and trailing commas).
 
 All worker pools running on the host must be declared into the file, specifying 
@@ -75,8 +73,10 @@ The following example defines "MyApp" as a pool of 2 C<MyApp::Worker> processes:
 =item bus.config.json
 
 All logical buses used by your application are defined into a file named 
-C<bus.config.json>. Each entry define a logical bus and the specify the 
-conection parameters to the STOMP broker. Required parameters are:
+C<bus.config.json> and specify the conection parameters to the STOMP brokers
+that will service them.
+
+Each entry define a logical bus. Required parameters are:
 
 C<bus-id> arbitrary identifier of logical bus.
 
@@ -97,12 +97,6 @@ The following example defines the logical bus "backend":
       "pass"   : "password",
       "vhost"  : "/backend",
   }]
-
-=back
-
-=head1 TODO
-
-- Reload config on HUP
 
 =cut
 

@@ -7,7 +7,7 @@ our $VERSION = '0.01';
 
 =head1 NAME
  
-Beekeeper::Worker::Util - 
+Beekeeper::Worker::Util -
  
 =head1 VERSION
  
@@ -15,9 +15,15 @@ Version 0.01
 
 =head1 SYNOPSIS
 
-=head1 DESCRIPTION
+  use Beekeeper::Worker::Util 'shared_cache';
+  
+  my $c = $self->shared_cache( ... );
+  
+  $c->set( $key => $value );
+  $c->get( $key );
+  $c->delete( $key );
 
-my $p = $self->shared_cache( ... );
+=head1 DESCRIPTION
 
 =cut
 

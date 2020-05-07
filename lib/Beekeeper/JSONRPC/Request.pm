@@ -7,7 +7,7 @@ our $VERSION = '0.01';
 
 =head1 NAME
  
-Beekeeper::JSONRPC::Notification - JSON-RPC request.
+Beekeeper::JSONRPC::Request - Representation of a JSON-RPC request.
  
 =head1 VERSION
  
@@ -15,9 +15,24 @@ Version 0.01
 
 =head1 SYNOPSIS
 
+  my $client = Beekeeper::Client->instance;
+  
+  my $req = $client->do_async_job(
+      method => 'myapp.svc.foo',
+      params => { foo => 'bar' },
+  );
+  
+  $client->wait_all_jobs;
+
+  die unless ($req->success);
+
+  print $req->result;
+
 =head1 DESCRIPTION
 
-Representation of a JSON-RPC request (see <http://www.jsonrpc.org/specification>).
+Objects of this class represents a JSON-RPC request (see L<http://www.jsonrpc.org/specification>).
+
+Method C<Beekeeper::Client-\>do_async_job> returns objects of this class.
 
 =head1 ACCESSORS
 
@@ -33,7 +48,7 @@ An arbitrary data structure to be passed as parameters to the defined method.
 
 =item id
 
-A value of any type, which is used to match the response with the request that it is replying to.
+A value of any type, which is used to match responses with requests.
 
 =back
 

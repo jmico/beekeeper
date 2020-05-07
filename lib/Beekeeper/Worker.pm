@@ -7,7 +7,7 @@ our $VERSION = '0.01';
 
 =head1 NAME
 
-Beekeeper::Worker - Base for creating services
+Beekeeper::Worker - Base class for creating services
 
 =head1 VERSION
 
@@ -117,8 +117,6 @@ pool.config.json
 This method is executed on a fresh worker process after it was initialized.
 
 This is intended to be overrided 
-
-The default implementation does nothing.
 
 =item on_shutdown
 

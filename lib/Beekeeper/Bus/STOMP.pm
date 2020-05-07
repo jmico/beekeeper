@@ -39,14 +39,15 @@ Version 0.01
   
   $stomp->disconnect( blocking => 1 );
 
-Note that most methods allows to send arbitrary headers, which are not explained
-here. So please read the STOMP specification, found at http://stomp.github.com/
+Most methods allows to send arbitrary headers along with commands.
 
 Except for trivial cases, error checking is delegated to the server.
 
+The STOMP specification can be found at L<http://stomp.github.com/>
+
 =head1 TODO
 
-- Heartbeats
+- Send heartbeats
 
 =head1 CONSTRUCTOR
 
@@ -56,9 +57,9 @@ Except for trivial cases, error checking is delegated to the server.
 
 =item host
 
-Hostname or IP address of the STOMP server. It also accepts an array of
-adresses which conforms a cluster, in which case the connection will be
-stablished against a randomly choosen node of the cluster.
+Hostname or IP address of the STOMP server. It also accepts an array of adresses 
+which conforms a cluster, in which case the connection will be stablished against
+a randomly choosen node of the cluster.
 
 =item port
 

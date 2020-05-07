@@ -7,17 +7,15 @@ our $VERSION = '0.01';
 
 =head1 NAME
  
-Beekeeper::JSONRPC::Notification - JSON-RPC notification.
+Beekeeper::JSONRPC::Notification - Representation of a JSON-RPC notification.
  
 =head1 VERSION
  
 Version 0.01
 
-=head1 SYNOPSIS
-
 =head1 DESCRIPTION
 
-Representation of a JSON-RPC notification (see <http://www.jsonrpc.org/specification>).
+Objects of this class represents a JSON-RPC notification (see L<http://www.jsonrpc.org/specification>).
 
 =head1 ACCESSORS
 
@@ -33,7 +31,7 @@ An arbitrary data structure to be passed as parameters to the defined method.
 
 =item id
 
-Always null.
+It is always undef.
 
 =back
 

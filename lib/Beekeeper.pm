@@ -79,19 +79,19 @@ Using the service from a client:
 
 =head1 WARNING
  
-This is alpha quality software still under development.
-
-=head1 METHODS
+This is beta quality software still under development.
 
 =head1 SEE ALSO
  
-L<Beekeeper::Client>, L<Beekeeper::Worker>, L<Gearman>.
+L<Beekeeper::WorkerPool>, L<Beekeeper::Client>, L<Beekeeper::Worker>.
 
 =head1 SOURCE REPOSITORY
  
 The source code repository for Beekeeper can be found at L<https://github.com/jmico/beekeeper>
 
 =head1 BUGS
+
+Please report them!
 
 =head1 AUTHOR
 

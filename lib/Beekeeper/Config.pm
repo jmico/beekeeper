@@ -17,20 +17,97 @@ Version 0.01
 
 =head1 DESCRIPTION
 
+Beekeeper applications use two config files to define how clients, workers
+and brokers connect to each other.
+
+These files are searched for in ENV C<BEEKEEPER_CONFIG_DIR>, C<~/.config/beekeeper>
+and then C</etc/beekeeper>.
+
+=item pool.config.json
+
+This file defines all worker pools running on this host, specifying 
+which logical bus should be used and which services it will run.
+
+The file format is in relaxed JSON, which allows comments and trailings commas.
+
+Each entry define a worker pool. Required parameters are:
+
+C<pool-id>: arbitrary identifier for the worker pool
+
+C<bus-id>: identifier of logical bus used by worker processes
+
+C<workers>: a map of worker classes to arbitrary config hashes
+
+Example:
+
+  [
+      {
+          "pool-id"     : "myapp",
+          "bus-id"      : "backend",
+          "description" : "pool of MyApp workers",
+  
+          "workers" : {
+              "MyApp::Service::Foo::Worker" : { "workers_count" : 4 },
+              "MyApp::Service::Bar::Worker" : { "workers_count" : 2 },
+          },
+      },
+  ]
+
+=item bus.config.json
+
+This file defines all logical buses used by your application, specifying
+the conection parameters to the STOMP brokers that will service them.
+
+For development purposes is handy to use a single broker to hold all 
+logical buses and easily simulate a complex topology, but in production 
+enviroments brokers should be isolated from each other.
+
+The file format is in relaxed JSON, which allows comments and trailings commas.
+
+Each entry define a logical bus. Required parameters are:
+
+C<bus-id>: unique identifier for the logical bus
+
+C<host>: hostname or IP address of the STOMP broker
+
+C<user>: username used to connect to the STOMP broker
+
+C<pass>: password used to connect to the STOMP broker
+
+C<vhost>: virtual host of STOMP broker (may be omitted)
+
+Example:
+
+  [
+      {
+          "bus-id"  : "backend",
+          "host"    : "localhost",
+          "user"    : "backend",
+          "pass"    : "def456",
+          "vhost"   : "/back",
+      },
+      {
+          "bus-id"  : "frontend",
+          "host"    : "localhost",
+          "user"    : "frontend",
+          "pass"    : "def456",
+          "vhost"   : "/front",
+      },
+  ]
+
 =head1 METHODS
 
-=over 4
+=item get_bus_config( bus_id => $id )
 
-=item get_bus_config
+Reads and parse C<bus.config.json> and returns the config of the requested bus.
 
+=item get_pool_config( bus_id => $id )
 
-=item get_pool_config
+Reads and parse C<pool.config.json> and returns the config of the requested pool.
 
+=item read_config_file( config_file => $filename )
 
-=item read_config_file
-
-
-=back
+Reads the given file and returns its content parsed as JSON.
 
 =cut
 

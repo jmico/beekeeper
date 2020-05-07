@@ -7,7 +7,7 @@ our $VERSION = '0.01';
 
 =head1 NAME
  
-Beekeeper::JSONRPC::Response - JSON-RPC response.
+Beekeeper::JSONRPC::Response - Representation of a JSON-RPC response.
  
 =head1 VERSION
  
@@ -15,13 +15,26 @@ Version 0.01
 
 =head1 SYNOPSIS
 
+  my $client = Beekeeper::Client->instance;
+  
+  my $resp = $client->do_job(
+      method => 'myapp.svc.foo',
+      params => { foo => 'bar' },
+  );
+  
+  die unless ($resp->success);
+
+  print $resp->result;
+
 =head1 DESCRIPTION
 
-Representation of a JSON-RPC notification (see <http://www.jsonrpc.org/specification>).
+Objects of this class represents a JSON-RPC response (see L<http://www.jsonrpc.org/specification>).
 
 When a RPC call is made the worker replies with a Beekeeper::JSONRPC::Response object
 if the invoked method was executed successfully. On error, a Beekeeper::JSONRPC::Error
 is returned instead.
+
+Method C<Beekeeper::Client-\>do_job> returns objects of this class on success.
 
 =head1 ACCESSORS
 
@@ -30,17 +43,17 @@ is returned instead.
 =item result
 
 Arbitrary value or data structure returned by the invoked method.
-Is undefined if the invoked method does not returns anything.
+It is undefined if the invoked method does not returns anything.
 
 =item id
 
-The id of the request it is responding to. It is used internally for response 
-matching, but it isn't very useful as this is unique only per client connection.
+The id of the request it is responding to. It is unique per client connection,
+and it is used for response matching.
 
 =item success
 
-Always returns true. Useful to determine if method was executed successfully
-or not ($response->result cannot be trusted as it may be undefined).
+Always returns true. Used to determine if a method was executed successfully
+or not ($response->result cannot be trusted as it may be undefined on success).
 
 =back
 

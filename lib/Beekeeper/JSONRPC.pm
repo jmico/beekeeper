@@ -4,15 +4,17 @@ our $VERSION = '0.01';
 
 =head1 NAME
 
-Beekeeper::JSONRPC - ...
+Beekeeper::JSONRPC - Representation of JSON-RPC objects
 
 =head1 VERSION
 
 Version 0.01
 
-=head1 SYNOPSIS
-
 =head1 DESCRIPTION
+
+All Beekeeper RPC calls follow the JSON-RPC 2.0 specification (see L<http://www.jsonrpc.org/specification>).
+
+Constructors on this class are not actually used and are provided just for completeness.
 
 =cut
 

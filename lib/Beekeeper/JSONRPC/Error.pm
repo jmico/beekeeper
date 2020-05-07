@@ -7,7 +7,7 @@ our $VERSION = '0.01';
 
 =head1 NAME
  
-Beekeeper::JSONRPC::Error - JSON-RPC error.
+Beekeeper::JSONRPC::Error - Representation of a JSON-RPC error.
  
 =head1 VERSION
  
@@ -15,40 +15,54 @@ Version 0.01
 
 =head1 SYNOPSIS
 
+  my $client = Beekeeper::Client->instance;
+  
+  my $resp = $client->do_job(
+      method => 'myapp.svc.foo',
+      params => { foo => 'bar' },
+  );
+  
+  unless ($resp->success) {
+      # Error response
+      die $resp->code . $resp->message;
+  }
+
 =head1 DESCRIPTION
 
-Representation of a JSON-RPC error (see <http://www.jsonrpc.org/specification>).
+Objects of this class represents a JSON-RPC error (see L<http://www.jsonrpc.org/specification>).
 
 When a RPC call could not be executed successfully the worker replies with a 
 Beekeeper::JSONRPC::Error object. These objects may be returned also due to  
-client side errors, like timeouts caused by network failure.
+client side errors, like network disconnections or timeouts.
+
+Method C<Beekeeper::Client-\>do_job> returns objects of this class on failure.
 
 =head1 ACCESSORS
 
 =over 4
 
-=item error
+=item message
 
 A string providing a short description of the error.
 
-=item error_code
+=item code
 
 A number that indicates the error type that occurred.
 
-=item error_data
+=item data
 
 Arbitrary value or data structure containing additional information about the error.
 This may be present or not.
 
 =item id
 
-The id of the request it is responding to. It is used internally for response 
-matching, but it isn't very useful as this is unique only per client connection.
+The id of the request it is responding to. It is unique per client connection,
+and it is used for response matching.
 
 =item success
 
-Always returns false. Useful to determine if method was executed successfully
-or not ($response->result cannot be trusted as it may be undefined).
+Always returns false. Used to determine if a method was executed successfully
+or not ($response->result cannot be trusted as it may be undefined on success).
 
 =back
 
