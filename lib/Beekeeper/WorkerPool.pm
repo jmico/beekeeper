@@ -7,7 +7,7 @@ our $VERSION = '0.01';
 
 =head1 NAME
 
-Beekeeper::WorkerPool - ...
+Beekeeper::WorkerPool - Manage worker pools
 
 =head1 VERSION
  
@@ -29,6 +29,7 @@ Version 0.01
    --group      str  Run as specified group
    --config-dir str  Path to directory containing config files
    --debug           Turn on workers debug flag
+   --help            Shows this message
 
 =head1 DESCRIPTION
 

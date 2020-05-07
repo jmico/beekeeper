@@ -8,7 +8,7 @@ our $VERSION = '0.01';
 
 =head1 NAME
 
-Beekeeper::WorkerPool::Daemon - ...
+Beekeeper::WorkerPool::Daemon - Daemonize processes
 
 =head1 VERSION
 
@@ -48,6 +48,8 @@ Then, the daemon can be executed with a script like this:
 This is a base module for creating daemons. It takes care of daemonization tasks
 commonly found in init.d scripts: forking, redirecting output, writing pid files, 
 start/stop/restart control commands, etc.
+
+It is used by the command line tool C<bkpr> to daemonize itself.
 
 =cut
 
