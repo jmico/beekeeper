@@ -241,7 +241,9 @@ function JSON_RPC () { return {
             }
         };
 
-        this.reply_queue = "/temp-queue/tmp." + Math.random().toString(36).substring(2);
+        var sid = ''; for(;sid.length < 14;) sid += (Math.random() * 36 | 0).toString(36);
+
+        this.reply_queue = "/temp-queue/tmp." + sid;
 
         if (this.server.match(/^RabbitMQ/)) {
             // HACK: Inject callback without actually subscribing, as RabbitMQ
