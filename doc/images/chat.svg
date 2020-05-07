@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/PR-SVG-20010719/DTD/svg10.dtd">
+<svg width="12cm" height="10cm" viewBox="392 176 236 193" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <rect style="fill: none; fill-opacity:0; stroke-width: 2.35099e-37; stroke: #ffffff" x="392" y="176" width="236" height="192"/>
+  <g>
+    <rect style="fill: #dddddd" x="400" y="224" width="100" height="16"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x="400" y="224" width="100" height="16"/>
+  </g>
+  <text font-size="7.90222" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="450" y="234.725">
+    <tspan x="450" y="234.725">backend-1 broker</tspan>
+  </text>
+  <g>
+    <rect style="fill: #99bbff" x="400" y="184" width="40" height="24"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x="400" y="184" width="40" height="24"/>
+  </g>
+  <text font-size="7.90222" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="420" y="198.725">
+    <tspan x="420" y="198.725">Worker</tspan>
+  </text>
+  <g>
+    <rect style="fill: #dddddd" x="400" y="304" width="100" height="16"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x="400" y="304" width="100" height="16"/>
+  </g>
+  <text font-size="7.90222" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="450" y="314.725">
+    <tspan x="450" y="314.725">frontend-1 broker</tspan>
+  </text>
+  <g>
+    <rect style="fill: #99bbff" x="460" y="184" width="40" height="24"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x="460" y="184" width="40" height="24"/>
+  </g>
+  <text font-size="7.90222" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="480" y="198.725">
+    <tspan x="480" y="198.725">Worker</tspan>
+  </text>
+  <g>
+    <rect style="fill: #ffdd66" x="400" y="336" width="40" height="24"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x="400" y="336" width="40" height="24"/>
+  </g>
+  <text font-size="7.90222" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="420" y="350.725">
+    <tspan x="420" y="350.725">Client</tspan>
+  </text>
+  <g>
+    <rect style="fill: #ffdd66" x="460" y="336" width="40" height="24"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x="460" y="336" width="40" height="24"/>
+  </g>
+  <g>
+    <rect style="fill: #99ff99" x="460" y="256" width="40" height="24"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x="460" y="256" width="40" height="24"/>
+  </g>
+  <text font-size="7.90222" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="480" y="270.725">
+    <tspan x="480" y="270.725">Router</tspan>
+  </text>
+  <line style="fill: none; fill-opacity:0; stroke-width: 2.35099e-37; stroke: #000000" x1="400" y1="320" x2="500" y2="320"/>
+  <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="420" y1="320" x2="420" y2="336"/>
+  <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="480" y1="320" x2="480" y2="336"/>
+  <line style="fill: none; fill-opacity:0; stroke-width: 2.35099e-37; stroke: #000000" x1="400" y1="224" x2="500" y2="224"/>
+  <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="420" y1="208" x2="420" y2="224"/>
+  <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="480" y1="208" x2="480" y2="224"/>
+  <g>
+    <rect style="fill: #dddddd" x="520" y="224" width="100" height="16"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x="520" y="224" width="100" height="16"/>
+  </g>
+  <text font-size="7.90222" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="570" y="234.725">
+    <tspan x="570" y="234.725">backend-2 broker</tspan>
+  </text>
+  <g>
+    <rect style="fill: #dddddd" x="520" y="304" width="100" height="16"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x="520" y="304" width="100" height="16"/>
+  </g>
+  <text font-size="7.90222" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="570" y="314.725">
+    <tspan x="570" y="314.725">frontend-2 broker</tspan>
+  </text>
+  <g>
+    <rect style="fill: #99ff99" x="520" y="256" width="40" height="24"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x="520" y="256" width="40" height="24"/>
+  </g>
+  <text font-size="7.90222" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="540" y="270.725">
+    <tspan x="540" y="270.725">Router</tspan>
+  </text>
+  <line style="fill: none; fill-opacity:0; stroke-width: 2.35099e-37; stroke: #000000" x1="520" y1="320" x2="620" y2="320"/>
+  <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="540" y1="320" x2="540" y2="360"/>
+  <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="600" y1="320" x2="600" y2="335.798"/>
+  <line style="fill: none; fill-opacity:0; stroke-width: 2.35099e-37; stroke: #000000" x1="520" y1="224" x2="620" y2="224"/>
+  <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="540" y1="200" x2="540" y2="224"/>
+  <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="600" y1="200" x2="600" y2="224"/>
+  <g>
+    <rect style="fill: #ffdd66" x="520" y="336" width="40" height="24"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x="520" y="336" width="40" height="24"/>
+  </g>
+  <text font-size="7.90222" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="480" y="350.725">
+    <tspan x="480" y="350.725">Browser</tspan>
+  </text>
+  <g>
+    <rect style="fill: #ffdd66" x="580" y="336" width="40" height="24"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x="580" y="336" width="40" height="24"/>
+  </g>
+  <text font-size="7.90222" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="600" y="350.725">
+    <tspan x="600" y="350.725">Browser</tspan>
+  </text>
+  <g>
+    <rect style="fill: #99bbff" x="520" y="184" width="40" height="24"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x="520" y="184" width="40" height="24"/>
+  </g>
+  <text font-size="7.90222" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="540" y="198.725">
+    <tspan x="540" y="198.725">Worker</tspan>
+  </text>
+  <g>
+    <rect style="fill: #99bbff" x="580" y="184" width="40" height="24"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x="580" y="184" width="40" height="24"/>
+  </g>
+  <text font-size="7.90222" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="600" y="198.725">
+    <tspan x="600" y="198.725">Worker</tspan>
+  </text>
+  <g>
+    <rect style="fill: #99ff99" x="400" y="256" width="40" height="24"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x="400" y="256" width="40" height="24"/>
+  </g>
+  <text font-size="7.90222" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="420" y="270.725">
+    <tspan x="420" y="270.725">Router</tspan>
+  </text>
+  <g>
+    <rect style="fill: #99ff99" x="580" y="256" width="40" height="24"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x="580" y="256" width="40" height="24"/>
+  </g>
+  <text font-size="7.90222" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="600" y="270.725">
+    <tspan x="600" y="270.725">Router</tspan>
+  </text>
+  <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="400" y1="240" x2="500" y2="240"/>
+  <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="520" y1="240" x2="620" y2="240"/>
+  <line style="fill: none; fill-opacity:0; stroke-width: 2.35099e-37; stroke: #000000" x1="520" y1="304" x2="620" y2="304"/>
+  <line style="fill: none; fill-opacity:0; stroke-width: 2.35099e-37; stroke: #000000" x1="400" y1="304" x2="500" y2="304"/>
+  <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="420" y1="280" x2="420" y2="304"/>
+  <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="480" y1="280" x2="480" y2="304"/>
+  <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="540" y1="280" x2="540" y2="304"/>
+  <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="600" y1="280" x2="600" y2="304"/>
+  <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="540" y1="280" x2="480" y2="304"/>
+  <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="420" y1="240" x2="420" y2="256"/>
+  <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="480" y1="240" x2="480" y2="256"/>
+  <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="540" y1="240" x2="540" y2="256"/>
+  <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="600" y1="240" x2="600" y2="256"/>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="420" y1="280" x2="449.026" y2="289.675"/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="468" y1="296" x2="464.205" y2="294.735"/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="461.675" y1="293.892" x2="457.881" y2="292.627"/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="455.351" y1="291.784" x2="451.556" y2="290.519"/>
+  </g>
+  <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="540" y1="304" x2="480" y2="280"/>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="600" y1="280" x2="570.974" y2="289.675"/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="552" y1="296" x2="555.795" y2="294.735"/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="558.325" y1="293.892" x2="562.119" y2="292.627"/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 0.4; stroke: #000000" x1="564.649" y1="291.784" x2="568.444" y2="290.519"/>
+  </g>
+  <text font-size="7.90222" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="540" y="350.725">
+    <tspan x="540" y="350.725">Client</tspan>
+  </text>
+</svg>
