@@ -117,6 +117,7 @@ sub new {
         is_connected    => undef,    # true once connected
         is_rabbitmq     => undef,    # true if server is RabbitMQ
         is_activemq     => undef,    # true if server is Apache ActiveMQ
+        is_artemis      => undef,    # true if server is Apache ActiveMQ Artemis
         connect_cb      => undef,    # user defined on_connect callback
         error_cb        => undef,    # user defined on_error callback
         try_hosts       => undef,    # list of hosts to try to connect
@@ -341,6 +342,7 @@ sub _connect {
                     $self->{server}  = $frame_hdr{'server'};
                     $self->{is_rabbitmq} = 1 if ($self->{server} =~ m/RabbitMQ/i);
                     $self->{is_activemq} = 1 if ($self->{server} =~ m/ActiveMQ/i);
+                    $self->{is_artemis}  = 1 if ($self->{server} =~ m/Artemis/i); # it is also ActiveMQ
                     # Call the user defined callback
                     my $cb = $self->{connect_cb};
                     $cb->(\%frame_hdr) if $cb;
