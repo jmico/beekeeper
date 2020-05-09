@@ -72,7 +72,7 @@ use Carp;
 
 use constant TXN_CLIENT_SIDE => 1;
 use constant TXN_SERVER_SIDE => 2;
-use constant REQ_TIMEOUT     => 20;  #TODO: 60
+use constant REQ_TIMEOUT     => 60;
 
 use Exporter 'import';
 
@@ -172,7 +172,7 @@ All clients and workers listening for C<method> will receive it.
 
 =item method
 
-A string with the name of the notification being sent with format C<"{class}.{method}">.
+A string with the name of the notification being sent with format C<"{service_class}.{method}">.
 
 =item params
 
@@ -192,6 +192,8 @@ sub send_notification {
     my ($self, %args) = @_;
 
     my $fq_meth = $args{'method'} or croak "Method was not specified";
+
+    $fq_meth .= '@' . $args{'address'} if (defined $args{'address'});
 
     $fq_meth =~ m/^     ( [\w-]+ (?:\.[\w-]+)* )
                      \. ( [\w-]+ ) 
@@ -240,12 +242,14 @@ sub send_notification {
 
 Make this client start accepting specified notifications from message bus.
 
-C<$method> is a string with the format "{class}.{method}". A default
-or fallback handler can be specified using a wildcard as "{class}.*".
+C<$method> is a string with the format "{service_class}.{method}". A default
+or fallback handler can be specified using a wildcard as "{service_class}.*".
 
 C<$callback> is a coderef that will be called when a notification is received.
 When executed, the callback will receive a parameter C<$params> which contains
 the notification value or data structure sent.
+
+Notifications will be received when AnyEvent event loop is running.
 
 =item stop_accepting_notifications ( $method, ... )
 
@@ -363,7 +367,7 @@ This method accepts the following parameters:
 
 =item method
 
-A string with the name of the method to be invoked with format C<"{class}.{method}">.
+A string with the name of the method to be invoked with format C<"{service_class}.{method}">.
 
 =item params
 
@@ -476,6 +480,8 @@ sub __do_rpc_request {
     my $client = $self->{_CLIENT};
 
     my $fq_meth = $args{'method'} or croak "Method was not specified";
+
+    $fq_meth .= '@' . $args{'address'} if (defined $args{'address'});
 
     $fq_meth =~ m/^     ( [\w-]+ (?:\.[\w-]+)* )
                      \. ( [\w-]+ ) 
@@ -758,6 +764,10 @@ sub ___abort_transaction {
 }
 
 1;
+
+=head1 SEE ALSO
+ 
+L<Beekeeper::Bus::STOMP>, L<Beekeeper::Worker>.
 
 =head1 AUTHOR
 

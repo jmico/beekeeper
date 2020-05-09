@@ -87,12 +87,12 @@ sub new {
 
     my $self = {
         worker_class => undef,
-        stomp_conn   => undef,
         foreground   => undef,
         log_file     => undef,
         service      => undef,
         host         => undef,
         pool         => undef,
+        _BUS         => undef,
         @_
     };
 
@@ -154,7 +154,7 @@ sub log {
 
     ## 2. Log to topic
 
-    my $bus = $self->{stomp_conn};
+    my $bus = $self->{_BUS};
     return unless $bus && $bus->{is_connected};
 
     # JSON-RPC notification

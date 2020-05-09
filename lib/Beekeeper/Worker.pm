@@ -52,7 +52,6 @@ Base class for creating services.
 
 =cut
 
-
 use Beekeeper::Client ':worker';
 use Beekeeper::Logger ':log_levels';
 use Beekeeper::JSONRPC;
@@ -109,7 +108,7 @@ our $JSON;
 
 You create your worker clases subclassing Beekeeper::Worker.
 
-You don0t create, objects are initialized by WorkerPool when spawning new processes.
+You don't create, objects are initialized by WorkerPool when spawning new processes.
 pool.config.json
 
 =item on_startup
@@ -219,8 +218,8 @@ sub new {
         # Connect to broker
         $self->__init_client;
 
-        #HACK: pass to stomp_conn to logger
-        $self->{_LOGGER}->{stomp_conn} = $self->{_BUS};
+        # Pass broker connection to logger
+        $self->{_LOGGER}->{_BUS} = $self->{_BUS} if (exists $self->{_LOGGER}->{_BUS});
 
         $self->__init_worker;
     };
@@ -256,11 +255,11 @@ sub log_handler {
 
     Beekeeper::Logger->new(
         worker_class => ref $self,
-        stomp_conn   => $self->{_BUS},
         foreground   => $self->{_WORKER}->{foreground},
         log_file     => $self->{_WORKER}->{config}->{log_file},
         host         => $self->{_WORKER}->{hostname},
         pool         => $self->{_WORKER}->{pool_id},
+        _BUS         => $self->{_BUS},
         @_
     );
 }
@@ -322,8 +321,8 @@ sub authorize_request {
 
 Make this worker start accepting specified JSON-RPC notifications from STOMP bus.
 
-C<$method> is a string with the format "service_name.method_name". A default
-or fallback handler can be specified using a wildcard as "service_name.*".
+C<$method> is a string with the format "{service_class}.{method}". A default
+or fallback handler can be specified using a wildcard as "{service_class}.*".
 
 C<$callback> is a method name or a coderef that will be called when a notification
 is received. When executed, the callback will receive two parameters C<$params> 
@@ -425,8 +424,8 @@ sub __get_cb_coderef {
 
 Make this worker start accepting specified JSON-RPC requests from STOMP bus.
 
-C<$method> is a string with the format "service_name.method_name". A default
-or fallback handler can be specified using a wildcard as "service_name.*".
+C<$method> is a string with the format "{service_class}.{method}". A default
+or fallback handler can be specified using a wildcard as "{service_class}.*".
 
 C<$callback> is a method name or a coderef that will be called when a request
 is received. When executed, the callback will receive two parameters C<$params> 
@@ -920,6 +919,10 @@ sub __report_exit {
 }
 
 1;
+
+=head1 SEE ALSO
+ 
+L<Beekeeper::WorkerPool>, L<Beekeeper::Client>.
 
 =head1 AUTHOR
 
