@@ -7,36 +7,57 @@ our $VERSION = '0.01';
 
 =head1 NAME
  
-Beekeeper::Client - ...
- 
+Beekeeper::Client - Make RPC calls through message bus
+
 =head1 VERSION
  
 Version 0.01
 
 =head1 SYNOPSIS
 
-  my $client = Beekeeper::Client->new;
+  my $client = Beekeeper::Client->instance;
   
   $client->send_notification(
       method => "my.service.foo",
-      params => { msg => $message },
+      params => { foo => $foo },
   );
   
-  $client->do_background_job(
+  my $resp = $client->do_job(
       method => "my.service.bar",
       params => { %args },
   );
   
-  my $result = $client->do_job(
-      method => "my.service.baz",
-      params => { %args },
+  die uneless $resp->success;
+  
+  print $resp->result;
+  
+  my $req = $client->do_async_job(
+      method     => "my.service.baz",
+      params     => { %args },
+      on_success => sub {
+          my $resp = shift;
+          print resp->result;
+      },
+      on_error => sub {
+          my $error = shift;
+          die error->message;
+      },
   );
+  
+  $client->wait_all_jobs;
 
 =head1 DESCRIPTION
 
-=head1 TODO
+Make RPC calls through message bus.
 
-- Handle STOMP disconnections gracefully
+=head1 CONSTRUCTOR
+
+=item instance( %args )
+
+Connects to the message broker and returns a singleton instance.
+
+Unless explicit connection parameters to the broker are provided tries 
+to connect using the configuration from config file C<bus.config.json>.
 
 =cut
 
@@ -138,23 +159,32 @@ sub instance {
     return $self;
 }
 
-=pod
 
 =head1 METHODS
 
-                  result   
-notification        no     all workers
-background job      no     single worker
-sync/async job      yes    single worker
+=item send_notification ( %args )
 
-=over 4
+Broadcast a notification to the message bus.
 
-=item send_notification( method => $method, params => $params )
+All clients and workers listening for C<method> will receive it.
 
-Broadcast a JSON-RPC notification to the STOMP bus. All workers listening for
-C<$method> (a string with the format "service_name.method_name") will receive it.
+=over4
 
-C<$params> is an arbitrary value or data structure sent with the notification.
+=item method
+
+A string with the name of the notification being sent with format C<"{class}.{method}">.
+
+=item params
+
+An arbitrary value or data structure sent with the notification. It could be undefined, 
+but it should not contain blessed references that cannot be serialized as JSON.
+
+=item address
+
+A string with the name of the remote bus when sending notifications to another logical 
+bus. Notifications to another bus need a router shoveling them.
+
+=back
 
 =cut
 
@@ -206,6 +236,24 @@ sub send_notification {
     $self->{_BUS}->send( body => \$json, %send_args );
 }
 
+=item accept_notifications ( $method => $callback, ... )
+
+Make this client start accepting specified notifications from message bus.
+
+C<$method> is a string with the format "{class}.{method}". A default
+or fallback handler can be specified using a wildcard as "{class}.*".
+
+C<$callback> is a coderef that will be called when a notification is received.
+When executed, the callback will receive a parameter C<$params> which contains
+the notification value or data structure sent.
+
+=item stop_accepting_notifications ( $method, ... )
+
+Make this client stop accepting specified notifications from message bus.
+
+C<$method> must be one of the strings used previously in C<accept_notifications>.
+
+=cut
 
 sub accept_notifications {
     my ($self, %args) = @_;
@@ -300,19 +348,83 @@ sub stop_accepting_notifications {
 
 =pod
 
-=item do_job
+=item do_job ( %args )
+
+Makes a synchronous RPC call to a service worker through the message bus.
+
+It will wait (in the event loop) until a response is received, wich will be either
+an C<Beekeeper::JSONRPC::Response> object or a C<Beekeeper::JSONRPC::Error>.
+
+On error it will die unless C<raise_error> option is set to false.
+
+This method accepts the following parameters:
 
 =over4
 
 =item method
 
+A string with the name of the method to be invoked with format C<"{class}.{method}">.
+
 =item params
+
+An arbitrary value or data structure to be passed as parameters to the defined method. 
+It could be undefined, but it should not contain blessed references that cannot be 
+serialized as JSON.
+
+=item address
+
+A string with the name of the remote bus when calling methods of workers connected
+to another logical bus. Requests to another bus need a router shoveling them.
 
 =item timeout
 
+Time in seconds before cancelling the request and returning an error response. If the
+request takes too long but otherwise was executed successfully the response will
+eventually arrive but it will be ignored.
+
 =item raise_error
+ 
+If set to true (the default) dies with the received error message when a call returns
+an error response. If set to false returns a C<Beekeeper::JSONRPC::Error> instead.
 
 =back
+
+=item do_async_job ( %args )
+
+Makes an asynchronous RPC call to a service worker through the message bus.
+
+It returns immediately a C<Beekeeper::JSONRPC::Request> object.
+
+This method  accepts parameters C<method>, C<params>, C<address> and C<timeout> 
+the same as C<do_job>. Additionally two callbacks can be specified:
+
+=over4
+
+=item on_success
+
+Callback which will be executed after receiving a successful response with a
+C<Beekeeper::JSONRPC::Response> object as parameter. Must be a coderef.
+
+=item on_error
+
+Callback which will be executed after receiving an error response with a
+C<Beekeeper::JSONRPC::Error> object as parameter. Must be a coderef.
+
+=back
+
+=item do_background_job ( %args )
+
+Makes an asynchronous RPC call to a service worker through the message bus but
+does not expect to receive any response, it is a fire and forget call.
+
+It returns undef immediately.
+
+This method  accepts parameters C<method>, C<params>, C<address> and C<timeout> 
+the same as C<do_job>.
+
+=item wait_all_jobs
+
+Wait (in the event loop) until all calls made by C<do_async_job> are completed.
 
 =cut
 
@@ -323,7 +435,8 @@ sub do_job {
 
     my $req = $self->__do_rpc_request( @_, req_type => 'SYNCHRONOUS' );
 
-    #TODO: RELEASE Force AnyEvent to allow one level of recursive condvar blocking
+    # Make AnyEvent allow one level of recursive condvar blocking, as we may
+    # block both in $worker->__work_forever and in $client->__do_rpc_request
     $WAITING && croak "Recursive condvar blocking wait attempted";
     local $WAITING = 1;
     local $AnyEvent::CondVar::Base::WAITING = 0;
@@ -334,11 +447,10 @@ sub do_job {
     my $resp = $req->{_response};
 
     if (!exists $resp->{result} && $req->{_raise_error}) {
-        my $errmsg = $resp->message . ( $resp->data ? ': ' . $resp->data : '' );
+        my $errmsg = $resp->code . " " . $resp->message;
         croak "Call to '$req->{method}' failed: $errmsg";
     }
 
-    #TODO: On_sucess, on_timeout, on_error ?
     return $resp;
 }
 
@@ -359,9 +471,6 @@ sub do_background_job {
     return;
 }
 
-# Request to local bus sent to:   /queue/req.{local_bus}.{service_class}
-# Request to remote bus sent to:  /queue/req.{remote_bus}
-
 sub __do_rpc_request {
     my ($self, %args) = @_;
     my $client = $self->{_CLIENT};
@@ -379,6 +488,9 @@ sub __do_rpc_request {
     my $local_bus = $self->{_BUS}->{cluster};
 
     $remote_bus = $client->{forward_to} unless (defined $remote_bus);
+
+    # Local bus request sent to:   /queue/req.{local_bus}.{service_class}
+    # Remote bus request sent to:  /queue/req.{remote_bus}
 
     if (defined $remote_bus) {
         $send_args{'destination'}  = "/queue/req.$remote_bus";
@@ -441,18 +553,22 @@ sub __do_rpc_request {
     elsif ($SYNCHRONOUS) {
 
         $req->{_raise_error} = (defined $raise_error) ? $raise_error : 1;
-        #TODO: RELEASE
-        # $req->{_on_error_cb} = sub {
-        #     my $resp = shift;
-        #     my $errmsg = $resp->message . ( $resp->data ? ': ' . $resp->data : '' );
-        #     croak "Call to '$req->{method}' failed: $errmsg";
-        # }
 
-        # Callback will be...
+        # Wait until a response is received in the reply queue
         $req->{_waiting_response} = AnyEvent->condvar;
         $req->{_waiting_response}->begin;
     }
     else {
+
+        $req->{_on_success_cb} = $args{'on_success'};
+        $req->{_on_error_cb}   = $args{'on_error'};
+
+        if ($raise_error && !$req->{_on_error_cb}) {
+            $req->{_on_error_cb} = sub {
+                my $errmsg = $_[0]->code . " " . $_[0]->message;
+                croak "Call to '$service.$method' failed: $errmsg";
+            };
+        }
 
         # Use shared cv for all requests
         if (!$client->{async_cv} || $client->{async_cv}->ready) {
@@ -472,10 +588,6 @@ sub __do_rpc_request {
         $req->{_on_error_cb}->($req->{_response}) if $req->{_on_error_cb};
         $req->{_waiting_response}->end;
     });
-
-    #TODO: raise error should be true unless error cb
-    $req->{_on_success_cb} = $args{'on_success'};
-    $req->{_on_error_cb}   = $args{'on_error'};
 
     bless $req, 'Beekeeper::JSONRPC::Request';
     return $req;
@@ -560,16 +672,14 @@ sub __create_reply_queue {
     return $reply_queue;
 }
 
-
 sub wait_all_jobs {
     my $self = shift;
 
-    #DOC: no croak if any job failed
-
-    # wait for all pending jobs
+    # Wait for all pending jobs
     my $cv = delete $self->{_CLIENT}->{async_cv};
 
-    #HACK: Force AnyEvent to allow one level of recursive condvar blocking
+    # Make AnyEvent to allow one level of recursive condvar blocking, as we may
+    # block both in $worker->__work_forever and here
     $WAITING && croak "Recursive condvar blocking wait attempted";
     local $WAITING = 1;
     local $AnyEvent::CondVar::Base::WAITING = 0;
@@ -593,11 +703,6 @@ sub set_credentials {
     $self->{_CLIENT}->{auth_tokens} = join(',', $uuid, @$tokens);
 }
 
-=pod
-
-=item begin_transaction
-
-=cut
 
 sub ___begin_transaction {
     my ($self, %args) = @_;
