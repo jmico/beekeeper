@@ -22,8 +22,8 @@ When done, stop worker pools with:
 ```
 ./run.sh stop
 ```
----
 
+---
 ## RabbitMQ setup
 
 In order to run this example you need a working instance of RabbitMQ. Enable STOMP and create the 
@@ -53,6 +53,11 @@ rabbitmqctl set_policy expiry -p /backend-1  ".*" '{"expires":60000}' --apply-to
 rabbitmqctl set_policy expiry -p /backend-2  ".*" '{"expires":60000}' --apply-to queues
 rabbitmqctl set_policy expiry -p /frontend-1 ".*" '{"expires":60000}' --apply-to queues
 rabbitmqctl set_policy expiry -p /frontend-2 ".*" '{"expires":60000}' --apply-to queues
+
+rabbitmqctl set_topic_permissions frontend -p /frontend-1 amq.topic "" "^frontend.*"
+rabbitmqctl set_topic_permissions frontend -p /frontend-2 amq.topic "" "^frontend.*"
+
+#TODO: make /queue/req.backend write only for user frontend
 ```
 Also ensure that `host` addresses in `bus.config.json` and `config.js` match RabbitMQ one.
 

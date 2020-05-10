@@ -17,12 +17,12 @@ When done, stop the worker pool with:
 ```
 ./run.sh stop
 ```
----
 
+---
 ### RabbitMQ setup
 
-In order to run this example you need a working instance of RabbitMQ. Enable STOMP, add and configure a 
-user `test` and create a virtual host `/test` with the following commands:
+In order to run this example you need a working instance of RabbitMQ. Enable STOMP, add 
+and configure a user `test` and create a virtual host `/test` with the following commands:
 
 ```
 rabbitmq-plugins enable rabbitmq_stomp

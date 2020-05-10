@@ -1,7 +1,7 @@
 ## Flood example
 
-This example allows to estimate the performance of a Beekeper setup, which depends heavily of the
-performance of the message broker and the network latency. 
+This example allows to estimate the performance of a Beekeper setup, which depends 
+heavily of the performance of the message broker and the network latency. 
 
 
 To run this example start a worker pool of `TestWorker` processes:
@@ -48,12 +48,12 @@ Sample output (on a local setup):
 1000 background jobs  of   5 Kb  in  0.193 sec    5173 /sec   0.19 ms each
 1000 background jobs  of  10 Kb  in  0.279 sec    3586 /sec   0.28 ms each
 ```
----
 
+---
 ### RabbitMQ setup
 
-In order to run this example you need a working instance of RabbitMQ. Enable STOMP, add and configure a 
-user `test` and create a virtual host `/test` with the following commands:
+In order to run this example you need a working instance of RabbitMQ. Enable STOMP, add 
+and configure a user `test` and create a virtual host `/test` with the following commands:
 
 ```
 rabbitmq-plugins enable rabbitmq_stomp
