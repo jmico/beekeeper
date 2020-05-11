@@ -13,15 +13,13 @@ Beekeeper::Service::Supervisor::Worker - Worker pool supervisor.
 
 Version 0.01
 
-=head1 SYNOPSIS
-
-  use Beekeeper::Service::Supervisor;
-
 =head1 DESCRIPTION
 
-Track state of workers.
-
 A Supervisor worker is created automatically in every worker pool.
+
+It keeps a shared table of the status of every worker connected to a logical 
+bus in every broker, routinely checking local workers and keeping track of 
+workers periodic performance reports.
 
 =cut
 

@@ -7,7 +7,7 @@ our $VERSION = '0.01';
 
 =head1 NAME
  
-Beekeeper::Worker::Util -
+Beekeeper::Worker::Util
  
 =head1 VERSION
  

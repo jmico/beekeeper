@@ -35,7 +35,7 @@ Version 0.01
 
 This module contains the core of the command line tool C<bkpr> which is used
 to manage worker pools: it start, stop and monitor pools of persistent
-Beekeeper::Worker processes which receive JSON-RPC requests from the STOMP bus.
+C<Beekeeper::Worker> processes which receive RPC requests from message bus.
 
 When started it daemonize itself (unless C<--foreground> option is passed) and
 fork all worker processes, then monitor those forked processes and B<immediately>

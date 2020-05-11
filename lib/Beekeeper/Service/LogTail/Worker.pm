@@ -7,7 +7,7 @@ our $VERSION = '0.01';
 
 =head1 NAME
 
-Beekeeper::Service::LogTail::Worker - Pool log browser
+Beekeeper::Service::LogTail::Worker - Buffer log entries
 
 =head1 VERSION
 
@@ -17,7 +17,17 @@ Version 0.01
 
 =head1 DESCRIPTION
 
-"/topic/log.backend.$level.$self->{service}",
+By default all workers use a C<Beekeeper::Logger> logger which logs errors and
+warnings both to files and to a topic C</topic/log> on the message bus.
+
+This worker keeps an in memory buffer of every log entry sent to that topic in
+every broker in a logical message bus.
+
+=head1 METHODS
+
+=item tail ( %filters )
+
+Returns all buffered entries that match the filter criteria.
 
 =cut
 

@@ -17,11 +17,13 @@ Version 0.01
 
 =head1 DESCRIPTION
 
-Each router is connected to a single upstream bus, and to all downstream bus
+This worker pulls requests from any frontend brokers and forward them to the 
+single backend broker it is connected to. It also pull generated responses from
+the backend and forward them to the aproppiate frontend broker which the
+client is connected to.
 
-=head1 TODO
-
-- Calculate and report worker load.
+In order to push unicasted notifications it keeps a shared table of client
+connections and server side assigned arbitrary addresses.
 
 =cut
 

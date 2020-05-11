@@ -32,7 +32,7 @@ GetOptions(
 
 my $Help = "
 Usage: bkpr-top [OPTIONS]
-Show real-time performance metrics of running workers.
+Display real-time performance metrics of running workers.
 
   -h, --host  str  display status only of specified host
   -p, --pool  str  display status only of specified pool
@@ -209,7 +209,7 @@ __END__
 
 =head1 NAME
 
-bkpr-top - ...
+bkpr-top - Display real-time performance metrics of running workers
 
 =head1 VERSION
 
@@ -219,7 +219,7 @@ Version 0.01
 
   Usage: bkpr-top [OPTIONS]
   
-  Show real-time performance metrics of running workers.
+  Display real-time performance metrics of running workers.
   
     -h, --host  str  display status only of specified host
     -p, --pool  str  display status only of specified pool
@@ -230,6 +230,21 @@ Version 0.01
   Filters --host, --pool and --class can be combined.
 
 =head1 DESCRIPTION
+
+Display in real-time performance metrics of all running workers connected
+to a logic message bus in a 'top' fashion.
+
+ "nps":  number of received notifications per second
+ "jps":  number of processed jobs per second
+ "mem":  resident memory size in KB
+ "load": percentage of busy time (it is not CPU load)
+
+Sorting order can be changed pressing keys N, J, M and L.
+Pressing Q quits the program.
+
+=head1 SEE ALSO
+
+L<Beekeeper::Service::Supervisor>.
 
 =head1 AUTHOR
 

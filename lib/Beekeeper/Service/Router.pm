@@ -15,13 +15,41 @@ Version 0.01
 
 =head1 SYNOPSIS
 
+  $self->bind_session( $req, "frontend.user-123" );
+  
+  $self->send_notification(
+      method => 'myapp.info@frontend.user-123',
+      params => 'hello',
+  );
+  
+  $self->unbind_session( $req, "frontend.user-123" );
+  
+  $self->unbind_address( "frontend.user-123" );
+
 =head1 DESCRIPTION
+
+Router workers shovel requests messages between frontend and backend brokers.
+
+In order to push unicasted notifications all routers share a table of client
+connections and server side assigned arbitrary addresses.
 
 =head1 METHODS
 
-=item bind
+=item bind_session ( $req, $address )
 
-=item unbind
+Assign an arbitrary address to a remote client connection.
+
+This address can be used later to push notifications to the client.
+
+The same address can be assigned to several connections at the same time.
+
+=item unbind_session ( $req )
+
+Cancel a connection bind.
+
+=item unbind_address ( $address )
+
+Cancel every connection bind to a given address.
 
 =cut
 

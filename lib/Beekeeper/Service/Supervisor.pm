@@ -17,6 +17,12 @@ Version 0.01
 
 =head1 DESCRIPTION
 
+Supervisor service keeps a table of the status and performance metrics of every 
+worker connected to a logical bus in every broker.
+
+This status table can be queried to shovel worker status to an external monitoring
+application. The command line tool L<bkpr-top> display this status table.
+
 =cut
 
 use Beekeeper::Client;
@@ -94,6 +100,10 @@ sub get_services_status {
 }
 
 1;
+
+=head1 SEE ALSO
+ 
+L<bkpr-top>, L<bkpr-restart>.
 
 =head1 AUTHOR
 

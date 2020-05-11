@@ -8,7 +8,7 @@ __END__
 
 =head1 NAME
  
-Beekeeper - Framework for building service oriented applications
+Beekeeper - Framework for building applications with a microservices architecture
  
 =head1 VERSION
  
@@ -19,6 +19,7 @@ Version 0.01
 Create a service:
 
   package My::Service;
+
   use base 'Beekeeper::Worker';
   
   sub on_startup {
@@ -42,6 +43,7 @@ Create a service:
 Create an API for the service:
 
   package My::Service;
+
   use Beekeeper::Client;
   
   sub msg {
@@ -76,6 +78,14 @@ Using the service from a client:
   My::Service->echo( foo => bar);
 
 =head1 DESCRIPTION
+
+Beekeeper is a framework for building applications with a microservices architecture.
+
+=begin HTML
+
+<p><img src="httpa://github.com/jmico/beekeeper/doc/images/beekeeper.svg"/></p>
+
+=end HTML
 
 =head1 WARNING
  

@@ -29,7 +29,7 @@ GetOptions(
 
 my $Help = "
 Usage: bkpr-restart [OPTIONS]
-Bla bla bla.
+Gracefully restart remote pool of workers.
 
   -H, --Host  str  restart workers only of specified host
   -p, --pool  str  restart workers only of specified pool
@@ -95,7 +95,7 @@ __END__
 
 =head1 NAME
 
-bkpr-restart - ...
+bkpr-restart - Gracefully restart remote pool of workers
 
 =head1 VERSION
 
@@ -103,7 +103,25 @@ Version 0.01
 
 =head1 SYNOPSIS
 
+  Usage: bkpr-restart [OPTIONS]
+  Gracefully restart remote pool of workers.
+  
+    -H, --Host  str  restart workers only of specified host
+    -p, --pool  str  restart workers only of specified pool
+    -c, --class str  restart workers only of specified class
+    -a, --all        restart all workers of every host and every pool
+    -d, --delay sec  delay in seconds between restarts
+    -h, --help       display this help and exit
+  
+  Filters --host, --pool and --class can be combined.
+
 =head1 DESCRIPTION
+
+Signal remote workers to finish their current tasks and restart.
+
+=head1 SEE ALSO
+
+L<Beekeeper::Service::Supervisor>
 
 =head1 AUTHOR
 

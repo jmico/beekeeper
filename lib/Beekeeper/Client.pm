@@ -249,7 +249,7 @@ C<$callback> is a coderef that will be called when a notification is received.
 When executed, the callback will receive a parameter C<$params> which contains
 the notification value or data structure sent.
 
-Notifications will be received when AnyEvent event loop is running.
+Note that callbacks will not be executed timely if AnyEvent loop is not running.
 
 =item stop_accepting_notifications ( $method, ... )
 
@@ -320,6 +320,14 @@ sub accept_notifications {
         );
     }
 }
+
+=item stop_accepting_notifications ( $method, ... )
+
+Make this client stop accepting specified notifications from message bus.
+
+C<$method> must be one of the strings used previously in C<accept_notifications>.
+
+=cut
 
 sub stop_accepting_notifications {
     my ($self, @methods) = @_;
@@ -397,7 +405,8 @@ an error response. If set to false returns a C<Beekeeper::JSONRPC::Error> instea
 
 Makes an asynchronous RPC call to a service worker through the message bus.
 
-It returns immediately a C<Beekeeper::JSONRPC::Request> object.
+It returns immediately a C<Beekeeper::JSONRPC::Request> object which, once completed,
+will have a defined C<response>.
 
 This method  accepts parameters C<method>, C<params>, C<address> and C<timeout> 
 the same as C<do_job>. Additionally two callbacks can be specified:
