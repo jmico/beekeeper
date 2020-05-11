@@ -780,11 +780,11 @@ L<Beekeeper::Bus::STOMP>, L<Beekeeper::Worker>.
 
 =head1 AUTHOR
 
-José Micó, C<< <jose.mico@gmail.com> >>
+José Micó, C<jose.mico@gmail.com>
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2015 by José Micó.
+Copyright 2015 José Micó.
 
 This is free software; you can redistribute it and/or modify it under the same 
 terms as the Perl 5 programming language itself.

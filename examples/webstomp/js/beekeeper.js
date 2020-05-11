@@ -2,7 +2,7 @@
 
     Beekeeper client (JSON-RPC over STOMP)
 
-    Copyright (C) 2015 José Micó
+    Copyright 2015 José Micó
 
     For protocol references see: 
     - http://www.jsonrpc.org/specification

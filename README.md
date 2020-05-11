@@ -239,11 +239,7 @@ apt install procps
 
 ## Licensing
 
-This software is copyright (c) 2015 by José Micó.
+Copyright 2015 José Micó.
 
 This is free software; you can redistribute it and/or modify it under the same
 terms as the Perl 5 programming language itself.
-
-This software is distributed in the hope that it will be useful, but it is
-provided “as is” and without any express or implied warranties. For details,
-see the full text of the license in the file LICENSE.
