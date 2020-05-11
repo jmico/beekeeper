@@ -61,7 +61,7 @@ sub on_startup {
         '_bkpr.sinkhole.unserviced_queues' => 'on_unserviced_queues',
     );
 
-    my $local_bus = $self->{_BUS}->{bus_id};
+    my $local_bus = $self->{_BUS}->{cluster};
 
     # Watch the Supervisor data traffic in order to stop rejecting
     # requests as soon as a worker handling these becomes online
@@ -95,7 +95,7 @@ sub on_unserviced_queues {
         # As no one is processing requests, respond these with errors
         $self->{Draining}->{$queue} = 1;
 
-        my $local_bus = $self->{_BUS}->{bus_id};
+        my $local_bus = $self->{_BUS}->{cluster};
         log_error "Draining unserviced /queue/req.$local_bus.$queue";
 
         $self->accept_jobs( "$queue.*" => 'reject_job' );
@@ -118,7 +118,7 @@ sub on_worker_status {
         # online, so do not respond with errors anymore
         delete $self->{Draining}->{$queue};
 
-        my $local_bus = $self->{_BUS}->{bus_id};
+        my $local_bus = $self->{_BUS}->{cluster};
         log_warn "Stopped draining /queue/req.$local_bus.$queue";
 
         $self->stop_accepting_jobs( "$queue.*" );
