@@ -42,6 +42,8 @@ Display real-time performance metrics of running workers.
 
 Filters --host, --pool and --class can be combined.
 
+Change sorting field with (M)emory, (C)pu, (L)oad, (N)otifications and (J)obs.
+
 ";
 
 if ($opt_help) {
@@ -57,15 +59,17 @@ if ($opt_list) {
     my $printed_lines = 0;
     my $sort_field = 'pid';
     my $order_desc = 1;
+    my $scr_size = '';
 
     my %sort_fields = (
-        'C' => 'class',
+        'S' => 'class',
         'P' => 'pool',
         'H' => 'host',
         'I' => 'pid',
         'M' => 'msize',
         'N' => 'nps',
         'J' => 'jps',
+        'C' => 'cpu',
         'L' => 'load',
     );
 
@@ -80,13 +84,17 @@ if ($opt_list) {
         my ($columns) = `tput cols`  =~ m/(\d+)/;
         my ($lines)   = `tput lines` =~ m/(\d+)/;
 
-        my $w = $columns - 54;
+        # Clear the screen when dimensions change
+        print "\033[2J" if ($scr_size ne "$columns-$lines");
+        $scr_size = "$columns-$lines";
+
+        my $w = $columns - 60;
 
         # Echo title
         print "\033[0;0H";  # jump to 0,0
         print "\033[7m";    # reverse
-        printf("%-${w}.${w}s %-8s %-8s %-8s %5s %5s %5s %7s \n",
-               'class','pool','host','pid','mem','nps','jps','load');
+        printf("%-${w}.${w}s %-8s %-8s %-8s %5s %5s %5s %5s %7s \n",
+               'class','pool','host','pid','mem','nps','jps','cpu','load');
         print "\033[0m";    # normal
 
         # Sort
@@ -100,14 +108,15 @@ if ($opt_list) {
         splice( @workers, $lines - 2 );
 
         foreach my $worker (@workers) {
-            printf("%-${w}.${w}s %-8s %-8s %-8s %5s %5s %5s %5s %% \n",
+            printf("%-${w}.${w}s %-8s %-8s %-8s %5s %5s %5s %5s %5s %% \n",
                 $worker->{class},
                 $worker->{pool},
                 $worker->{host},
                 $worker->{pid},
-                $worker->{msize} || '-',
+                $worker->{mem} || '-',
                 sprintf("%.0f", $worker->{nps}  + .5) || '0',
                 sprintf("%.0f", $worker->{jps}  + .5) || '0',
+                sprintf("%.0f", $worker->{cpu}  + .5) || '0',
                 sprintf("%.0f", $worker->{load} + .5) || '0',
             );
         }
@@ -134,12 +143,14 @@ else {
     my $printed_lines = 0;
     my $sort_field = 'class';
     my $order_desc = 1;
+    my $scr_size = '';
 
     my %sort_fields = (
-        'C' => 'class',
+        'S' => 'class',
         'W' => 'count',
         'N' => 'nps',
         'J' => 'jps',
+        'C' => 'cpu',
         'L' => 'load',
     );
 
@@ -160,13 +171,17 @@ else {
         my ($columns) = `tput cols`  =~ m/(\d+)/;
         my ($lines)   = `tput lines` =~ m/(\d+)/;
 
-        my $w = $columns - 33;
+        # Clear the screen when dimensions change
+        print "\033[2J" if ($scr_size ne "$columns-$lines");
+        $scr_size = "$columns-$lines";
+
+        my $w = $columns - 48;
 
         # Echo title
         print "\033[0;0H";  # jump to 0,0
         print "\033[7m";    # reverse
-        printf("%-${w}.${w}s %-5s %8s %8s %7s \n",
-               'class','count','nps','jps','load');
+        printf("%-${w}.${w}s %5s %8s %8s %8s %5s %7s \n",
+               'class','count','MB','nps','jps','cpu','load');
         print "\033[0m";    # normal
 
         # Sort
@@ -180,11 +195,13 @@ else {
         splice( @services, $lines - 2 );
 
         foreach my $svc (@services) {
-            printf("%-${w}.${w}s %5d %8.1f %8.1f %5.0f %% \n", 
+            printf("%-${w}.${w}s %5d %8.1f %8.1f %8.1f %5.0f %5.0f %% \n", 
                 $svc->{class},
                 $svc->{count},
+                $svc->{mem} / 1000,
                 $svc->{nps},
                 $svc->{jps},
+                $svc->{cpu},
                 $svc->{load},
             );
         }
@@ -228,6 +245,8 @@ Version 0.01
     -h, --help       display this help and exit
   
   Filters --host, --pool and --class can be combined.
+  
+  Change sorting field with (M)emory, (C)pu, (L)oad, (N)otifications and (J)obs.
 
 =head1 DESCRIPTION
 
@@ -237,9 +256,10 @@ to a logic message bus in a 'top' fashion.
  "nps":  number of received notifications per second
  "jps":  number of processed jobs per second
  "mem":  resident memory size in KB
- "load": percentage of busy time (it is not CPU load)
+ "cpu":  percentage of cpu load
+ "load": percentage of busy time
 
-Sorting order can be changed pressing keys N, J, M and L.
+Sorting order can be changed pressing keys N, J, M, C and L.
 Pressing Q quits the program.
 
 =head1 SEE ALSO

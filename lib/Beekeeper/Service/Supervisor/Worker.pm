@@ -54,6 +54,7 @@ sub on_startup {
 
     $self->{Workers} = $self->shared_cache( id => "workers", max_age => CHECK_PERIOD * 4 );
     $self->{Queues} = {};
+    $self->{Load} = {};
 
     $self->accept_notifications(
         '_bkpr.supervisor.restart_pool'    => 'restart_pool',
@@ -206,33 +207,15 @@ sub check_workers {
 
         my $pid = $worker->{pid};
 
+        my ($mem_size, $cpu_ticks);
+
         if (open my $fh, '<', "/proc/$pid/statm") {
             # Linux on intel x86 has a fixed 4KB page size
-            my ($VIRT, $RES, $SHARE) = map { $_ * 4 } (split /\s/, scalar <$fh>)[0,1,2];            
+            my ($virt, $res, $share) = map { $_ * 4 } (split /\s/, scalar <$fh>)[0,1,2];            
             close $fh;
 
-            # Apache::SizeLimit uses $VIRT + $SHARE but that doensn't look useful
-            my $msize = $RES - $SHARE;
-
-            my $old_size = $worker->{msize};
-
-            if ($old_size && abs($msize - $old_size) / $old_size < .05) {
-                # Avoid sending messages when memory changes are below 5%
-                $self->touch_worker_status(
-                    pool  => $worker->{pool},
-                    host  => $worker->{host},
-                    pid   => $worker->{pid},
-                );
-            }
-            else {
-                # Update worker memory usage
-                $self->set_worker_status(
-                    pool  => $worker->{pool},
-                    host  => $worker->{host},
-                    pid   => $worker->{pid},
-                    msize => $msize,
-                );
-            }
+            # Apache::SizeLimit uses $virt + $share but that doensn't look useful
+            $mem_size = $res - $share;
         }
         else {
             # Worker is not running anymore
@@ -240,6 +223,43 @@ sub check_workers {
                 pool => $worker->{pool},
                 host => $worker->{host},
                 pid  => $worker->{pid},
+            );
+
+            next;
+        }
+
+        if (open my $fh, '<', "/proc/$pid/stat") {
+            my ($utime, $stime) = (split /\s/, scalar <$fh>)[13,14];
+            close $fh;
+
+            # Values in clock ticks, usually 100 (getconf CLK_TCK) 
+            $cpu_ticks = $utime + $stime;
+        }
+
+        my $cpu_load = sprintf("%.2f",($cpu_ticks - ($self->{Load}->{$pid} || 0)) / CHECK_PERIOD);
+        $self->{Load}->{$pid} = $cpu_ticks;
+
+        my $old_msize = $worker->{msize} || 0.01;
+        my $old_load  = $worker->{cpu}   || 0.01;
+
+        if (( abs($mem_size - $old_msize) / $old_msize < .05 ) &&
+            ( abs($cpu_load - $old_load)  / $old_load  < .05 )) {
+
+            # Avoid sending messages when changes are below 5%
+            $self->touch_worker_status(
+                pool  => $worker->{pool},
+                host  => $worker->{host},
+                pid   => $worker->{pid},
+            );
+        }
+        else {
+            # Update worker memory usage and cpu load
+            $self->set_worker_status(
+                pool => $worker->{pool},
+                host => $worker->{host},
+                pid  => $worker->{pid},
+                mem  => $mem_size,
+                cpu  => $cpu_load,
             );
         }
     }
@@ -335,13 +355,17 @@ sub get_services_status {
         $services{$worker->{class}}{count}++;
         $services{$worker->{class}}{jps}  += $worker->{jps};
         $services{$worker->{class}}{nps}  += $worker->{nps};
+        $services{$worker->{class}}{cpu}  += $worker->{cpu} || 0;
+        $services{$worker->{class}}{mem}  += $worker->{mem} || 0;
         $services{$worker->{class}}{load} += $worker->{load};
     }
 
     foreach my $service (values %services) {
-        $service->{jps}  = sprintf("%.2f", $service->{jps});
-        $service->{nps}  = sprintf("%.2f", $service->{nps}  / $service->{count});
-        $service->{load} = sprintf("%.2f", $service->{load} / $service->{count});
+        $service->{jps}  = sprintf("%.2f", $service->{jps} );
+        $service->{nps}  = sprintf("%.2f", $service->{nps} );
+        $service->{cpu}  = sprintf("%.2f", $service->{cpu} );
+        $service->{mem}  = sprintf("%.2f", $service->{mem} );
+        $service->{load} = sprintf("%.2f", $service->{load});
     }
 
     return \%services;
