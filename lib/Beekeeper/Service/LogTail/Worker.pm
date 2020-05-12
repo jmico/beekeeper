@@ -128,7 +128,7 @@ sub _connect_to_all_brokers {
 sub _collect_log {
     my ($self, $bus) = @_;
 
-    # Default logger logs to topics /topic/log.$bus.$level.$service
+    # Default logger logs to topics /topic/log.$level.$service
 
     $bus->subscribe(
         destination    => "/topic/log.#",
@@ -142,10 +142,21 @@ sub _collect_log {
             push @Log_buffer, $req->{params};
 
             shift @Log_buffer if (@Log_buffer >= $self->{max_size});
+
+            $self->{notif_count}++;
         }
     );
 }
 
+sub on_shutdown {
+    my ($self, %args) = @_;
+
+     foreach my $bus (@{$self->{cluster}}) {
+
+        next unless ($bus->{is_connected});
+        $bus->disconnect( blocking => 1 );
+    }
+}
 
 sub tail {
     my ($self, $params) = @_;

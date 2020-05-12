@@ -562,6 +562,12 @@ sub DESTROY {
     my $self = shift;
 
     $self->_save_state if $self->{persist};
+
+    foreach my $bus (@{$self->{_CLUSTER}}) {
+
+        next unless ($bus->{is_connected});
+        $bus->disconnect( blocking => 1 );
+    }
 }
 
 1;

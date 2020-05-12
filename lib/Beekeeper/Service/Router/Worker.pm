@@ -148,12 +148,20 @@ sub on_shutdown {
         );
     }
 
+    AnyEvent->now_update;
+
     my $timeout = AnyEvent->timer(
         after => 10,
         cb    => sub { $cv->send },
     );
 
     $cv->recv;
+
+    foreach my $frontend_bus (values %{$self->{FRONTEND}}) {
+
+        next unless ($frontend_bus->{is_connected});
+        $frontend_bus->disconnect( blocking => 1 );
+    }
 }
 
 sub pull_frontend_requests {
