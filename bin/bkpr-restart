@@ -3,8 +3,6 @@
 use strict;
 use warnings;
 
-$ENV{PATH} = '/bin'; # untaint
-
 BEGIN {
 
     unless (eval { require Beekeeper }) {
