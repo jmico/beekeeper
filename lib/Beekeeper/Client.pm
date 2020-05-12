@@ -619,7 +619,8 @@ sub __create_reply_queue {
 
     # Create an exclusive auto-delete queue for receiving RPC responses.
 
-    my $reply_queue = '/temp-queue/reply-' . int(rand(90000000)+10000000);
+    my $reply_queue = '/temp-queue/reply-';
+    $reply_queue .= ('A'..'Z','a'..'z','0'..'9')[rand 62] for (1..16);
     $client->{reply_queue} = $reply_queue;
 
     $self->{_BUS}->subscribe(
