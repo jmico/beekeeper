@@ -484,6 +484,8 @@ sub do_background_job {
     return;
 }
 
+my $__now = 0;
+
 sub __do_rpc_request {
     my ($self, %args) = @_;
     my $client = $self->{_CLIENT};
@@ -595,6 +597,9 @@ sub __do_rpc_request {
     }
 
     $client->{in_progress}->{$req_id} = $req;
+
+    # Ensure that timeout is set properly when the event loop was blocked
+    if ($__now != time) { $__now = time; AnyEvent->now_update }
 
     # Request timeout timer
     $req->{_timeout} = AnyEvent->timer( after => $timeout, cb => sub {

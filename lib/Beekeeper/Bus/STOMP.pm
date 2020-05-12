@@ -187,6 +187,9 @@ sub _connect {
     my $timeout = $config->{'timeout'};
     $timeout = 30 unless defined $timeout;
 
+    # Ensure that timeout is set properly when the event loop was blocked
+    AnyEvent->now_update;
+
     # Connection timeout handler
     if ($timeout && !$self->{timeout_tmr}) {
         $self->{timeout_tmr} = AnyEvent->timer( after => $timeout, cb => sub { 

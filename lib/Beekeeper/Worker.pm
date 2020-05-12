@@ -310,6 +310,8 @@ sub __init_worker {
 
     $self->__report_status;
 
+    AnyEvent->now_update;
+
     $self->{_WORKER}->{report_status_timer} = AnyEvent->timer(
         after    => rand( REPORT_STATUS_PERIOD ), 
         interval => REPORT_STATUS_PERIOD,

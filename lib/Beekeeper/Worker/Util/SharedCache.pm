@@ -83,6 +83,8 @@ sub new {
 
     $self->_connect_to_all_brokers($worker);
 
+    AnyEvent->now_update;
+
     if ($self->{max_age}) {
         my $Self = $self;
         $self->{gc_timer} = AnyEvent->timer(
@@ -237,6 +239,9 @@ sub _send_sync_request {
         $timeout += 20 / (1 + log($size + 1));
     }
 
+    # Ensure that timeout is set properly when the event loop was blocked
+    AnyEvent->now_update;
+
     $self->{_sync_timeout} = AnyEvent->timer(
         after => $timeout,
         cb    => sub { $self->_sync_completed(0) },
@@ -299,6 +304,7 @@ sub _accept_sync_requests {
     );
 }
 
+my $_now = 0;
 
 sub set {
     my ($self, $key, $value) = @_;
@@ -340,6 +346,10 @@ sub set {
     unless (defined $value) {
         # Postpone delete because it is necessary to keep the versioning 
         # of this modification until it is propagated to all workers
+
+        # Ensure that timer is set properly when the event loop was blocked
+        if ($_now != time) { $_now = time; AnyEvent->now_update }
+
         $self->{_destroy}->{$key} = AnyEvent->timer( after => 60, cb => sub {
             delete $self->{_destroy}->{$key};
             delete $self->{data}->{$key};
@@ -423,6 +433,10 @@ sub _merge {
     unless (defined $self->{data}->{$key}) {
         # Postpone delete because it is necessary to keep the versioning 
         # of this modification until it is propagated to all workers
+
+        # Ensure that timer is set properly when the event loop was blocked
+        if ($_now != time) { $_now = time; AnyEvent->now_update }
+
         $self->{_destroy}->{$key} = AnyEvent->timer( after => 60, cb => sub {
             delete $self->{_destroy}->{$key};
             delete $self->{data}->{$key};
