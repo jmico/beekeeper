@@ -216,6 +216,7 @@ sub new {
 
     $JSON = JSON::XS->new;
     $JSON->utf8;             # encode result as utf8
+    $JSON->allow_blessed;    # encode blessed references as null
     $JSON->convert_blessed;  # use TO_JSON methods to serialize objects
 
     if (defined $SIG{TERM} && $SIG{TERM} eq 'DEFAULT') {

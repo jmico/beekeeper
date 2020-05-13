@@ -54,6 +54,8 @@ use JSON::XS;
 use Exporter 'import';
 use Time::HiRes;
 
+my $JSON;
+
 our @EXPORT_OK = qw(
     LOG_FATAL
     LOG_ALERT
@@ -159,9 +161,9 @@ sub log {
 
     # JSON-RPC notification
 
-    #TODO: this will fail if $msg contains blessed references
+    $JSON = JSON::XS->new->utf8->allow_blessed->convert_blessed unless defined $JSON;
 
-    my $json = encode_json({
+    my $json = $JSON->encode({
         jsonrpc => '2.0',
         method  => $Label{$level},
         params  => {
