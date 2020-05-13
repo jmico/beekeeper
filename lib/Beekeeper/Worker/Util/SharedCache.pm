@@ -337,6 +337,8 @@ sub set {
             delete $self->{time}->{$key};
         });
     }
+
+    return 1;
 }
 
 sub get {
