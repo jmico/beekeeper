@@ -202,8 +202,7 @@ sub read_config_file {
     my $config = eval { $json->decode($data) };
 
     if ($@) {
-        my $errmsg = $@; $errmsg =~ s/(.*) at .*? line \d+/$1/s; #TODO
-        die "Couldn't parse config file $file: Invalid JSON syntax: $errmsg";
+        die "Couldn't parse config file $file: Invalid JSON syntax";
     }
 
     $Cache{$file} = $config;

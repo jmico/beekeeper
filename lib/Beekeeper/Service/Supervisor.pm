@@ -74,7 +74,6 @@ sub get_workers_status {
             pool  => $args{'pool'},
             class => $args{'class'},
         },
-        #TODO: raise_error => $args{'raise_error'} ?
     );
 
     return $resp->result;
@@ -93,7 +92,6 @@ sub get_services_status {
             pool  => $args{'pool'},
             class => $args{'class'},
         },
-        #TODO: raise_error => $args{'raise_error'} ?
     );
 
     return $resp->result;

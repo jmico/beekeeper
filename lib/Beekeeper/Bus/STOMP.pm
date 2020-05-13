@@ -98,7 +98,7 @@ allow errors, the connection was already closed when this is called.
 
 =cut
 
-use AnyEvent::Impl::Perl;  #TODO: use AnyEvent?
+use AnyEvent::Impl::Perl;  # Perl backend is actually faster
 use AnyEvent::Handle;
 use List::Util 'shuffle';
 use Carp;

@@ -407,8 +407,6 @@ sub bind {
 
     $address =~ s/^\@$frontend_cluster\.//;
 
-    #TODO: $self->{Sessions}->delete( $session_id )
-
     $self->{Sessions}->set( $session_id => [ $address, $reply_queue, $auth_tokens ] );
 
     return 1;
