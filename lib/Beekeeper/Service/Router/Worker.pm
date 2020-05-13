@@ -336,6 +336,7 @@ sub _init_routing_table {
     my $sess_timeout = $worker_config->{'session_timeout'} ||  SESSION_TIMEOUT;
 
     $self->{Addr_to_queues} = {};
+    $self->{Addr_to_session} = {};
 
     $self->{Sessions} = $self->shared_cache( 
         id => "router",
@@ -344,23 +345,33 @@ sub _init_routing_table {
         on_update => sub {
             my ($session, $value, $old_value) = @_;
 
-            # Keep an address -> relpy queues index
+            # Keep indexes:  address -> relpy queues
+            #                address -> sessions
 
             if (defined $value) {
                 # Bind
                 my $addr  = $value->[0];
                 my $queue = $value->[1];
+
                 my $dest_queues = $self->{Addr_to_queues}->{$addr} ||= [];
                 return if grep { $_ eq $queue } @$dest_queues;
                 push @$dest_queues, $queue;
+
+                my $dest_session = $self->{Addr_to_session}->{$addr} ||= [];
+                push @$dest_session, $session;
             }
             elsif (defined $old_value) {
                 # Unbind
                 my $addr  = $old_value->[0];
                 my $queue = $old_value->[1];
+
                 my $dest_queues = $self->{Addr_to_queues}->{$addr} || return;
                 @$dest_queues = grep { $_ ne $queue } @$dest_queues;
                 delete $self->{Addr_to_queues}->{$addr} unless @$dest_queues;
+
+                my $dest_session = $self->{Addr_to_session}->{$addr};
+                @$dest_session = grep { $_ ne $session } @$dest_session;
+                delete $self->{Addr_to_session}->{$addr} unless @$dest_session;
             }
         },
     );
@@ -441,15 +452,12 @@ sub unbind {
 
     if ($address) {
 
-        #TODO: Iterating over entire cache as it is not indexed by address
-
         $address =~ s/^$frontend_cluster\.//;
 
-        my $all_sessions = $self->{Sessions}->raw_data;
+        my $sessions = $self->{Addr_to_session}->{$address};
 
         # Remove all sessions binded to address
-        foreach my $session_id (keys %$all_sessions) {
-            next unless ($all_sessions->{$session_id}->[0] eq $address);
+        foreach my $session_id (@$sessions) {
             $self->{Sessions}->delete( $session_id );
         }
     }
