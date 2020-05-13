@@ -43,8 +43,7 @@ sub login {
         tokens => [ "USER" ],
     );
 
-    #TODO: remove @
-    $self->bind_session( $req, "\@frontend.user-$uuid" );
+    $self->bind_session( $req, "frontend.user-$uuid" );
 
     $self->send_notification(
         method => "myapp.chat.pmessage\@frontend.user-$uuid",
@@ -82,7 +81,7 @@ sub kick {
         params => { message => "You were kicked by $uuid" },
     );
 
-    $self->unbind_address( "\@frontend.user-$uuid_to_kick" );
+    $self->unbind_address( "frontend.user-$uuid_to_kick" );
 
     return 1;
 }

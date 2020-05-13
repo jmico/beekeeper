@@ -386,7 +386,7 @@ sub bind {
         die ( $session_id ? "Invalid session $session_id" : "Session not specified");
     }
 
-    if (defined $address && $address !~ m/^\@$frontend_cluster\.[\w-]+$/) {
+    if (defined $address && $address !~ m/^$frontend_cluster\.[\w-]+$/) {
         # eg: @frontend.user-1234
         die "Invalid address $address";
     }
@@ -405,7 +405,7 @@ sub bind {
         die "Invalid auth tokens $auth_tokens";
     }
 
-    $address =~ s/^\@$frontend_cluster\.//;
+    $address =~ s/^$frontend_cluster\.//;
 
     $self->{Sessions}->set( $session_id => [ $address, $reply_queue, $auth_tokens ] );
 
@@ -425,7 +425,7 @@ sub unbind {
         die "Invalid session $session_id";
     }
 
-    if (defined $address && $address !~ m/^\@$frontend_cluster\.[\w-]+$/) {
+    if (defined $address && $address !~ m/^$frontend_cluster\.[\w-]+$/) {
         # eg: @frontend.user-1234
         die "Invalid address $address";
     }
@@ -443,7 +443,7 @@ sub unbind {
 
         #TODO: Iterating over entire cache as it is not indexed by address
 
-        $address =~ s/^\@$frontend_cluster\.//;
+        $address =~ s/^$frontend_cluster\.//;
 
         my $all_sessions = $self->{Sessions}->raw_data;
 
