@@ -106,33 +106,14 @@ sub new {
     return $self;
 }
 
-sub _cluster_config {
-    my ($self, $worker) = @_;
-
-    my $bus_config = $worker->{_WORKER}->{bus_config};
-    my $bus_id = $worker->{_BUS}->bus_id;
-    my $cluster_id = $bus_config->{$bus_id}->{'cluster'};
-
-    unless ($cluster_id) {
-        # No clustering defined, just a single backend broker
-        return [ $bus_config->{$bus_id} ];
-    }
-
-    my @cluster_config;
-
-    foreach my $config (values %$bus_config) {
-        next unless $config->{'cluster'} && $config->{'cluster'} eq $cluster_id;
-        push @cluster_config, $config;
-    }
-
-    return \@cluster_config;
-}
-
 sub _connect_to_all_brokers {
     my ($self, $worker) = @_;
     weaken($self);
 
-    my $cluster_config = $self->_cluster_config($worker);
+    #TODO: using multiple shared_cache from the same worker will cause multiple cluster connections
+
+    my $worker_bus = $worker->{_BUS};
+    my $cluster_config = Beekeeper::Config->get_cluster_config( bus_id => $worker_bus->bus_id );
 
     my $cluster = $self->{_CLUSTER} = [];
 
@@ -140,12 +121,11 @@ sub _connect_to_all_brokers {
 
         my $bus_id = $config->{'bus-id'};
 
-        if ($bus_id eq $worker->{_BUS}->bus_id) {
+        if ($bus_id eq $worker_bus->bus_id) {
             # Already connected to our own bus
-            my $bus = $worker->{_BUS};
-            $self->_setup_sync_listeners($bus);
-            $self->_send_sync_request($bus);
-            $self->{_BUS} = $bus;
+            $self->_setup_sync_listeners($worker_bus);
+            $self->_send_sync_request($worker_bus);
+            $self->{_BUS} = $worker_bus;
             weaken($self->{_BUS});
             next;
         }

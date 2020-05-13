@@ -121,6 +121,8 @@ sub get_bus_config {
 
     my $bus_id = $args{'bus_id'};
 
+    die "bus_id was not specified" unless ($bus_id);
+
     my $config = $class->read_config_file( config_file => "bus.config.json", %args );
 
     my %bus_cfg  = map { $_->{'bus-id'}  => $_ } @$config;
@@ -133,11 +135,44 @@ sub get_pool_config {
 
     my $pool_id = $args{'pool_id'};
 
+    die "pool_id was not specified" unless ($pool_id);
+
     my $config = $class->read_config_file( config_file => "pool.config.json", %args );
 
     my %pool_cfg = map { $_->{'pool-id'} => $_ } @$config;
 
     return ($pool_id eq '*') ? \%pool_cfg : $pool_cfg{$pool_id};
+}
+
+sub get_cluster_config {
+    my ($class, %args) = @_;
+
+    my $cluster = $args{'cluster'};
+    my $bus_id  = $args{'bus_id'};
+    my @cluster_config;
+
+    die "No cluster or bus_id was specified" unless ($bus_id || $cluster);
+
+    my $config = $class->read_config_file( config_file => "bus.config.json", %args );
+
+    if ($cluster) {
+
+        @cluster_config = grep { defined $_->{'cluster'} && $_->{'cluster'} eq $cluster } @$config;
+    }
+    elsif ($bus_id) {
+
+        my ($bus_config) = grep { $_->{'bus-id'} eq $bus_id } @$config;
+        return [] unless $bus_config;
+
+        $cluster = $bus_config->{'cluster'};
+        return [ $bus_config ] unless $cluster;
+
+        @cluster_config = grep {
+            (defined $_->{'cluster'} && $_->{'cluster'} eq $cluster) || $_->{'bus-id'} eq $bus_id
+        } @$config;
+    }
+
+    return \@cluster_config;
 }
 
 sub read_config_file {

@@ -31,6 +31,7 @@ use Beekeeper::Worker ':log';
 use base 'Beekeeper::Worker';
 
 use Beekeeper::Worker::Util 'shared_cache';
+use Scalar::Util 'weaken';
 
 use constant SESSION_TIMEOUT => 1800;
 
@@ -48,24 +49,21 @@ sub on_startup {
 
     my $worker_config = $self->{_WORKER}->{config};
     my $bus_config    = $self->{_WORKER}->{bus_config};
-    my @frontends;
 
     # Determine name of frontend cluster
-    $self->{frontend_cluster} = $worker_config->{'frontend_cluster'} || 'frontend';
+    my $frontend_cluster = $worker_config->{'frontend_cluster'} || 'frontend';
+    $self->{frontend_cluster} = $frontend_cluster;
 
-    foreach my $config (values %$bus_config) {
-        next unless $config->{'cluster'} && $config->{'cluster'} eq $self->{frontend_cluster};
-        push @frontends, $config;
-    }
+    my $frontends_config = Beekeeper::Config->get_cluster_config( cluster => $frontend_cluster );
 
-    unless (@frontends) {
-        die "No bus in cluster '$self->{frontend_cluster}' found into config file bus.config.json\n";
+    unless (@$frontends_config) {
+        die "No bus in cluster '$frontend_cluster' found into config file bus.config.json\n";
     }
 
     $self->{wait_frontends_up} = AnyEvent->condvar;
 
     # Create a connection to every frontend
-    foreach my $config (@frontends) {
+    foreach my $config (@$frontends_config) {
 
         # Connect to frontend using backend user and pass 
         $config->{'user'} = $self->{_BUS}->{config}->{user};
@@ -166,6 +164,7 @@ sub on_shutdown {
 
 sub pull_frontend_requests {
     my ($self, %args) = @_;
+    weaken($self);
 
     # Get requests from frontend bus and forward them to backend bus
     #
@@ -270,6 +269,7 @@ sub pull_backend_responses {
 
 sub pull_backend_notifications {
     my ($self, %args) = @_;
+    weaken($self);
 
     # Get notifications from backend and broadcast them to frontend
 

@@ -36,7 +36,6 @@ use base 'Beekeeper::Worker';
 
 use JSON::XS;
 use Scalar::Util 'weaken';
-use Carp;
 
 my @Log_buffer;
 
@@ -59,43 +58,22 @@ sub on_startup {
     );
 }
 
-sub _cluster_config {
-    my $self = shift;
-
-    my $bus_config = $self->{_WORKER}->{bus_config};
-    my $bus_id = $self->{_BUS}->bus_id;
-    my $cluster_id = $bus_config->{$bus_id}->{'cluster'};
-
-    unless ($cluster_id) {
-        # No clustering defined, just a single backend broker
-        return [ $bus_config->{$bus_id} ];
-    }
-
-    my @cluster_config;
-
-    foreach my $config (values %$bus_config) {
-        next unless $config->{'cluster'} && $config->{'cluster'} eq $cluster_id;
-        push @cluster_config, $config;
-    }
-
-    return \@cluster_config;
-}
-
 sub _connect_to_all_brokers {
     my $self = shift;
     weaken($self);
 
-    $self->{cluster} = [];
+    my $own_bus = $self->{_BUS};
+    my $cluster_config = Beekeeper::Config->get_cluster_config( bus_id => $own_bus->bus_id );
 
-    my $cluster_config = $self->_cluster_config;
+    $self->{_CLUSTER} = [];
 
     foreach my $config (@$cluster_config) {
 
         my $bus_id = $config->{'bus-id'};
 
-        if ($bus_id eq $self->{_BUS}->bus_id) {
+        if ($bus_id eq $own_bus->bus_id) {
             # Already connected to our own bus
-            $self->_collect_log($self->{_BUS});
+            $self->_collect_log($own_bus);
             next;
         }
 
@@ -119,7 +97,7 @@ sub _connect_to_all_brokers {
             },
         );
 
-        push @{$self->{cluster}}, $bus;
+        push @{$self->{_CLUSTER}}, $bus;
 
         $bus->connect;
     }
@@ -127,6 +105,7 @@ sub _connect_to_all_brokers {
 
 sub _collect_log {
     my ($self, $bus) = @_;
+    weaken($self);
 
     # Default logger logs to topics /topic/log.$level.$service
 
@@ -151,7 +130,7 @@ sub _collect_log {
 sub on_shutdown {
     my ($self, %args) = @_;
 
-     foreach my $bus (@{$self->{cluster}}) {
+     foreach my $bus (@{$self->{_CLUSTER}}) {
 
         next unless ($bus->{is_connected});
         $bus->disconnect( blocking => 1 );
