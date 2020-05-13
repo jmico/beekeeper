@@ -115,21 +115,30 @@ sub new {
 
     unless (exists $args{'host'} && exists $args{'user'} && exists $args{'pass'}) {
 
+        # Get broker connection parameters from config file
+
         my $bus_id = $args{'bus_id'};
 
         if (defined $bus_id) {
-            # Get broker connection parameters from config file
+            # Use parameters for specific bus
             my $config = Beekeeper::Config->get_bus_config( %args );
             croak "Bus '$bus_id' is not defined into config file bus.config.json" unless $config;
             %args = ( %$config, %args );
         }
         else {
-            # Use connection parameters for default bus (if any)
             my $config = Beekeeper::Config->get_bus_config( bus_id => '*', %args );
-            my ($default) = grep { $config->{$_}->{default} } keys %$config;
-            croak "No default bus defined into config file bus.config.json" unless $default;
-            $bus_id = $config->{$default}->{'bus-id'};
-            %args = ( %{$config->{$default}}, %args, bus_id => $bus_id );
+            if (scalar(keys %$config) == 1) {
+                # Use the only config present
+                ($bus_id) = (keys %$config);
+                %args = ( %{$config->{$bus_id}}, bus_id => $bus_id, %args );
+            }
+            else {
+                # Use default parameters (if any)
+                my ($default) = grep { $config->{$_}->{default} } keys %$config;
+                croak "No default bus defined into config file bus.config.json" unless $default;
+                $bus_id = $config->{$default}->{'bus-id'};
+                %args = ( %{$config->{$default}}, bus_id => $bus_id, %args );
+            }
         }
     }
 

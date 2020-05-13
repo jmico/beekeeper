@@ -20,6 +20,5 @@
         "user"    : "test",
         "pass"    : "abc123",
         "vhost"   : "/test",
-        "default" : 1,
     },
 ]
