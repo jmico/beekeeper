@@ -89,6 +89,7 @@ if ($opt_list) {
         $scr_size = "$columns-$lines";
 
         my $w = $columns - 60;
+        $w = 0 if $w < 0;
 
         # Echo title
         print "\033[0;0H";  # jump to 0,0
@@ -176,6 +177,7 @@ else {
         $scr_size = "$columns-$lines";
 
         my $w = $columns - 48;
+        $w = 0 if $w < 0;
 
         # Echo title
         print "\033[0;0H";  # jump to 0,0
