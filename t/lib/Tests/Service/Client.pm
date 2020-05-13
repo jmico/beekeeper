@@ -18,7 +18,7 @@ sub signal {
 
     my $cli = Beekeeper::Client->instance;
 
-    $cli->do_job(
+    $cli->send_notification(
         method => 'test.signal',
         params => { signal => $signal, pid => $pid },
     );
@@ -32,6 +32,39 @@ sub fail {
     $cli->do_job(
         method => 'test.fail',
         params => { %args },
+    );
+}
+
+sub sleep {
+    my ($class, $time) = @_;
+
+    my $cli = Beekeeper::Client->instance;
+
+    $cli->do_job(
+        method => 'test.sleep',
+        params => $time,
+    );
+}
+
+sub fibonacci_1 {
+    my ($class, $n) = @_;
+
+    my $cli = Beekeeper::Client->instance;
+
+    $cli->do_job(
+        method => 'test.fib1',
+        params => $n,
+    );
+}
+
+sub fibonacci_2 {
+    my ($class, $n) = @_;
+
+    my $cli = Beekeeper::Client->instance;
+
+    $cli->do_job(
+        method => 'test.fib2',
+        params => $n,
     );
 }
 

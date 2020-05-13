@@ -29,6 +29,9 @@ sub on_startup {
     $self->accept_jobs(
         'test.signal' => 'signal',
         'test.fail'   => 'fail',
+        'test.sleep'  => '_sleep',
+        'test.fib1'   => 'fibonacci_1',
+        'test.fib2'   => 'fibonacci_2',
         'test.echo'   => 'echo',
         'test.*'      => 'catchall',
     );
@@ -64,6 +67,50 @@ sub fail {
     die $params->{die} if $params->{die};
 
     die Beekeeper::JSONRPC::Error->server_error( message => $params->{error}) if $params->{error};
+}
+
+sub _sleep {
+    my ($self, $params) = @_;
+
+    sleep $params;
+}
+
+sub fibonacci_1 {
+    my ($self, $n) = @_;
+
+    return $n if ($n <= 1);
+
+    my $resp1 = $self->do_job(
+        method => 'test.fib1',
+        params => $n - 1,
+    );
+
+    my $resp2 = $self->do_job(
+        method => 'test.fib1',
+        params => $n - 2,
+    );
+
+    return $resp1->result + $resp2->result; 
+}
+
+sub fibonacci_2 {
+    my ($self, $n) = @_;
+
+    return $n if ($n <= 1);
+
+    my $req1 = $self->do_async_job(
+        method => 'test.fib2',
+        params => $n - 1,
+    );
+
+    my $req2 = $self->do_async_job(
+        method => 'test.fib2',
+        params => $n - 2,
+    );
+
+    $self->wait_all_jobs;
+
+    return $req1->result + $req2->result; 
 }
 
 sub echo {

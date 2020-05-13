@@ -43,7 +43,7 @@ sub test_01_notifications : Test(2) {
     is( $var, $expected, "Catchall notifications received by 2 workers");
 }
 
-sub test_02_sync_jobs : Test(14) {
+sub test_02_sync_jobs : Test(16) {
     my $self = shift;
     
     my $cli = Beekeeper::Client->instance;
@@ -87,7 +87,7 @@ sub test_02_sync_jobs : Test(14) {
     };
 
     is( $resp, undef );
-    like( $@, qr/Call to 'test.fail' failed: Server error at /); # hidden error
+    like( $@, qr/Call to 'test.fail' failed: -32000 Server error at /); # hidden error
 
     # Handled exception
     $resp = eval {
@@ -98,7 +98,19 @@ sub test_02_sync_jobs : Test(14) {
     };
 
     is( $resp, undef );
-    like( $@, qr/Call to 'test.fail' failed: error message 678 at /); # explicit error
+    like( $@, qr/Call to 'test.fail' failed: -32000 error message 678 at /); # explicit error
+
+    # Timeout
+    $resp = eval {
+        $cli->do_job(
+            method  => 'test.sleep',
+            params  => '0.1',
+            timeout => '0.01',
+        );
+    };
+
+    is( $resp, undef );
+    like( $@, qr/Call to 'test.sleep' failed: -31600 Request timeout /);
 }
 
 sub test_03_background_jobs : Test(1) {
@@ -121,7 +133,7 @@ sub test_03_background_jobs : Test(1) {
     is( $var, $expected, "Background job executed 3 times");
 }
 
-sub test_04_async_jobs : Test(12) {
+sub test_04_async_jobs : Test(13) {
     my $self = shift;
 
     my $cli = Beekeeper::Client->instance;
@@ -158,9 +170,22 @@ sub test_04_async_jobs : Test(12) {
     foreach my $n (0..4) {
         is( $reqs[$n]->result, $var + $n );
     }
+
+    # Timeout
+    eval {
+        my $req = $cli->do_job(
+            method  => 'test.sleep',
+            params  => '0.2',
+            timeout => '0.01',
+        );
+
+        $cli->wait_all_jobs;
+    };
+
+    like( $@, qr/Call to 'test.sleep' failed: -31600 Request timeout /);
 }
 
-sub test_05_client_api : Test(5) {
+sub test_05_client_api : Test(8) {
     my $self = shift;
 
     use_ok('Tests::Service::Client');
@@ -170,7 +195,7 @@ sub test_05_client_api : Test(5) {
 
     $SIG{'USR1'} = sub { $var = $var + 1 };
 
-    $svc->notify( "test.signal" => { signal => 'USR1', pid => $$ } );
+    $svc->signal( 'USR1' => $$ );
 
     my $expected = 54;
     my $max_wait = 100; while ($max_wait--) { last if $var == $expected; sleep 0.01; }
@@ -182,7 +207,13 @@ sub test_05_client_api : Test(5) {
     isa_ok($resp, 'Beekeeper::JSONRPC::Response');
     is( $resp->success, 1 );
     is( $resp->result, 'foo');
+
+
+    $resp = $svc->fibonacci_1( 2 );
+
+    isa_ok($resp, 'Beekeeper::JSONRPC::Response');
+    is( $resp->success, 1 );
+    is( $resp->result, 1 );
 }
 
 1;
-
