@@ -600,8 +600,9 @@ sub __drain_task_queue {
                     return;
                 }
 
-                local $client->{auth_tokens} = $msg_headers->{'x-auth-tokens'};
-                local $client->{session_id}  = $msg_headers->{'x-session'};
+                local $client->{curr_request} = $request;
+                local $client->{auth_tokens}  = $msg_headers->{'x-auth-tokens'};
+                local $client->{session_id}   = $msg_headers->{'x-session'};
 
                 $cb->($self, $request->{params}, $request);
             };
@@ -654,8 +655,9 @@ sub __drain_task_queue {
                     die Beekeeper::JSONRPC::Error->method_not_found;
                 }
 
-                local $client->{auth_tokens} = $msg_headers->{'x-auth-tokens'};
-                local $client->{session_id}  = $msg_headers->{'x-session'};
+                local $client->{curr_request} = $request;
+                local $client->{auth_tokens}  = $msg_headers->{'x-auth-tokens'};
+                local $client->{session_id}   = $msg_headers->{'x-session'};
 
                 # Execute job
                 $cb->($self, $request->{params}, $request);

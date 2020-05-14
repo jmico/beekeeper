@@ -15,14 +15,14 @@ Version 0.01
 
 =head1 SYNOPSIS
 
-  $self->bind_session( $req, "frontend.user-123" );
+  $self->bind_connection( "frontend.user-123" );
   
   $self->send_notification(
       method => 'myapp.info@frontend.user-123',
       params => 'hello',
   );
   
-  $self->unbind_session( $req, "frontend.user-123" );
+  $self->unbind_connection( "frontend.user-123" );
   
   $self->unbind_address( "frontend.user-123" );
 
@@ -35,17 +35,17 @@ connections and server side assigned arbitrary addresses.
 
 =head1 METHODS
 
-=item bind_session ( $req, $address )
+=item bind_connection ( $address )
 
-Assign an arbitrary address to a remote client connection.
+Assign an arbitrary address to a current client connection.
 
 This address can be used later to push notifications to the client.
 
 The same address can be assigned to several connections at the same time.
 
-=item unbind_session ( $req )
+=item unbind_connection
 
-Cancel a connection bind.
+Cancel current client connection bind to an address.
 
 =item unbind_address ( $address )
 
@@ -56,32 +56,32 @@ Cancel every connection bind to a given address.
 use Exporter 'import';
 
 our @EXPORT_OK = qw(
-    bind_session
-    unbind_session
+    bind_connection
+    unbind_connection
     unbind_address
 );
 
 our %EXPORT_TAGS = ('all' => \@EXPORT_OK );
 
 
-sub bind_session {
-    my ($self, $request, $address) = @_;
+sub bind_connection {
+    my ($self, $address) = @_;
 
-    my $reply_queue = $request ? $request->{_headers}->{'x-forward-reply'} : undef;
+    my $req = $self->{_CLIENT}->{curr_request} or die "No connection to bind";
 
     $self->do_job(
         method => '_bkpr.router.bind',
         _auth_ => '0,BKPR_ROUTER',
         params => {
             address     => $address, 
-            reply_queue => $reply_queue,
+            reply_queue => $req->{_headers}->{'x-forward-reply'},
             session_id  => $self->{_CLIENT}->{session_id},
             auth_tokens => $self->{_CLIENT}->{auth_tokens},
         },
     );
 }
 
-sub unbind_session {
+sub unbind_connection {
     my $self = shift;
 
     $self->do_job(

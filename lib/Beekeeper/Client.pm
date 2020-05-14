@@ -82,7 +82,8 @@ our @EXPORT_OK = qw(
     do_async_job
     do_background_job
     wait_all_jobs
-    set_credentials
+    set_auth_credentials
+    get_current_uuid
     __do_rpc_request
     __create_reply_queue
 );
@@ -107,6 +108,7 @@ sub new {
         in_progress    => undef,
         transaction    => undef,
         transaction_id => undef,
+        curr_request   => undef,
         auth_tokens    => undef,
         session_id     => undef,
         async_cv       => undef,
@@ -718,7 +720,7 @@ sub wait_all_jobs {
 }
 
 
-sub set_credentials {
+sub set_auth_credentials {
     my ($self, %args) = @_;
 
     my $uuid   = $args{'uuid'}   || 0;
@@ -726,11 +728,21 @@ sub set_credentials {
 
     croak "Invalid uuid $uuid" unless ($uuid =~ m/^[\w-]+$/);
 
+    $tokens = [ $tokens ] unless (ref $tokens eq 'ARRAY');
+
     foreach my $token (@$tokens) {
         croak "Invalid token $token" unless ($token =~ m/^\w+$/);
     }
 
     $self->{_CLIENT}->{auth_tokens} = join(',', $uuid, @$tokens);
+}
+
+sub get_current_uuid {
+    my $self = shift;
+
+    my ($uuid) = split(',', $self->{_CLIENT}->{auth_tokens}); 
+
+    return $uuid;
 }
 
 
