@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Beekeeper::Client;
-use Time::HiRes;
+use Time::HiRes 'time';
 
 
 sub new {
@@ -12,10 +12,10 @@ sub new {
     bless {}, $class;
 }
 
-sub do_job {
-    my $self = shift;
+sub client {
+    my $proto = shift;
 
-    Beekeeper::Client->instance->do_job(@_);
+    Beekeeper::Client->instance;
 }
 
 
@@ -24,7 +24,7 @@ sub do_job {
 sub send_message {
     my ($self, %args) = @_;
 
-    $self->do_job(
+    $self->client->do_job(
         method => 'myapp.chat.message',
         params => {
             message => $args{'message'},
@@ -35,11 +35,23 @@ sub send_message {
 sub send_private_message {
     my ($self, %args) = @_;
 
-    $self->do_job(
-        method => 'myapp.chat.pmessage',
-        params => {
-            username => $args{'username'},
-            message  => $args{'message'},
+    $self->client->do_job(
+        method  => 'myapp.chat.pmessage',
+        params  => {
+            to_user => $args{'to_user'},
+            message => $args{'message'},
+        },
+    );
+}
+
+sub send_notice {
+    my ($self, %args) = @_;
+
+    $self->client->do_job(
+        method  => 'myapp.chat.notice',
+        params  => {
+            to_uuid => $args{'to_uuid'},
+            message => $args{'message'},
         },
     );
 }
@@ -47,13 +59,11 @@ sub send_private_message {
 sub ping {
     my ($self) = @_;
 
-    my $now = Time::HiRes::time;
+    my $start = time;
 
-    $self->do_job(
-        method => 'myapp.chat.ping',
-    );
+    $self->client->do_job( method => 'myapp.chat.ping' );
 
-    my $took = Time::HiRes::time - $now;
+    my $took = time - $start;
 
     return sprintf("%.1f", $took * 1000);
 }
@@ -63,7 +73,9 @@ sub receive_messages {
 
     my $callback = $args{'callback'};
 
-    Beekeeper::Client->instance->accept_notifications(
+    die "Callback must be a coderef" unless (ref $callback eq 'CODE');
+
+    $self->client->accept_notifications(
         'myapp.chat.*' => sub { 
             my $params = shift;
             $callback->(

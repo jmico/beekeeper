@@ -8,6 +8,8 @@ use base 'Beekeeper::Worker';
 
 use Beekeeper::Service::Router ':all';
 
+use MyApp::Service::Chat;
+
 
 sub authorize_request {
     my ($self, $req) = @_;
@@ -16,7 +18,7 @@ sub authorize_request {
         return REQUEST_AUTHORIZED;
     }
 
-    $req->has_auth_tokens('USER');
+    $req->has_auth_tokens('CHAT_USER');
 }
 
 sub on_startup {
@@ -30,58 +32,58 @@ sub on_startup {
 }
 
 sub login {
-    my ($self, $params, $req) = @_;
+    my ($self, $params) = @_;
 
-    my $user = $params->{username};
-    my $pass = $params->{password};
+    my $username = $params->{username} || die "No username";
+    my $password = $params->{password};
 
-    # In this example user credentials are not verified at all
-    my $uuid = $user;
+    # For simplicity, this example avoids resolving username <--> uuid  
+    # mapping, and username and password are not verified at all
+    my $uuid = $username;
 
-    $self->set_credentials( 
+    $self->set_auth_credentials( 
         uuid   => $uuid,
-        tokens => [ "USER" ],
+        tokens => 'CHAT_USER',
     );
 
-    $self->bind_session( $req, "frontend.user-$uuid" );
+    # Assign an address to the user connection in order to push messages to him
+    $self->bind_connection( "frontend.user-$uuid" );
 
-    $self->send_notification(
-        method => "myapp.chat.pmessage\@frontend.user-$uuid",
-        params => { message => "Welcome $user" },
+    MyApp::Service::Chat->send_notice(
+        to_uuid => $uuid,
+        message => "Welcome $username",
     );
 
     return 1;
 }
 
 sub logout {
-    my ($self, $params, $req) = @_;
+    my ($self, $params) = @_;
 
-    my $uuid = $req->uuid;
+    my $uuid = $self->get_current_uuid;
 
-    $self->send_notification(
-        method => "myapp.chat.pmessage\@frontend.user-$uuid",
-        params => { message => "Bye $uuid" },
+    MyApp::Service::Chat->send_notice(
+        to_uuid => $uuid,
+        message => "Bye!",
     );
 
-    $self->unbind_session;
+    $self->unbind_connection;
 
     return 1;
 }
 
 sub kick {
-    my ($self, $params, $req) = @_;
+    my ($self, $params) = @_;
 
-    my $uuid = $req->uuid;
+    # For simplicity, this example avoids resolving username <--> uuid 
+    my $kick_uuid = $params->{'username'};
 
-    my $user = $params->{username};
-    my $uuid_to_kick = $user;
-
-    $self->send_notification(
-        method => "myapp.chat.pmessage\@frontend.user-$uuid_to_kick",
-        params => { message => "You were kicked by $uuid" },
+    MyApp::Service::Chat->send_notice(
+        to_uuid => $kick_uuid,
+        message => "You were kicked",
     );
 
-    $self->unbind_address( "frontend.user-$uuid_to_kick" );
+    $self->unbind_address( "frontend.user-$kick_uuid" );
 
     return 1;
 }

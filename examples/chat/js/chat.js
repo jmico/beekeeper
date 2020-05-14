@@ -121,7 +121,7 @@ function Chat () { return {
         else if (params =  cmd.match(/^\/pm\s+(\w+)\s+(.*)/i)) {
             this.rpc.call({
                 method: 'myapp.chat.pmessage', 
-                params: { "username": params[1], "message": params[2] },
+                params: { "to_user": params[1], "message": params[2] },
                 on_error: function(error) {
                     This.echo_error( "Error : " + error.data );
                 }

@@ -10,47 +10,64 @@ use base 'Beekeeper::Worker';
 sub authorize_request {
     my ($self, $req) = @_;
 
-    $req->has_auth_tokens('USER');
+    $req->has_auth_tokens('CHAT_USER');
 }
 
 sub on_startup {
     my $self = shift;
 
     $self->accept_jobs(
-        'myapp.chat.message'  => 'message',
-        'myapp.chat.pmessage' => 'private_message',
+        'myapp.chat.message'  => 'send_message',
+        'myapp.chat.pmessage' => 'send_private_message',
+        'myapp.chat.notice'   => 'send_notice',
         'myapp.chat.ping'     => 'ping',
     );
 }
 
-sub message {
-    my ($self, $params, $req) = @_;
+sub send_message {
+    my ($self, $params) = @_;
 
-    my $msg = $params->{'message'};
-    my $from = $req->uuid;
+    my $msg  = $params->{'message'};
+    my $from = $self->get_current_uuid;
 
     return unless (defined $msg && length $msg);
 
-    #TODO: Filter message
-
-    # Broadcast
+    # Broadcast to all frontend clients
     $self->send_notification(
-        method => 'myapp.chat.message@frontend',
-        params => { from => $from, message => $msg },
+        method  => 'myapp.chat.message',
+        address => 'frontend',
+        params  => { from => $from, message => $msg },
     );
 }
 
-sub private_message {
-    my ($self, $params, $req) = @_;
+sub send_private_message {
+    my ($self, $params) = @_;
 
-    my $user = $params->{'username'};
-    my $msg = $params->{'message'};
-    my $from = $req->uuid;
+    # For simplicity, this example avoids resolving username <--> uuid 
+    my $uuid = $params->{'to_user'};
+    my $msg  = $params->{'message'};
+    my $from = $self->get_current_uuid;
 
-    # Unicast
+    return unless (defined $msg && length $msg);
+
+    # Push notification to specific user
     $self->send_notification(
-        method => "myapp.chat.pmessage\@frontend.user-$user",
-        params => { from => $from, message => $msg },
+        method  => 'myapp.chat.pmessage',
+        address => "frontend.user-$uuid",
+        params  => { from => $from, message => $msg },
+    );
+}
+
+sub send_notice {
+    my ($self, $params) = @_;
+
+    my $uuid = $params->{'to_uuid'};
+    my $msg  = $params->{'message'};
+
+    $self->send_notification(
+        method  => 'myapp.chat.pmessage',
+        address => "frontend.user-$uuid",
+        params  => { message => $msg },
     );
 }
 

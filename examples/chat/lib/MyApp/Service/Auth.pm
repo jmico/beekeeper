@@ -11,10 +11,10 @@ sub new {
     bless {}, $class;
 }
 
-sub do_job {
-    my $self = shift;
+sub client {
+    my $proto = shift;
 
-    Beekeeper::Client->instance->do_job(@_);
+    Beekeeper::Client->instance;
 }
 
 
@@ -23,7 +23,7 @@ sub do_job {
 sub login {
     my ($self, %args) = @_;
 
-    $self->do_job(
+    $self->client->do_job(
         method => 'myapp.auth.login',
         params => {
             username => $args{'username'},
@@ -35,7 +35,7 @@ sub login {
 sub logout {
     my ($self) = @_;
 
-    $self->do_job(
+    $self->client->do_job(
         method => 'myapp.auth.logout',
     );
 }
@@ -43,7 +43,7 @@ sub logout {
 sub kick {
     my ($self, %args) = @_;
 
-    $self->do_job(
+    $self->client->do_job(
         method => 'myapp.auth.kick',
         params => { 
             username => $args{'username'},

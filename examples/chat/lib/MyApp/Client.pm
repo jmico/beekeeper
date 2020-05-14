@@ -44,14 +44,24 @@ sub run {
         print $msg{message} . "\n";
     });
  
-    $self->{auth}->login( username => getpwuid($>), password => '123' );
-
     $self->{hdl} = AnyEvent::Handle->new( fh => $self->{fh} );
 
-    $self->process_cmd("");
+    $self->{auth}->login( username => getpwuid($>), password => '123' );
+
+    $self->read_line;
 
     $self->{quit_cv} = AnyEvent->condvar;
     $self->{quit_cv}->recv;
+}
+
+sub read_line {
+    my $self = shift;
+
+    $self->{hdl}->push_read( line => sub {
+        my ($hdl, $line) = @_;
+        $self->process_cmd($line);
+        $self->read_line;
+    });
 }
 
 sub process_cmd {
@@ -63,50 +73,41 @@ sub process_cmd {
     my $auth = $self->{auth};
     my $resp;
 
-    CMD: {
+    return unless (length $line);
 
-        last unless (length $line);
+    if ($line =~ m|^/login \s+ (\w+) \s+ (\w+)|ix) {
 
-        if ($line =~ m|^/login \s+ (\w+) \s+ (\w+)|ix) {
+        $resp = $auth->login( username => $1, password => $2 );
+    }
+    elsif ($line =~ m|^/kick \s+ (\w+)|ix) {
 
-            $resp = $auth->login( username => $1, password => $2 );
-        }
-        elsif ($line =~ m|^/kick \s+ (\w+)|ix) {
+        $resp = $auth->kick( username => $1 );
+    }
+    elsif ($line =~ m|^/logout\b|i) {
 
-            $resp = $auth->kick( username => $1 );
-        }
-        elsif ($line =~ m|^/logout\b|i) {
+        $resp = $auth->logout;
+    }
+    elsif ($line =~ m|^/pm \s+ (\w+) \s+ (.+)|ix) {
 
-            $resp = $auth->logout;
-        }
-        elsif ($line =~ m|^/pm \s+ (\w+) \s+ (.+)|ix) {
+        $resp = $chat->send_private_message( to_user => $1, message => $2 );
+    }
+    elsif ($line =~ m|^/ping\b|i) {
 
-            $resp = $chat->send_private_message( username => $1, message => $2 );
-        }
-        elsif ($line =~ m|^/ping\b|i) {
-
-            $resp = $chat->ping;
-            print "> Ping: $resp ms\n";
-            last;
-        }
-        elsif ($line =~ m|^/quit\b|i) {
-            $self->{quit_cv}->send;
-            last;
-        }
-        else {
-            $resp = $chat->send_message( message => $line );
-        }
-
-        unless ($resp->success) {
-            print "ERR: " . $resp->message . "\n";
-        }
+        $resp = $chat->ping;
+        print "> Ping: $resp ms\n";
+        return;
+    }
+    elsif ($line =~ m|^/quit\b|i) {
+        $self->{quit_cv}->send;
+        return;
+    }
+    else {
+        $resp = $chat->send_message( message => $line );
     }
 
-    $self->{hdl}->push_read( line => sub {
-        my ($hdl, $line) = @_;
-        $self->process_cmd($line);
-    });
+    unless ($resp->success) {
+        print "ERR: " . $resp->message . "\n";
+    }
 }
 
 1;
-
