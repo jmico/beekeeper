@@ -6,9 +6,9 @@ Beekeeper is a framework for building applications with a microservices architec
 
 A pool of worker processes handle requests and communicate with each other through a common message bus.
 
-Clients send requests through a different message bus, which is isolated for security reasons.
+Clients send requests through a different set of message buses, which are isolated for security reasons.
 
-Requests and responses are shoveled between the two buses by few router processes.
+Requests and responses are shoveled between buses by few router processes.
 
 
 **Benefits of this architecture:**
@@ -104,7 +104,7 @@ sub uppercase {
 
     my $resp = $client->do_job(
         method => 'myapp.str.uc',
-        params => { string => "hello!" },
+        params => { string => $str },
     );
 
     return $resp->result;
@@ -215,13 +215,13 @@ These numbers will, of course, worsen if broker performance degrades under load.
 
 ## Examples
 
-`examples/basic` is a barebones example of the usage of Beekeper.
+[examples/basic](./examples/basic) is a barebones example of the usage of Beekeper.
 
-`examples/flood` allows to estimate the performance of a Beekeper setup.
+[examples/flood](./examples/flood) allows to estimate the performance of a Beekeper setup.
 
-`examples/webstomp` use a service from a browser using WebSockets.
+[examples/webstomp](./examples/webstomp) use a service from a browser using WebSockets.
 
-`examples/chat` implements a real world setup with isolated buses and redundancy.
+[examples/chat](./examples/chat) implements a real world setup with isolated buses and redundancy.
 
 
 ## Dependencies

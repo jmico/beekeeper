@@ -22,6 +22,10 @@ When done, stop worker pools with:
 ```
 ./run.sh stop
 ```
+Network traffic can be inspected with:
+```
+tcpflow -i any -C -g port 61613
+```
 
 ---
 ## RabbitMQ setup

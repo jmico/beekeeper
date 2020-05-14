@@ -29,9 +29,9 @@ Sample output (on a local setup):
 # flood -b -c 1000
 
 1000 notifications    of   0 Kb  in  0.057 sec   17673 /sec   0.06 ms each
-1000 notifications    of   1 Kb  in  0.075 sec   13299 /sec   0.08 ms each
+1000 notifications    of   1 Kb  in  0.071 sec   13990 /sec   0.07 ms each
 1000 notifications    of   5 Kb  in  0.084 sec   11850 /sec   0.08 ms each
-1000 notifications    of  10 Kb  in  0.109 sec    9157 /sec   0.11 ms each
+1000 notifications    of  10 Kb  in  0.099 sec   10117 /sec   0.10 ms each
 
 1000 sync jobs        of   0 Kb  in  1.533 sec     652 /sec   1.53 ms each
 1000 sync jobs        of   1 Kb  in  1.542 sec     649 /sec   1.54 ms each
