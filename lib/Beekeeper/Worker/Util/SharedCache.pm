@@ -540,7 +540,7 @@ sub _load_state {
     }
 }
 
-sub DESTROY {
+sub disconnect {
     my $self = shift;
 
     $self->_save_state if $self->{persist};
@@ -550,6 +550,13 @@ sub DESTROY {
         next unless ($bus->{is_connected});
         $bus->disconnect( blocking => 1 );
     }
+}
+
+sub DESTROY {
+    my $self = shift;
+
+    #TODO: $self contains a circular reference
+    $self->disconnect;
 }
 
 1;

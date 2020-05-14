@@ -155,11 +155,16 @@ sub on_shutdown {
 
     $cv->recv;
 
-    foreach my $frontend_bus (values %{$self->{FRONTEND}}) {
+    # Disconnect from all frontends
+    my @frontends = values %{$self->{FRONTEND}};
+    foreach my $frontend_bus (@frontends) {
 
         next unless ($frontend_bus->{is_connected});
         $frontend_bus->disconnect( blocking => 1 );
     }
+
+    # Disconnect from all frontends
+    $self->{Sessions}->disconnect;
 }
 
 sub pull_frontend_requests {
@@ -456,8 +461,11 @@ sub unbind {
 
         my $sessions = $self->{Addr_to_session}->{$address};
 
+        # Make a copy because @$sessions shortens on each delete
+        my @sessions = $sessions ? @$sessions : ();
+
         # Remove all sessions binded to address
-        foreach my $session_id (@$sessions) {
+        foreach my $session_id (@sessions) {
             $self->{Sessions}->delete( $session_id );
         }
     }
