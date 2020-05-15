@@ -310,11 +310,11 @@ sub _connect {
                 }
 
                 if ($body_lenght >= 0) {
-                    # If body lenght is known wait until readed enough data
+                    # If body lenght is known wait until read enough data
                     return if (length $fh->{rbuf} < $body_lenght + 1);
                 }
                 else {
-                    # If body lenght is unknown wait until readed frame separator
+                    # If body lenght is unknown wait until read frame separator
                     $body_lenght = index($fh->{rbuf}, "\x00");
                     return if ($body_lenght == -1);
                 }

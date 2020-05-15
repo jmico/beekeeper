@@ -175,7 +175,7 @@ Beekeeper is pretty lightweight, so the performance depends mostly of *the broke
 
 - Sending a notification with `send_notification` takes 0.1 ms. A worker can emit 10000 notifications per second, even over 15000 if these are smaller than 1 KB.
 
-- A worker processing remote calls adds 0.75 ms of latency and involves 2 network round trips. So a single worker can handle a maximum of 1300 requests per second.
+- A worker processing remote calls adds 0.42 ms of latency and involves 2 network round trips. So a single worker can handle a maximum of 2300 requests per second.
 
 - A worker adds an overhead of 0,04% CPU load per request.
 
@@ -189,11 +189,11 @@ Suppose it is needed to handle 1000 requests per second to a task that take 25 m
 
 Adding framework and network latency, a single worker can handle:
 ```
-1000 ms / (25 ms + 0.75 ms + 0.1 ms * 2) = 38.5 req/s
+1000 ms / (25 ms + 0.42 ms + 0.1 ms * 2) = 39 req/s
 ```
 In order to handle 1000 requests per second:
 ```
-1000 req/s / 38.5 req/s = 26 workers
+1000 req/s / 39 req/s = 26 workers
 ```
 The memory needed is:
 ```
@@ -205,7 +205,7 @@ The CPU needed is:
 ```
 End user latency is:
 ```
-25 ms + 0.75 ms + 5 ms + 0.1 ms * 6 = 32 ms + user latency
+25 ms + 0.42 ms + 5 ms + 0.1 ms * 6 = 31 ms + user latency
 ```
 Backend broker receives 2000 msg/s and sends 2000 msg/s, giving a 4000 msg/s total traffic.
 Frontend broker receives 1000 msg/s and sends 1000 msg/s, giving a 2000 msg/s total traffic.
