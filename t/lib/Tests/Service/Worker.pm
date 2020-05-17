@@ -33,7 +33,6 @@ sub on_startup {
         'test.fib1'   => 'fibonacci_1',
         'test.fib2'   => 'fibonacci_2',
         'test.echo'   => 'echo',
-        'test.*'      => 'catchall',
     );
 }
 
@@ -81,13 +80,15 @@ sub fibonacci_1 {
     return $n if ($n <= 1);
 
     my $resp1 = $self->do_job(
-        method => 'test.fib1',
-        params => $n - 1,
+        method  => 'test.fib1',
+        params  => $n - 1,
+        timeout => 3,
     );
 
     my $resp2 = $self->do_job(
-        method => 'test.fib1',
-        params => $n - 2,
+        method  => 'test.fib1',
+        params  => $n - 2,
+        timeout => 3,
     );
 
     return $resp1->result + $resp2->result; 
@@ -99,13 +100,15 @@ sub fibonacci_2 {
     return $n if ($n <= 1);
 
     my $req1 = $self->do_async_job(
-        method => 'test.fib2',
-        params => $n - 1,
+        method  => 'test.fib2',
+        params  => $n - 1,
+        timeout => 3,
     );
 
     my $req2 = $self->do_async_job(
-        method => 'test.fib2',
-        params => $n - 2,
+        method  => 'test.fib2',
+        params  => $n - 2,
+        timeout => 3,
     );
 
     $self->wait_all_jobs;

@@ -38,13 +38,15 @@ sub test_01_client : Test(9) {
     #   'pid'   => 4916,
     #   'load'  => '0.00',
     #   'nps'   => '0.00',
+    #   'mem'   => '0.00',
+    #   'cpu'   => '0.00',
     #   'queue' => ['test'],
     #   'class' => 'Tests::Service::Worker'
     # }, ...
 
-    is( scalar @$workers, 3 );
+    is( scalar @$workers, $self->using_toybroker ? 4 : 3 );
 
-    my $sevices = $svc->get_services_status;
+    my $services = $svc->get_services_status;
     ok( exists $workers->[0]->{'class'} );
     ok( exists $workers->[0]->{'queue'} );
     is( $workers->[0]->{'pool'}, 'test-pool' );
@@ -52,18 +54,20 @@ sub test_01_client : Test(9) {
     # $sevices = {
     #
     # 'Tests::Service::Worker' => {
-    #     'nps'   => '0.00',
+    #     'mem'   => '0.00',
+    #     'cpu'   => '0.00',
     #     'load'  => '0.00',
+    #     'nps'   => '0.00',
     #     'jps'   => '0.00'
     #     'count' => 2,
     # }, ...
 
-    is( scalar keys %$sevices, 2 );
-    ok( exists $sevices->{'Tests::Service::Worker'} );
-    ok( exists $sevices->{'Beekeeper::Service::Supervisor::Worker'} );
+    is( scalar keys %$services, $self->using_toybroker ? 3 : 2 );
+    ok( exists $services->{'Tests::Service::Worker'} );
+    ok( exists $services->{'Beekeeper::Service::Supervisor::Worker'} );
 
-    is( $sevices->{'Tests::Service::Worker'}->{count}, 2 );
-    is( $sevices->{'Beekeeper::Service::Supervisor::Worker'}->{count}, 1 );
+    is( $services->{'Tests::Service::Worker'}->{count}, 2 );
+    is( $services->{'Beekeeper::Service::Supervisor::Worker'}->{count}, 1 );
 }
 
 1;

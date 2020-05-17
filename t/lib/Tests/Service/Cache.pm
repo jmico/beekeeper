@@ -7,6 +7,7 @@ use Beekeeper::Worker ':log';
 use base 'Beekeeper::Worker';
 
 use Beekeeper::Worker::Util 'shared_cache';
+use Time::HiRes 'sleep';
 
 =pod
 
@@ -27,6 +28,8 @@ sub on_startup {
         'cache.del'  => 'del',
         'cache.raw'  => 'raw_data',
         'cache.bal'  => 'balance',
+        'cache.run'  => 'run_data',
+        'cache.clr'  => 'clear',
     );
 }
 
@@ -52,22 +55,51 @@ sub del {
     my ($self, $params) = @_;
 
     $self->{Cache}->delete( $params->{'key'} );
-    1;
 }
 
 sub raw_data {
     my ($self, $params) = @_;
 
-    $self->{Cache}->raw_data;
+    return $self->{Cache}->raw_data;
 }
 
 sub balance {
     my ($self, $params) = @_;
 
-    my $pid = $$;
-    my $runs = $self->{Cache}->get( $pid ) || 0;
+    my $dset = $params->{dset} || '';
 
-    $self->{Cache}->set( $pid => $runs + 1 );
+    my $pid = $$;
+    my $runs = $self->{Cache}->get( "$dset:$pid" ) || 0;
+
+    sleep $params->{sleep} if $params->{sleep};
+
+    $self->{Cache}->set( "$dset:$pid" => $runs + 1 );
+}
+
+sub run_data {
+    my ($self, $params) = @_;
+
+    my $dset = $params->{dset} || '';
+
+    my $cache = $self->{Cache}->raw_data;
+    my $raw = {};
+
+    foreach my $key (keys %$cache) {
+        next unless $key =~ m/^$dset:(.*)/;
+        $raw->{$1} = $cache->{$key};
+    }
+
+    return $raw;
+}
+
+sub clear {
+    my ($self, $params) = @_;
+
+    my $data = $self->{Cache}->raw_data;
+
+    foreach my $pid (keys %$data) {
+        $self->{Cache}->delete( $pid );
+    }
 }
 
 1;

@@ -43,7 +43,7 @@ sub test_01_notifications : Test(2) {
     is( $var, $expected, "Catchall notifications received by 2 workers");
 }
 
-sub test_02_sync_jobs : Test(16) {
+sub test_02_sync_jobs : Test(20) {
     my $self = shift;
     
     my $cli = Beekeeper::Client->instance;
@@ -100,6 +100,26 @@ sub test_02_sync_jobs : Test(16) {
     is( $resp, undef );
     like( $@, qr/Call to 'test.fail' failed: -32000 error message 678 at /); # explicit error
 
+    # Invalid method
+    $resp = eval {
+        $cli->do_job(
+            method  => 'test.#@@@@',
+        );
+    };
+
+    is( $resp, undef );
+    like( $@, qr/Invalid method test.#@@@@ at /); # local error, call not made
+
+    # Invalid method
+    $resp = eval {
+        $cli->do_job(
+            method  => 'test.notfound',
+        );
+    };
+
+    is( $resp, undef );
+    like( $@, qr/Call to 'test.notfound' failed: -32601 Method not found at /);
+
     # Timeout
     $resp = eval {
         $cli->do_job(
@@ -110,7 +130,7 @@ sub test_02_sync_jobs : Test(16) {
     };
 
     is( $resp, undef );
-    like( $@, qr/Call to 'test.sleep' failed: -31600 Request timeout /);
+    like( $@, qr/Call to 'test.sleep' failed: -31600 Request timeout at /);
 }
 
 sub test_03_background_jobs : Test(1) {
