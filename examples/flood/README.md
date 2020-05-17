@@ -23,10 +23,10 @@ When done, stop the worker pool with:
 ./run.sh stop
 ```
 
-Sample output (on a local setup):
+Sample output running on a local RabbitMQ:
 
 ```
-# flood -b -c 1000
+# flood -b
 
 1000 notifications    of   0 Kb  in  0.057 sec   17673 /sec   0.06 ms each
 1000 notifications    of   1 Kb  in  0.071 sec   13990 /sec   0.07 ms each
@@ -48,12 +48,38 @@ Sample output (on a local setup):
 1000 background jobs  of   5 Kb  in  0.193 sec    5173 /sec   0.19 ms each
 1000 background jobs  of  10 Kb  in  0.279 sec    3586 /sec   0.28 ms each
 ```
+Sample output running a ToyBroker:
+
+```
+# flood -b
+
+1000 notifications    of   0 Kb  in  0.044 sec   22899 /sec   0.04 ms each
+1000 notifications    of   1 Kb  in  0.065 sec   15456 /sec   0.06 ms each
+1000 notifications    of   5 Kb  in  0.073 sec   13717 /sec   0.07 ms each
+1000 notifications    of  10 Kb  in  0.092 sec   10924 /sec   0.09 ms each
+
+1000 sync jobs        of   0 Kb  in  0.829 sec    1206 /sec   0.83 ms each
+1000 sync jobs        of   1 Kb  in  0.987 sec    1013 /sec   0.99 ms each
+1000 sync jobs        of   5 Kb  in  1.071 sec     934 /sec   1.07 ms each
+1000 sync jobs        of  10 Kb  in  1.136 sec     880 /sec   1.14 ms each
+
+1000 async jobs       of   0 Kb  in  0.253 sec    3960 /sec   0.25 ms each
+1000 async jobs       of   1 Kb  in  0.267 sec    3750 /sec   0.27 ms each
+1000 async jobs       of   5 Kb  in  0.284 sec    3525 /sec   0.28 ms each
+1000 async jobs       of  10 Kb  in  0.336 sec    2975 /sec   0.34 ms each
+
+1000 background jobs  of   0 Kb  in  0.065 sec   15472 /sec   0.06 ms each
+1000 background jobs  of   1 Kb  in  0.068 sec   14602 /sec   0.07 ms each
+1000 background jobs  of   5 Kb  in  0.080 sec   12462 /sec   0.08 ms each
+1000 background jobs  of  10 Kb  in  0.099 sec   10082 /sec   0.10 ms each
+```
 
 ---
 ### RabbitMQ setup
 
-In order to run this example you need a working instance of RabbitMQ. Enable STOMP, add 
-and configure a user `test` and create a virtual host `/test` with the following commands:
+This example uses the internal ToyBroker to allow being run out of the box.
+
+To run this example using RabbitMQ set `use_toybroker` to false in config files, and configure RabbitMQ (enable STOMP, add an user `test` and a virtual host `/test`) with the following commands:
 
 ```
 rabbitmq-plugins enable rabbitmq_stomp

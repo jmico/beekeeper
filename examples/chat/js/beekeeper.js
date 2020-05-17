@@ -241,7 +241,7 @@ function JSON_RPC () { return {
             }
         };
 
-        var sid = ''; for(;sid.length < 14;) sid += (Math.random() * 36 | 0).toString(36);
+        var sid = ''; for(;sid.length < 16;) sid += (Math.random() * 36 | 0).toString(36);
 
         this.reply_queue = "/temp-queue/tmp." + sid;
 

@@ -20,9 +20,10 @@
 # $ ./bkpr --pool-id "myapp-2" start
 
     {
-        "pool-id"     : "myapp-1",
-        "bus-id"      : "backend-1",
-        "description" : "pool #1 of MyApp workers",
+        "pool-id"       : "myapp-1",
+        "bus-id"        : "backend-1",
+        "description"   : "pool #1 of MyApp workers",
+        "use_toybroker" :  1,
 
         "workers" : {
             "MyApp::Service::Chat::Worker"         : { "workers_count" : 4 },

@@ -21,8 +21,9 @@ When done, stop the worker pool with:
 ---
 ### RabbitMQ setup
 
-In order to run this example you need a working instance of RabbitMQ. Enable STOMP, add 
-and configure a user `test` and create a virtual host `/test` with the following commands:
+This example uses the internal ToyBroker to allow being run out of the box.
+
+To run this example using RabbitMQ set `use_toybroker` to false in config files, and configure RabbitMQ (enable STOMP, add an user `test` and a virtual host `/test`) with the following commands:
 
 ```
 rabbitmq-plugins enable rabbitmq_stomp

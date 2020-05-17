@@ -182,12 +182,9 @@ sub time_this {
 
 sub run_benchmarks {
 
-    my $count = $opt_count || $opt_number || 100;
+    my $count = $opt_count || $opt_number || 1000;
 
     my @sizes = ( 0, 1, 5, 10 );
-
-    # This clearly shows RabbitMQ bug of missing messages
-    # for (1..10) { time_this( type => 'A', count => 40, size => 5 ); sleep 2 } return;
 
     # Notifications
     foreach (@sizes) {
