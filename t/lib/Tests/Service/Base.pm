@@ -10,7 +10,7 @@ use base 'Test::Class';
 use Beekeeper::Client;
 use Beekeeper::Config;
 use Beekeeper::Service::Supervisor;
-use Time::HiRes;
+use Time::HiRes 'sleep';
 
 use constant DEBUG => 0;
 
@@ -33,17 +33,40 @@ Stop all workers. Called automatically when the test ends.
 
 use Tests::Service::Config;
 
+my $Broker;
+my $toybroker_pid;
+my @forked_pids;
+
+sub using_toybroker {
+    return ($Broker =~ m/ToyBroker/);
+}
+
 sub check_broker_connection : Test(startup => 1) {
     my $class = shift;
+    my $server;
+    my $error;
 
-    # Ensure that tests can connect to broker
+    local $SIG{'__WARN__'} = sub { $error = @_ };
+
+    # Try to connect to broker
     my $config = Beekeeper::Config->get_bus_config( bus_id => 'test' );
     my $bus = Beekeeper::Bus::STOMP->new( %$config, timeout => 1 );
-    eval { $bus->connect( blocking => 1 ) };
-    $class->BAILOUT("Could not connect to STOMP broker: $@") if $@;
-    $bus->disconnect;
+    $Broker = eval { $bus->connect( blocking => 1 ); $bus->{server} };
+    $bus->disconnect if $Broker;
     %$bus = (); undef $bus;
-    ok( 1, "Can connect to STOMP broker");
+
+    if ($Broker) {
+        ok( 1, "Can connect to STOMP broker $Broker");
+        return;
+    }
+
+    # Spawn a ToyBroker
+    $toybroker_pid = $class->_spawn_worker('Beekeeper::Service::ToyBroker::Worker');
+    $Broker = 'ToyBroker';
+
+    sleep 0.5;
+
+    ok( 1, "Using ToyBroker");
 }
 
 sub stop_test_workers : Test(shutdown) {
@@ -53,7 +76,6 @@ sub stop_test_workers : Test(shutdown) {
     $class->stop_workers;
 }
 
-my @forked_pids;
 
 sub start_workers {
     my ($class, $worker_class, %config) = @_;
@@ -125,6 +147,18 @@ sub stop_workers {
         @forked_pids = grep { kill(0, $_) } @forked_pids;
         Time::HiRes::sleep(0.1);
     }
+
+    return unless $toybroker_pid;
+
+    # Signal ToyBroker to quit
+    kill('INT', $toybroker_pid);
+
+    diag "Waiting for ToyBroker to quit" if DEBUG;
+    $max_wait = 100;
+    while ($toybroker_pid && $max_wait--) {
+        $toybroker_pid = 0 unless kill(0, $toybroker_pid);
+        Time::HiRes::sleep(0.1);
+    }
 };
 
 sub _spawn_worker {
@@ -183,7 +217,7 @@ sub _spawn_worker {
 
     # Mocked worker config
     my $worker_config = {
-        #TODO: send log to a file, so it can be inspected 
+        #TODO: send log to a temp file, so it can be inspected 
         log_file => '/dev/null',
         %config
     };
