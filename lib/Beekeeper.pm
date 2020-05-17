@@ -245,7 +245,7 @@ The framework includes these command line tools to manage worker pools:
 
 =head1 WARNING
  
-This is beta quality software still under development.
+This is beta quality software.
 
 =head1 SEE ALSO
  
