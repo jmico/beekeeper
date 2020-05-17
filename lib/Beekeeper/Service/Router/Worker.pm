@@ -207,7 +207,7 @@ sub pull_frontend_requests {
                 $session_id = $1;
             }
             else {
-                return unless $reply_to =~ m|^/temp-queue/tmp\.([\w-]{8,22})$|;
+                return unless $reply_to =~ m|^/temp-queue/tmp\.([\w-]{16,22})$|;
                 $session_id = $1;
             }
 

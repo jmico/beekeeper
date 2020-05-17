@@ -102,6 +102,7 @@ The following example defines the logical bus "backend":
 
 use base 'Beekeeper::WorkerPool::Daemon';
 use POSIX ":sys_wait_h";
+use Time::HiRes 'sleep';
 use Beekeeper::Config;
 
 use constant COMPILE_ERROR_EXIT_CODE => 99;
@@ -196,15 +197,31 @@ sub main {
     my $workers_config = $self->{config}->{'workers'};
     my $pool_id        = $self->{config}->{'pool-id'};
 
-    #
-    $workers_config->{'Beekeeper::Service::Supervisor::Worker'} ||= { workers_count => 1 };
-    $workers_config->{'Beekeeper::Service::Sinkhole::Worker'}   ||= { workers_count => 1 };
+    my @spawn_workers = (
+        # Every pool spawns at least a Supervisor and a Sinkhole
+        'Beekeeper::Service::Supervisor::Worker',
+        'Beekeeper::Service::Sinkhole::Worker',
+    );
 
-    #
+    if ($self->{config}->{'use_toybroker'}) {
+        # Spawn the broker in first place as other workers may depend of it
+        unshift @spawn_workers, 'Beekeeper::Service::ToyBroker::Worker';
+    }
+
+    foreach my $worker_class (@spawn_workers) {
+        $workers_config->{$worker_class} ||= { workers_count => 1 };
+    }
+
     foreach my $worker_class (sort keys %$workers_config) {
+        next if grep { $_ eq $worker_class } @spawn_workers;
+        push @spawn_workers, $worker_class;
+    }
+
+    # Make a list of individual workers to spawn
+    foreach my $worker_class (@spawn_workers) {
         my $worker_count = $workers_config->{$worker_class}->{workers_count};
         for (1..$worker_count) {
-            unshift @spawn_queue, $worker_class;
+            push @spawn_queue, $worker_class;
         }
     }
 
@@ -342,6 +359,9 @@ sub main {
 
                 # Add to our list of spawned workers (only if it isn't already defunct)
                 $workers{$worker_pid} = $worker_class unless (exists $workers{$worker_pid});
+
+                # Give ToyBroker enough time to start accepting connections 
+                sleep 0.05 if ($worker_class eq 'Beekeeper::Service::ToyBroker::Worker');
             }
 
             foreach my $worker_pid (keys %workers) {
