@@ -277,8 +277,9 @@ sub _accept_sync_requests {
             );
 
             $bus->ack(
+                id           => $msg_headers->{'ack'},
+               'message-id'  => $msg_headers->{'message-id'},
                 subscription => $msg_headers->{'subscription'}, 
-                id           => $msg_headers->{'message-id'},
             );
         }
     );

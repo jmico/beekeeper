@@ -71,7 +71,7 @@ use Carp;
 #TODO: our @CARP_NOT = ('AnyEvent', 'Beekeeper::Bus::STOMP');
 
 use constant COMPILE_ERROR_EXIT_CODE => 99;
-use constant REPORT_STATUS_PERIOD    => 5;
+use constant REPORT_STATUS_PERIOD    => 10;
 use constant REQUEST_AUTHORIZED      => int(rand(90000000)+10000000);
 
 use Exporter 'import';
@@ -711,8 +711,9 @@ sub __drain_task_queue {
                 # processing it may cause unprocessed requests or undelivered responses)
 
                 $self->{_BUS}->ack(
-                    'id'           => $msg_headers->{'message-id'},
-                    'subscription' => $msg_headers->{'subscription'},  # not needed in STOMP 1.2
+                    'id'           => $msg_headers->{'ack'},          # STOMP 1.2
+                    'message-id'   => $msg_headers->{'message-id'},   # STOMP 1.1
+                    'subscription' => $msg_headers->{'subscription'}, # STOMP 1.1
                     'buffer_id'    => "txn-$request_id",
                 );
 
@@ -730,7 +731,8 @@ sub __drain_task_queue {
                 # Background jobs doesn't expect responses
 
                 $self->{_BUS}->ack(
-                    'id'           => $msg_headers->{'message-id'},
+                    'id'           => $msg_headers->{'ack'},
+                    'message-id'   => $msg_headers->{'message-id'},
                     'subscription' => $msg_headers->{'subscription'},
                 );
             }

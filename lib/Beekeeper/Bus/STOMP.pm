@@ -193,7 +193,7 @@ sub _connect {
     # Connection timeout handler
     if ($timeout && !$self->{timeout_tmr}) {
         $self->{timeout_tmr} = AnyEvent->timer( after => $timeout, cb => sub { 
-            my $errmsg = "Could not connect to STOMP server after $timeout seconds";
+            my $errmsg = "Could not connect to STOMP broker after $timeout seconds";
             $self->_reset_connection;
             $self->{connect_cv}->send;
             my $cb = $self->{error_cb};
@@ -256,7 +256,7 @@ sub _connect {
             # or connection refused. Try next host of cluster immediately, or retry
             # in few seconds if all hosts of the cluster are unresponsive
             $self->{connect_err}++;
-            warn "Could not connect to STOMP server at $host:$port: $errmsg\n" if ($self->{connect_err} <= @{$self->{hosts}});
+            warn "Could not connect to STOMP broker at $host:$port: $errmsg\n" if ($self->{connect_err} <= @{$self->{hosts}});
             my $delay = @{$self->{try_hosts}} ? 0 : $self->{connect_err} / @{$self->{hosts}};
             $self->{reconnect_tmr} = AnyEvent->timer(
                 after => ($delay < 10 ? $delay : 10),
@@ -273,7 +273,7 @@ sub _connect {
         on_eof => sub {
             my ($fh) = @_;
             # The server has closed the connection cleanly
-            my $errmsg = ($self->{server} || 'STOMP server') . " at $host:$port has gone away";
+            my $errmsg = ($self->{server} || 'STOMP broker') . " at $host:$port has gone away";
             $self->_reset_connection;
             my $cb = $self->{error_cb};
             $cb ? $cb->($errmsg) : die "$errmsg\n";
@@ -334,7 +334,7 @@ sub _connect {
                 }
                 elsif ($frame_cmd eq 'CONNECTED') {
                     # If there was an error condition then log recovery
-                    warn "Connected to STOMP server at $host:$port\n" if $self->{connect_err};
+                    warn "Connected to STOMP broker at $host:$port\n" if $self->{connect_err};
                     $self->{is_connected}  = 1;
                     $self->{timeout_tmr}   = undef;
                     $self->{reconnect_tmr} = undef;
@@ -732,13 +732,18 @@ Any arbitrary header may be specified, and will be passed to the server.
 
 =item id
 
-Required header containing the message-id of the message being acknowledged.
+STOMP 1.2 requires this header. It must contain the value of the C<ack> header
+of the message being acknowledged.
+
+=item message-id
+
+STOMP 1.1 requires this header. It must contain containing the value of the
+C<message-id> header of the message being acknowledged.
 
 =item subscription
 
-STOMP 1.1 requires a header containing the id of the subscription from which
-the message was received. For brokers supporting STOMP 1.2 this header is
-not necessary.
+STOMP 1.1 requires this header. It must contain containing the value of the
+C<subscription> header of the message being acknowledged.
 
 =back
 
@@ -747,16 +752,21 @@ not necessary.
 sub ack {
     my ($self, %headers) = @_;
 
-    croak "Missing 'id' header" unless $headers{'id'};
-
     if ($self->{version} >= 1.2) {
+
         # STOMP 1.2 requires only 'id' header
+        croak "Missing 'id' header" unless $headers{'id'};
+
+        delete $headers{'message-id'};
         delete $headers{'subscription'};
     }
     else {
+
         # STOMP 1.1 requires 'subscription' and 'message-id' headers
+        croak "Missing 'message-id' header"   unless $headers{'message-id'};
         croak "Missing 'subscription' header" unless $headers{'subscription'};
-        $headers{'message-id'} = delete $headers{'id'};
+
+        delete $headers{'id'};
     }
 
     my $buffer_id = delete $headers{'buffer_id'};
