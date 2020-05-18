@@ -1,5 +1,3 @@
-[
-
 # This file is in relaxed JSON format (it allows comments and trailing commas).
 #
 # All worker pools running on this host must be defined here, specifying 
@@ -19,9 +17,10 @@
 # $ ./bkpr --pool-id "myapp-1" start
 # $ ./bkpr --pool-id "myapp-2" start
 
+[
     {
         "pool-id"       : "myapp-1",
-        "bus-id"        : "backend-1",
+        "bus-id"        : "backend-A",
         "description"   : "pool #1 of MyApp workers",
         "use_toybroker" :  1,
 
@@ -34,7 +33,7 @@
     },
     {
         "pool-id"     : "myapp-2",
-        "bus-id"      : "backend-2",
+        "bus-id"      : "backend-B",
         "description" : "pool #2 of MyApp workers",
 
         "workers" : {

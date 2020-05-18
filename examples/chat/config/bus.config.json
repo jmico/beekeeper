@@ -1,8 +1,6 @@
-[
-
 # This file is in relaxed JSON format (it allows comments and trailing commas).
 #
-# All logical buses used by your application must be defined here, specifying
+# Logical buses used in pool.config.json must be defined here, specifying
 # the conection parameters to the STOMP broker that will service them.
 #
 # In this example four logical buses are defined, all residing in the same
@@ -19,37 +17,38 @@
 #  - pass    : password used to connect to the STOMP broker
 #  - vhost   : virtual host of STOMP broker (may be omitted)
 
+[
     {
-        "bus-id"  : "backend-1",
+        "bus-id"  : "backend-A",
         "cluster" : "backend",
         "host"    : "localhost",
         "user"    : "backend",
         "pass"    : "def456",
-        "vhost"   : "/backend-1",
+        "vhost"   : "/backend-A",
         "default" : 1,
     },
     {
-        "bus-id"  : "backend-2",
+        "bus-id"  : "backend-B",
         "cluster" : "backend",
         "host"    : "localhost",
         "user"    : "backend",
         "pass"    : "def456",
-        "vhost"   : "/backend-2",
+        "vhost"   : "/backend-B",
     },
     {
-        "bus-id"  : "frontend-1",
+        "bus-id"  : "frontend-A",
         "cluster" : "frontend",
         "host"    : "localhost",
         "user"    : "frontend",
         "pass"    : "abc123",
-        "vhost"   : "/frontend-1",
+        "vhost"   : "/frontend-A",
     },
     {
-        "bus-id"  : "frontend-2",
+        "bus-id"  : "frontend-B",
         "cluster" : "frontend",
         "host"    : "localhost",
         "user"    : "frontend",
         "pass"    : "abc123",
-        "vhost"   : "/frontend-2",
+        "vhost"   : "/frontend-B",
     },
 ]

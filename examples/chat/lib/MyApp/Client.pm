@@ -23,8 +23,8 @@ sub new {
 
     $self->{fh} = $args{'fh'} || \*STDIN;
 
-    # Connect to bus 'frontend-1', wich will forward requests to 'backend'
-    $self->{client} = Beekeeper::Client->instance( bus_id => 'frontend-1', forward_to => 'backend' );
+    # Connect to bus 'frontend-A', wich will forward requests to 'backend'
+    $self->{client} = Beekeeper::Client->instance( bus_id => 'frontend-A', forward_to => 'backend' );
 
     $self->{chat} = MyApp::Service::Chat->new;
     $self->{auth} = MyApp::Service::Auth->new;
