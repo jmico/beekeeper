@@ -6,23 +6,38 @@ use warnings;
 use JSON::XS;
 
 my $bus_config_json = qq<
-[
-    # Mock bus.config.json file used by tests
 
+# Mock bus.config.json file used by tests
+
+[
     {
-        "bus-id" : "test",
-        "host"   : "localhost",
-        "user"   : "test",
-        "pass"   : "abc123",
-        "vhost"  : "/test",
-        "default": 1,
+        "bus-id"  : "test",
+        "host"    : "localhost",
+        "user"    : "test",
+        "pass"    : "abc123",
+        "vhost"   : "/test",
+        "default" : 1,
     },
 ]>;
 
-sub read_config_file {
-    my ($class, %args) = @_;
+my $toybroker_config_json = qq<
 
-    my $data = $args{config_file} eq "bus.config.json" ? $bus_config_json : '';
+# Mock toybroker.config.json file used by tests
+
+{
+    "listen_addr" : "127.0.0.1",
+    "listen_port" : "61613",
+
+    "users" : {
+        "test" : { "password" : "abc123" },
+    },
+}>;
+
+sub read_config_file {
+    my ($class, $file) = @_;
+
+    my $data = $file eq "bus.config.json"       ? $bus_config_json       : 
+               $file eq "toybroker.config.json" ? $toybroker_config_json : '';
 
     # Allow comments and end-comma
     my $json = JSON::XS->new->relaxed;
@@ -37,8 +52,7 @@ INSTALL: {
     no strict 'refs';
     no warnings 'redefine';
 
-    my $old_new = \&{'Beekeeper::Config::read_config_file'};
-    *{'Beekeeper::Config::read_config_file'} = \&read_config_file; # sub { $old_new->( @_, config_file => $config_file ) };
+    *{'Beekeeper::Config::read_config_file'} = \&read_config_file;
 }
     
 1;

@@ -92,6 +92,7 @@ sub start_broker {
     ($listen_addr) = ($listen_addr =~ m/^([\w\.:]+)$/);  # untaint
     ($listen_port) = ($listen_port =~ m/^(\d+)$/);
 
+    $self->{users_cfg}   = $config->{users};
     $self->{connections} = {};
     $self->{queues}      = {};
     $self->{topics}      = {};
@@ -211,10 +212,16 @@ sub connect {
     my $user = $hdr->{'login'};
     my $pass = $hdr->{'passcode'};
 
-    # $user/$pass from $remote_addr
-    my $authorized = 1;
+    my $users_cfg = $self->{users_cfg};
 
-    unless ($authorized) {
+    unless (exists $users_cfg->{$user}) {
+        # User does not exist
+        $self->error($fh, 'Not authorized');
+        return;
+    }
+
+    unless ($users_cfg->{$user}->{'password'} eq $pass) {
+        # Wrong password
         $self->error($fh, 'Not authorized');
         return;
     }
@@ -565,6 +572,12 @@ sub ack {
     }
 
     $self->_service_queue($dest);
+}
+
+sub nack {
+    my ($self, $fh, $hdr) = @_;
+
+    #TODO
 }
 
 1;
