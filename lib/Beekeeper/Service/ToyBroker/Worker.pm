@@ -6,6 +6,8 @@ use warnings;
 use Beekeeper::Worker ':log';
 use base 'Beekeeper::Worker';
 
+use Beekeeper::Config;
+
 use AnyEvent;
 use AnyEvent::Handle;
 use AnyEvent::Socket;
@@ -82,11 +84,19 @@ sub start_broker {
     my $self = shift;
     weaken($self);
 
+    my $config = Beekeeper::Config->read_config_file( 'toybroker.config.json' ) || {};
+
+    my $listen_addr = $config->{'listen_addr'} || '127.0.0.1';  # Must be an IPv4 or IPv6 address
+    my $listen_port = $config->{'listen_port'} ||  61613;
+
+    ($listen_addr) = ($listen_addr =~ m/^([\w\.:]+)$/);  # untaint
+    ($listen_port) = ($listen_port =~ m/^(\d+)$/);
+
     $self->{connections} = {};
     $self->{queues}      = {};
     $self->{topics}      = {};
 
-    $self->{broker} = tcp_server ('127.0.0.1', STOMP_PORT, sub {
+    $self->{broker} = tcp_server ($listen_addr, $listen_port, sub {
         my ($fh, $host, $port) = @_;
 
         my $login_tmr = AnyEvent->timer( after => 5, cb => sub {

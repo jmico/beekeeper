@@ -123,12 +123,12 @@ sub new {
 
         if (defined $bus_id) {
             # Use parameters for specific bus
-            my $config = Beekeeper::Config->get_bus_config( %args );
+            my $config = Beekeeper::Config->get_bus_config( bus_id => $bus_id );
             croak "Bus '$bus_id' is not defined into config file bus.config.json" unless $config;
             %args = ( %$config, %args );
         }
         else {
-            my $config = Beekeeper::Config->get_bus_config( bus_id => '*', %args );
+            my $config = Beekeeper::Config->get_bus_config( bus_id => '*');
             if (scalar(keys %$config) == 1) {
                 # Use the only config present
                 ($bus_id) = (keys %$config);

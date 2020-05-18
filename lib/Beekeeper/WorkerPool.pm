@@ -162,8 +162,10 @@ sub load_config {
     my $pool_id  = $self->{config}->{'pool-id'};
     my $conf_dir = $self->{options}->{'config-dir'};
 
-    my $pool_cfg = Beekeeper::Config->get_pool_config( pool_id => $pool_id, config_dir => $conf_dir );
-    my $bus_cfg  = Beekeeper::Config->get_bus_config(  bus_id  => '*',      config_dir => $conf_dir );
+    Beekeeper::Config->set_config_dir($conf_dir) if ($conf_dir);
+
+    my $pool_cfg = Beekeeper::Config->get_pool_config( pool_id => $pool_id );
+    my $bus_cfg  = Beekeeper::Config->get_bus_config(  bus_id  => '*' );
 
     unless ($pool_cfg) {
         die "Worker pool '$pool_id' is not defined into config file pool.config.json\n";

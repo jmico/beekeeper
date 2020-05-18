@@ -105,7 +105,7 @@ Reads and parse C<bus.config.json> and returns the config of the requested bus.
 
 Reads and parse C<pool.config.json> and returns the config of the requested pool.
 
-=item read_config_file( config_file => $filename )
+=item read_config_file( $filename )
 
 Reads the given file and returns its content parsed as JSON.
 
@@ -114,7 +114,16 @@ Reads the given file and returns its content parsed as JSON.
 use JSON::XS;
 
 my %Cache;
+my $Config_dir;
 
+
+sub set_config_dir {
+    my ($class, $dir) = @_;
+
+    die "Couldn't read config files from $dir: directory does not exist\n" unless ($dir && -d $dir);
+
+    $Config_dir = $dir;
+}
 
 sub get_bus_config {
     my ($class, %args) = @_;
@@ -123,7 +132,9 @@ sub get_bus_config {
 
     die "bus_id was not specified" unless ($bus_id);
 
-    my $config = $class->read_config_file( config_file => "bus.config.json", %args );
+    my $config = $class->read_config_file( 'bus.config.json' );
+
+    die "Couldn't read config file bus.config.json: file not found\n" unless defined ($config);
 
     my %bus_cfg  = map { $_->{'bus-id'}  => $_ } @$config;
 
@@ -137,7 +148,9 @@ sub get_pool_config {
 
     die "pool_id was not specified" unless ($pool_id);
 
-    my $config = $class->read_config_file( config_file => "pool.config.json", %args );
+    my $config = $class->read_config_file( 'pool.config.json' );
+
+    die "Couldn't read config file pool.config.json: file not found\n" unless defined ($config);
 
     my %pool_cfg = map { $_->{'pool-id'} => $_ } @$config;
 
@@ -153,7 +166,7 @@ sub get_cluster_config {
 
     die "No cluster or bus_id was specified" unless ($bus_id || $cluster);
 
-    my $config = $class->read_config_file( config_file => "bus.config.json", %args );
+    my $config = $class->read_config_file( 'bus.config.json' );
 
     if ($cluster) {
 
@@ -176,20 +189,21 @@ sub get_cluster_config {
 }
 
 sub read_config_file {
-    my ($class, %args) = @_;
+    my ($class, $file) = @_;
 
-    my $file = $args{'config_file'};
-    my $cdir = $args{'config_dir'};
+    die "Couldn't read config file: filename was not specified\n" unless ($file);
 
-    die "Couldn't read config files: $cdir does not exist\n" if ($cdir && ! -d $cdir);
-
+    my $cdir;
+    $cdir = $Config_dir;
     $cdir = $ENV{'BEEKEEPER_CONFIG_DIR'} unless ($cdir && -d $cdir);
-    $cdir = '~/.config/beekeeper' unless ($cdir && -d $cdir);
-    $cdir = '/etc/beekeeper' unless ($cdir && -d $cdir);
+    $cdir = '~/.config/beekeeper'        unless ($cdir && -d $cdir);
+    $cdir = '/etc/beekeeper'             unless ($cdir && -d $cdir);
 
     $file = "$cdir/$file";
 
     return $Cache{$file} if exists $Cache{$file};
+
+    return undef unless (-e $file);
 
     local($/);
     open(my $fh, '<', $file) or die "Couldn't read config file $file: $!";
@@ -197,7 +211,7 @@ sub read_config_file {
     close($fh);
 
     # Allow comments and end-comma
-    my $json = JSON::XS->new->relaxed;
+    my $json = JSON::XS->new->utf8->relaxed;
 
     my $config = eval { $json->decode($data) };
 
