@@ -35,7 +35,7 @@ connections and server side assigned arbitrary addresses.
 
 =head1 METHODS
 
-=item bind_connection ( $address )
+=head3 bind_connection ( $address )
 
 Assign an arbitrary address to a current client connection.
 
@@ -43,11 +43,11 @@ This address can be used later to push notifications to the client.
 
 The same address can be assigned to several connections at the same time.
 
-=item unbind_connection
+=head3 unbind_connection
 
 Cancel current client connection bind to an address.
 
-=item unbind_address ( $address )
+=head3 unbind_address ( $address )
 
 Cancel every connection bind to a given address.
 

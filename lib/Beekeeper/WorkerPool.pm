@@ -43,7 +43,7 @@ respawn defunct ones.
 
 =head1 CONFIGURATION
 
-=item pool.config.json
+=head3 pool.config.json
 
 Workers pools are defined into a file named C<pool.config.json>, which is searched
 for into ENV C<BEEKEEPER_CONFIG_DIR>, C<~/.config/beekeeper> and C</etc/beekeeper>.
@@ -70,7 +70,7 @@ The following example defines "MyApp" as a pool of 2 C<MyApp::Worker> processes:
       },
   }]
 
-=item bus.config.json
+=head3 bus.config.json
 
 All logical buses used by your application are defined into a file named 
 C<bus.config.json> and specify the conection parameters to the STOMP brokers

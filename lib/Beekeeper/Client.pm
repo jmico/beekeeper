@@ -52,7 +52,7 @@ Make RPC calls through message bus.
 
 =head1 CONSTRUCTOR
 
-=item instance( %args )
+=head3 instance( %args )
 
 Connects to the message broker and returns a singleton instance.
 
@@ -173,7 +173,7 @@ sub instance {
 
 =head1 METHODS
 
-=item send_notification ( %args )
+=head3 send_notification ( %args )
 
 Broadcast a notification to the message bus.
 
@@ -249,7 +249,7 @@ sub send_notification {
     $self->{_BUS}->send( body => \$json, %send_args );
 }
 
-=item accept_notifications ( $method => $callback, ... )
+=head3 accept_notifications ( $method => $callback, ... )
 
 Make this client start accepting specified notifications from message bus.
 
@@ -262,7 +262,7 @@ the notification value or data structure sent.
 
 Note that callbacks will not be executed timely if AnyEvent loop is not running.
 
-=item stop_accepting_notifications ( $method, ... )
+=head3 stop_accepting_notifications ( $method, ... )
 
 Make this client stop accepting specified notifications from message bus.
 
@@ -332,7 +332,7 @@ sub accept_notifications {
     }
 }
 
-=item stop_accepting_notifications ( $method, ... )
+=head3 stop_accepting_notifications ( $method, ... )
 
 Make this client stop accepting specified notifications from message bus.
 
@@ -369,9 +369,7 @@ sub stop_accepting_notifications {
     }
 }
 
-=pod
-
-=item do_job ( %args )
+=head3 do_job ( %args )
 
 Makes a synchronous RPC call to a service worker through the message bus.
 
@@ -412,7 +410,7 @@ an error response. If set to false returns a C<Beekeeper::JSONRPC::Error> instea
 
 =back
 
-=item do_async_job ( %args )
+=head3 do_async_job ( %args )
 
 Makes an asynchronous RPC call to a service worker through the message bus.
 
@@ -436,7 +434,7 @@ C<Beekeeper::JSONRPC::Error> object as parameter. Must be a coderef.
 
 =back
 
-=item do_background_job ( %args )
+=head3 do_background_job ( %args )
 
 Makes an asynchronous RPC call to a service worker through the message bus but
 does not expect to receive any response, it is a fire and forget call.
@@ -446,7 +444,7 @@ It returns undef immediately.
 This method  accepts parameters C<method>, C<params>, C<address> and C<timeout> 
 the same as C<do_job>.
 
-=item wait_all_jobs
+=head3 wait_all_jobs
 
 Wait (in the event loop) until all calls made by C<do_async_job> are completed.
 

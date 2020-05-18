@@ -23,7 +23,7 @@ and brokers connect to each other.
 These files are searched for in ENV C<BEEKEEPER_CONFIG_DIR>, C<~/.config/beekeeper>
 and then C</etc/beekeeper>.
 
-=item pool.config.json
+=head3 pool.config.json
 
 This file defines all worker pools running on this host, specifying 
 which logical bus should be used and which services it will run.
@@ -53,7 +53,7 @@ Example:
       },
   ]
 
-=item bus.config.json
+=head3 bus.config.json
 
 This file defines all logical buses used by your application, specifying
 the conection parameters to the STOMP brokers that will service them.
@@ -97,15 +97,15 @@ Example:
 
 =head1 METHODS
 
-=item get_bus_config( bus_id => $id )
+=head3 get_bus_config( bus_id => $id )
 
 Reads and parse C<bus.config.json> and returns the config of the requested bus.
 
-=item get_pool_config( bus_id => $id )
+=head3 get_pool_config( bus_id => $id )
 
 Reads and parse C<pool.config.json> and returns the config of the requested pool.
 
-=item read_config_file( $filename )
+=head3 read_config_file( $filename )
 
 Reads the given file and returns its content parsed as JSON.
 

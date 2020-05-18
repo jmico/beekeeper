@@ -51,7 +51,7 @@ The STOMP specification can be found at L<http://stomp.github.com/>
 
 =head1 CONSTRUCTOR
 
-=item new ( %options )
+=head3 new ( %options )
 
 =over 4
 
@@ -95,6 +95,8 @@ Optional user defined callback which is called after a connection is completed.
 Optional user defined callback which is called when an error condition occurs.
 If not specified, the deafult is to die with C<$errmsg>. As STOMP protocol doesn't 
 allow errors, the connection was already closed when this is called.
+
+=back
 
 =cut
 
@@ -147,11 +149,10 @@ sub new {
 sub bus_id  { shift->{bus_id}  }
 sub cluster { shift->{cluster} }
 
-=pod
 
 =head1 METHODS
 
-=item connect ( %options )
+=head3 connect ( %options )
 
 Connect to the STOMP server and do handshake. On failure retries until timeout.
 
@@ -371,9 +372,7 @@ sub _connect {
     1;
 }
 
-=pod
-
-=item disconnect ( %options )
+=head3 disconnect ( %options )
 
 A client can disconnect from the server at anytime by closing the socket but 
 there is no guarantee that the previously sent frames have been received by
@@ -447,9 +446,7 @@ sub _reset_connection {
     $self->{is_activemq} = undef;
 }
 
-=pod
-
-=item subscribe ( %headers )
+=head3 subscribe ( %headers )
 
 Create a subscription to a given destination. When a message is received, it
 will be passed to given on_receive_msg callback. Example:
@@ -553,9 +550,7 @@ sub subscribe {
     return $subscr_id;
 }
 
-=pod
-
-=item unsubscribe ( %headers )
+=head3 unsubscribe ( %headers )
 
 Cancel an existing subscription, connection will no longer receive messages 
 from that destination. Example:
@@ -631,9 +626,7 @@ sub unsubscribe {
     1;
 }
 
-=pod
-
-=item send ( %headers )
+=head3 send ( %headers )
 
 Sends a message to a destination in the messaging system. Example:
 
@@ -717,9 +710,7 @@ sub send {
     }
 }
 
-=pod
-
-=item ack ( %headers )
+=head3 ack ( %headers )
 
 Used to acknowledge consumption of a message from a subscription using 'client'
 or 'client-individual' acknowledgment. Any messages received from such a 
@@ -788,9 +779,7 @@ sub ack {
     1;
 }
 
-=pod
-
-=item nack ( %headers )
+=head3 nack ( %headers )
 
 nack() is the opposite of ack(). It is used to tell the server that the client 
 did not consume the message. The server can then either send the message to a
@@ -832,9 +821,7 @@ sub nack {
     1;
 }
 
-=pod
-
-=item flush_buffer
+=head3 flush_buffer
 
 Send several messages into a single socket write. This is more efficient
 than individual send() calls because nagle's algorithm is disabled.
@@ -862,10 +849,7 @@ sub flush_buffer {
     1;
 }
 
-
-=pod
-
-=item discard_buffer
+=head3 discard_buffer
 
 =cut
 
@@ -885,9 +869,7 @@ sub discard_buffer {
     1;
 }
 
-=pod
-
-=item begin ( %headers )
+=head3 begin ( %headers )
 
 Used to start a transaction. Transactions in this case apply to sending and 
 acknowledging: any messages sent or acknowledged during a transaction will be
@@ -916,9 +898,7 @@ sub begin {
     );
 }
 
-=pod
-
-=item commit ( %headers )
+=head3 commit ( %headers )
 
 Used to commit a transaction in progress.
 
@@ -944,9 +924,7 @@ sub commit {
     );
 }
 
-=pod
-
-=item abort ( %headers )
+=head3 abort ( %headers )
 
 Used to roll back a transaction in progress.
 

@@ -25,7 +25,7 @@ every broker in a logical message bus.
 
 =head1 METHODS
 
-=item tail ( %filters )
+=head3 tail ( %filters )
 
 Returns all buffered entries that match the filter criteria.
 
