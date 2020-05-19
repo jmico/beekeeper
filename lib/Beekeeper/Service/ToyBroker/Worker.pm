@@ -3,6 +3,8 @@ package Beekeeper::Service::ToyBroker::Worker;
 use strict;
 use warnings;
 
+our $VERSION = '0.01';
+
 use Beekeeper::Worker ':log';
 use base 'Beekeeper::Worker';
 
@@ -13,9 +15,10 @@ use AnyEvent::Handle;
 use AnyEvent::Socket;
 use Scalar::Util 'weaken';
 
-use constant STOMP_PORT => 61613;
+our $MAX_MESSAGE_SIZE;
+our $MAX_HEADERS_SIZE;
 
-our $VERSION = '0.01';
+use constant DEBUG => 0;
 
 =head1 NAME
 
@@ -65,13 +68,16 @@ sub on_startup    { }
 sub on_shutdown {
     my $self = shift;
 
-    # Wait for clients gracefully disconnection
+    # Wait for clients gracefully disconnects
     for (1..50) {
         last unless (keys %{$self->{connections}} <= 1); # our one
         my $wait = AnyEvent->condvar;
         my $tmr = AnyEvent->timer( after => 0.1, cb => $wait );
         $wait->recv;
     }
+
+    # Get rid of our connection to ourselves
+    $self->{_BUS}->disconnect( blocking => 1 );
 }
 
 sub authorize_request {
@@ -85,6 +91,9 @@ sub start_broker {
     weaken($self);
 
     my $config = Beekeeper::Config->read_config_file( 'toybroker.config.json' ) || {};
+
+    $MAX_MESSAGE_SIZE = $config->{'max_message_size'} || 65536;
+    $MAX_HEADERS_SIZE = $config->{'max_headers_size'} ||  1024;
 
     my $listen_addr = $config->{'listen_addr'} || '127.0.0.1';  # Must be an IPv4 or IPv6 address
     my $listen_port = $config->{'listen_port'} ||  61613;
@@ -108,7 +117,7 @@ sub start_broker {
         my %frame_hdr;
         my $body_lenght;
 
-        my $hdl; $hdl = AnyEvent::Handle->new(
+        $self->{connections}->{"$fh"} = AnyEvent::Handle->new(
             fh => $fh,
             on_read => sub {
                 my $fh = $_[0];
@@ -125,7 +134,7 @@ sub start_broker {
                                          ([A-Z]+)\n      # frame command
                                          (.*?)           # one or more lines of headers
                                           \n\n           # end of headers
-                                        //sx or return;
+                                        //sx or last;
 
                         $frame_cmd   = $1;
                         $raw_headers = $2;
@@ -133,7 +142,7 @@ sub start_broker {
                         foreach $line (split(/\n/, $raw_headers)) {
                             ($key, $value) = split(/:/, $line, 2);
                             # On duplicated headers only the first one is valid
-                            $frame_hdr{$key} = $value unless ($key && exists $frame_hdr{$key});
+                            $frame_hdr{$key} = $value unless (exists $frame_hdr{$key});
                         }
 
                         # content-length may be explicitly specified or not
@@ -193,14 +202,24 @@ sub start_broker {
                     undef $body_lenght;
                     %frame_hdr = ();
 
-                    redo PARSE_FRAME if (defined $fh->{rbuf} && length $fh->{rbuf} > 1);
+                    redo PARSE_FRAME if (defined $fh->{rbuf} && length $fh->{rbuf} >= 10);
+                }
+
+                if (defined $fh->{rbuf}) {
+                    if (length $fh->{rbuf} > (defined $frame_cmd ? $MAX_MESSAGE_SIZE : $MAX_HEADERS_SIZE)) {
+                        $self->_shutdown($fh);
+                    }
                 }
             },
+            on_eof => sub {
+                # Clean client disconenction
+                my $fh = $_[0];
+                $self->_shutdown($fh);
+            },
             on_error => sub {
-                # my ($fh, $fatal, $message) = @_;
-                $self->_clear_subscriptions($hdl);
-                delete $self->{connections}->{"$hdl"};
-                undef $hdl;
+                my $fh = $_[0];
+                DEBUG && log_error "@_\n";
+                $self->_shutdown($fh);
             }
         );
     });
@@ -236,9 +255,10 @@ sub connect {
     $fh->{user}  = $user;
     $fh->{vhost} = $hdr->{'host'} || '';
 
-    $fh->{authorized} = 1;
-    $fh->{topic_subs} = {};
-    $fh->{queue_subs} = {};
+    $fh->{authorized}  = 1;
+    $fh->{topic_subs}  = {};
+    $fh->{queue_subs}  = {};
+    $fh->{pending_ack} = {};
 
     $self->{connections}->{"$fh"} = $fh;
 }
@@ -248,10 +268,7 @@ sub disconnect {
 
     $self->receipt($fh, $hdr);
 
-    $self->_clear_subscriptions($fh);
-    delete $self->{connections}->{"$fh"};
-
-    $fh->push_shutdown;
+    $self->_shutdown($fh);
 }
 
 sub error {
@@ -264,26 +281,39 @@ sub error {
         "\x00"
     );
 
-    $self->_clear_subscriptions($fh);
-
-    $fh->push_shutdown;
+    $self->_shutdown($fh);
 }
 
-sub _clear_subscriptions {
+sub _shutdown {
     my ($self, $fh) = @_;
 
-    my $topic_subs = $fh->{topic_subs};
-    my $queue_subs = $fh->{queue_subs};
+    if ($fh->{authorized}) {
 
-    foreach my $sub_id (keys %$topic_subs) {
-        my $dest = $topic_subs->{$sub_id};
-        $self->_unsubscribe_from_topic($fh, $dest);
+        # Clear_subscriptions
+
+        my $topic_subs  = $fh->{topic_subs};
+        my $queue_subs  = $fh->{queue_subs};
+        my $pending_ack = $fh->{pending_ack};
+
+        foreach my $sub_id (keys %$topic_subs) {
+            my $dest = delete $topic_subs->{$sub_id};
+            $self->_unsubscribe_from_topic( $fh, $dest );
+        }
+
+        foreach my $sub_id (keys %$queue_subs) {
+            my $dest = delete $queue_subs->{$sub_id};
+            $self->_unsubscribe_from_queue( $fh, $dest );
+        }
+
+        foreach my $ack_id (keys %$pending_ack) {
+            my $sent_msg = delete $pending_ack->{$ack_id};
+            $self->_send_to_queue( @$sent_msg );
+        }
     }
 
-    foreach my $sub_id (keys %$queue_subs) {
-        my $dest = $queue_subs->{$sub_id};
-        $self->_unsubscribe_from_queue($fh, $dest);
-    }
+    $fh->push_shutdown;
+
+    delete $self->{connections}->{"$fh"};
 }
 
 sub receipt {
@@ -437,13 +467,21 @@ sub send {
 
     if ($dest =~ s|^/(temp-)?queue/||) {
 
+        # Need to copy because these are refs to the parser buffer
+        my %hdr_copy = %$hdr;
+        my $msg_copy = $$msg;
+
         $dest = $fh->{vhost} .'/'. $dest;
-        $self->_send_to_queue($dest, $hdr, $msg);
+        $self->_send_to_queue($dest, \%hdr_copy, \$msg_copy);
+
+        $self->{_WORKER}->{jobs_count}++;
     }
     elsif ($dest =~ s|^/(temp-)?topic/||) {
 
         $dest = $fh->{vhost} .'/'. $dest;
         $self->_send_to_topic($dest, $hdr, $msg);
+
+        $self->{_WORKER}->{notif_count}++;
     }
     else {
         $self->error($fh, "Invalid destination");
@@ -455,8 +493,6 @@ sub send {
 
 sub _send_to_topic {
     my ($self, $dest, $hdr, $msg) = @_;
-
-    $self->{_WORKER}->{notif_count}++; # inbound
 
     $hdr->{'content-length'} = length($$msg);
 
@@ -494,14 +530,12 @@ sub _send_to_topic {
 sub _send_to_queue {
     my ($self, $dest, $hdr, $msg) = @_;
 
-    $self->{_WORKER}->{jobs_count}++; # inbound
-
     my $queue = $self->{queues}->{$dest} ||= {
         subscribers => [],
         messages    => [],
     };
 
-    push @{$queue->{messages}}, { %$hdr, _msg => $$msg }; # make a copy
+    push @{$queue->{messages}}, [ $hdr, $msg ];
 
     $self->_service_queue($dest);
 }
@@ -527,18 +561,18 @@ sub _service_queue {
         my $ack_id = $subscr->{sub_id} .':'. $subscr->{msg_id};
         next if ($subscr->{ack} && $fh->{pending_ack}->{$ack_id});
 
-        my $hdr = shift @$messages;
-        my $msg = delete $hdr->{_msg};
+        $next = shift @$messages;
+        my ($hdr, $msg) = @$next;
 
         $subscr->{msg_id}++;
 
-        $hdr->{'content-length'} = length($msg);
+        $hdr->{'content-length'} = length($$msg);
         $hdr->{'subscription'}   = $subscr->{sub_id};
         $hdr->{'message-id'}     = $subscr->{msg_id};
 
         if ($subscr->{ack}) {
             $ack_id = $subscr->{sub_id} .':'. $subscr->{msg_id};
-            $fh->{pending_ack}->{$ack_id} = $dest;
+            $fh->{pending_ack}->{$ack_id} = [ $dest, $hdr, $msg ];
             $hdr->{'ack'} = $ack_id;
         }
 
@@ -548,7 +582,7 @@ sub _service_queue {
             "MESSAGE\n" .
             $headers    .
             "\n"        .
-            $msg       .
+            $$msg       .
             "\x00"
         );
 
@@ -561,23 +595,41 @@ sub _service_queue {
 sub ack {
     my ($self, $fh, $hdr) = @_;
 
-    my $id = $hdr->{'id'} ||                                     # STOMP 1.2                 
-             $hdr->{'subscription'} .':'. $hdr->{'message-id'};  # STOMP 1.1
+    my $ack_id = $hdr->{'id'} ||                                     # STOMP 1.2                 
+                 $hdr->{'subscription'} .':'. $hdr->{'message-id'};  # STOMP 1.1
 
-    my $dest = delete $fh->{pending_ack}->{$id};
+    #  $sent_msg = [$dest, $hdr, $msg]
+    my $sent_msg = delete $fh->{pending_ack}->{$ack_id};
 
-    unless ($dest) {
+    unless ($sent_msg) {
         $self->error($fh, "Unmatched ACK");
         return;
     }
 
-    $self->_service_queue($dest);
+    $self->receipt($fh, $hdr);
+
+    $self->_service_queue( $sent_msg->[0] );
 }
 
 sub nack {
     my ($self, $fh, $hdr) = @_;
 
-    #TODO
+    my $ack_id = $hdr->{'id'} ||                                     # STOMP 1.2                 
+                 $hdr->{'subscription'} .':'. $hdr->{'message-id'};  # STOMP 1.1
+
+    #  $sent_msg = [$dest, $hdr, $msg]
+    my $sent_msg = delete $fh->{pending_ack}->{$ack_id};
+
+    unless ($sent_msg) {
+        $self->error($fh, "Unmatched NACK");
+        return;
+    }
+
+    $sent_msg->[1]->{'resend'}++;
+
+    $self->receipt($fh, $hdr);
+
+    $self->_send_to_queue( @$sent_msg );
 }
 
 1;
