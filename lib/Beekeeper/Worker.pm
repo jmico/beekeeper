@@ -778,8 +778,20 @@ sub stop_accepting_notifications {
         $self->{_BUS}->unsubscribe(
             destination => "/topic/msg.$local_bus.$service.$method",
             on_success  => sub {
-                #TODO: Some notifications may be still queued, which will cause warnings
+
                 delete $self->{_WORKER}->{callbacks}->{"msg.$fq_meth"};
+
+                # Discard notifications already queued
+                my $job_queue = $self->{_WORKER}->{job_queue_high};
+
+                @$job_queue = grep {
+                    my $task = $_;
+                    my ($body_ref, $msg_headers) = @$task;
+                    my $request = decode_json($$body_ref);
+                    my $req_method = $request->{method};
+                    $req_method =~ m/^([\.\w-]+)\.([\w-]+)$/;
+                    not ($service eq $1 && ($method eq '*' || $method eq $2));
+                } @$job_queue;
             }
         );
     }
@@ -824,8 +836,23 @@ sub stop_accepting_jobs {
         $self->{_BUS}->unsubscribe(
             destination => "/queue/req.$local_bus.$service",
             on_success  => sub {
-                #TODO: A single job may still be queued, NACK it
+
                 delete $callbacks->{$_} foreach @cb_keys;
+
+                my $job_queue = $self->{_WORKER}->{job_queue_low};
+
+                while (@$job_queue) {
+
+                    # NACK and discard jobs already queued
+                    my $task = shift @$job_queue;
+                    my ($body_ref, $msg_headers) = @$task;
+
+                    $self->{_BUS}->nack(
+                        'id'           => $msg_headers->{'ack'},          # STOMP 1.2
+                        'message-id'   => $msg_headers->{'message-id'},   # STOMP 1.1
+                        'subscription' => $msg_headers->{'subscription'}, # STOMP 1.1
+                    );
+                }
             }
         );
     }
