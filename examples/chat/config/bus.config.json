@@ -51,4 +51,11 @@
         "pass"    : "abc123",
         "vhost"   : "/frontend-B",
     },
+    {
+        "bus-id"  : "toybroker",
+        "host"    : "localhost",
+        "user"    : "broker",
+        "pass"    : "hij789",
+        "vhost"   : "/toybroker",
+    },
 ]

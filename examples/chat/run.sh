@@ -6,5 +6,24 @@ if [ -z "$BEEKEEPER_CONFIG_DIR" ]; then
     exit 
 fi
 
-bkpr --pool-id "myapp-1" ${1-start}
-bkpr --pool-id "myapp-2" ${1-start}
+case "$1" in
+    'start')
+        bkpr --pool-id "broker"  start
+        bkpr --pool-id "myapp-A" start
+        bkpr --pool-id "myapp-B" start
+        ;;
+    'stop')
+        bkpr --pool-id "myapp-A" stop
+        bkpr --pool-id "myapp-B" stop
+        bkpr --pool-id "broker"  stop
+        ;;
+    'restart')
+        bkpr --pool-id "myapp-A" restart
+        bkpr --pool-id "myapp-B" restart
+        ;;
+    *)
+        echo -e "Usage: $0 [start|stop|restart]"
+        ;;
+esac
+
+

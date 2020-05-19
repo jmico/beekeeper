@@ -11,5 +11,6 @@
     "users" : {
         "frontend" : { "password" : "abc123" },
         "backend"  : { "password" : "def456" },
+        "broker"   : { "password" : "hij789" },
     },
 }
