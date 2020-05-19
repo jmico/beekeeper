@@ -34,6 +34,7 @@ Stop all workers. Called automatically when the test ends.
 use Tests::Service::Config;
 
 my $Broker;
+my $supervisor_pid;
 my $toybroker_pid;
 my @forked_pids;
 
@@ -73,36 +74,29 @@ sub stop_test_workers : Test(shutdown) {
     my $class = shift;
 
     # Stop forked workers when test ends
-    $class->stop_workers;
+    $class->stop_all_workers;
 }
-
 
 sub start_workers {
     my ($class, $worker_class, %config) = @_;
 
-    # Check if worker was already used
-    my $module_file = $worker_class;
-    $module_file =~ s/::/\//g;
-    $module_file .= '.pm';
-    $class->BAILOUT("$worker_class is already loaded") if $INC{$module_file};
+    my $workers_count = $config{'workers_count'} ||= 2;
+    my $no_wait = delete $config{'no_wait'};
+    my @pids;
 
-    my $workers_count = $config{workers_count} ||= 2;
-    my $running;
- 
-    unless (@forked_pids) {
+    unless ($supervisor_pid) {
 
         ## First call  
 
         # Spawn a supervisor
-        my $pid = $class->_spawn_worker('Beekeeper::Service::Supervisor::Worker');
-        push @forked_pids, $pid;
+        $supervisor_pid = $class->_spawn_worker('Beekeeper::Service::Supervisor::Worker');
 
         # Wait until supervisor is running (this blocks for few seconds)
         diag "Waiting for supervisor" if DEBUG;
         my $max_wait = 100;
         while ($max_wait--) {
             my $status = Beekeeper::Service::Supervisor->get_services_status( class => 'Beekeeper::Service::Supervisor::Worker' );
-            $running = $status->{'Beekeeper::Service::Supervisor::Worker'}->{count} || 0;
+            my $running = $status->{'Beekeeper::Service::Supervisor::Worker'}->{count} || 0;
             last if $running == 1;
             Time::HiRes::sleep(0.1);
         }
@@ -117,46 +111,45 @@ sub start_workers {
     for (1..$workers_count) {
         my $pid = $class->_spawn_worker($worker_class, %config);
         push @forked_pids, $pid;
+        push @pids, $pid;
     }
+
+    return @pids if $no_wait;
 
     # Wait until workers are running
     diag "Waiting for $workers_count $worker_class workers" if DEBUG;
     my $max_wait = 100;
     while ($max_wait--) {
         my $status = Beekeeper::Service::Supervisor->get_services_status( class => $worker_class );
-        $running = $status->{$worker_class}->{count} || 0;
+        my $running = $status->{$worker_class}->{count} || 0;
         last if $running == $workers_count;
         Time::HiRes::sleep(0.1);
     }
 
-    return $running;
+    return @pids;
+}
+
+sub stop_all_workers {
+    my $class = shift;
+
+    $class->stop_workers('INT', @forked_pids);
+    $class->stop_workers('INT', $supervisor_pid);
+    $class->stop_workers('INT', $toybroker_pid);
 }
 
 sub stop_workers {
-    my $class = shift;
+    my ($class, $signal, @pids) = @_;
 
-    # Signal all workers to quit
-    foreach my $worker_pid (@forked_pids) {
-        kill('INT', $worker_pid);
+    # Signal workers to quit
+    foreach my $worker_pid (@pids) {
+        kill($signal, $worker_pid);
     }
 
     # Wait until test workers are gone
     diag "Waiting for workers to quit" if DEBUG;
     my $max_wait = 100;
-    while (@forked_pids && $max_wait--) {
-        @forked_pids = grep { kill(0, $_) } @forked_pids;
-        Time::HiRes::sleep(0.1);
-    }
-
-    return unless $toybroker_pid;
-
-    # Signal ToyBroker to quit
-    kill('INT', $toybroker_pid);
-
-    diag "Waiting for ToyBroker to quit" if DEBUG;
-    $max_wait = 100;
-    while ($toybroker_pid && $max_wait--) {
-        $toybroker_pid = 0 unless kill(0, $toybroker_pid);
+    while (@pids && $max_wait--) {
+        @pids = grep { kill(0, $_) } @pids;
         Time::HiRes::sleep(0.1);
     }
 };
