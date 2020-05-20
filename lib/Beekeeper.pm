@@ -92,7 +92,7 @@ A pool of worker processes handle requests and communicate with each other throu
 
 Clients send requests through a different set of message buses, which are isolated for security reasons.
 
-Requests and responses are shoveled between buses by few router processes.
+Requests and responses are shoveled between buses by a few router processes.
 
 
 B<Benefits of this architecture:>
@@ -114,13 +114,13 @@ B<Key characteristics:>
 
 - Message marshalling is JSON.
 
-- No message persistence in the broker, it just pass on messages.
+- No message persistence in the broker, it just passes on messages.
 
 - No routing logic is defined in the broker, zero configuration is needed.
 
-- Efficient multicast and unicast pushed notifications.
+- Efficient multicast and unicast notifications.
 
-- Automatic load balancing.
+- Inherent load balancing.
 
 
 B<What does this framework provides:>
@@ -129,7 +129,7 @@ B<What does this framework provides:>
 
 - C<Beekeeper::Client>, a class for writing service clients.
 
-- C<bkpr> command which spawn and control worker processes.
+- C<bkpr> command which spawns and controls worker processes.
 
 - Automatic message routing between frontend and backend buses.
 
@@ -144,9 +144,9 @@ B<What does this framework provides:>
 
 =head3 Writing workers
 
-Workers provide a service accepting certain RPC calls from clients.
-
-The base class C<Beekeeper::Worker> provides all the glue needed to accept requests and communicate trough the message bus with clients or another workers.
+Workers provide a service accepting certain RPC calls from clients. The base class C<Beekeeper::Worker> 
+provides all the glue needed to accept requests and communicate trough the message bus with clients or 
+another workers.
 
 A worker class just declares on startup which methods it will accept, then implements them:
 
@@ -171,9 +171,11 @@ use base 'Beekeeper::Worker';
 
 =head3 Writing clients
 
-Clients provide an API to interact with the remote service.
+Clients of the service need an interface to use it without knowledge of the underlying RPC 
+mechanisms. The class C<Beekeeper::Client> provides simple methods to connect to the broker 
+and make RPC calls.
 
-The class C<Beekeeper::Client> provides methods to connect to the broker and make requests or send notifications. This is the API of the above service:
+This is the interface of the above service:
 
   package MyApp::Client;
   
@@ -201,9 +203,13 @@ Then other workers or clients can just:
 
 =head3 Configuring
 
-Beekeeper applications use two config files to define how clients, workers and brokers connect to each other. These files are searched for in ENV C<BEEKEEPER_CONFIG_DIR>, C<~/.config/beekeeper> and then C</etc/beekeeper>. File format is relaxed JSON, which allows comments and trailings commas.
+Beekeeper applications use two config files to define how clients, workers and brokers 
+connect to each other. These files are searched for in ENV C<BEEKEEPER_CONFIG_DIR>, 
+C<~/.config/beekeeper> and then C</etc/beekeeper>. File format is relaxed JSON, which 
+allows comments and trailings commas.
 
-The file C<pool.config.json> defines all worker pools running on a host, specifying which logical bus should be used and which services it will run. For example:
+The file C<pool.config.json> defines all worker pools running on a host, specifying 
+which logical bus should be used and which services it will run. For example:
 
   [{
       "pool-id" : "myapp",
@@ -213,7 +219,8 @@ The file C<pool.config.json> defines all worker pools running on a host, specify
       },
   }]
 
-The file C<bus.config.json> defines all logical buses used by the application, specifying the conection parameters to the brokers that will service them. For example:
+The file C<bus.config.json> defines all logical buses used by the application, specifying 
+the connection parameters to the brokers that will service them. For example:
 
   {
      "bus-id"  : "backend",
@@ -223,16 +230,20 @@ The file C<bus.config.json> defines all logical buses used by the application, s
      "vhost"   : "/back",
   ]
 
-Neither the worker code nor the client code have hardcoded references to the logical message bus or the broker connection parameters, they communicate to each other using the definitions in these two files.
+Neither the worker code nor the client code have hardcoded references to the logical message 
+bus or the broker connection parameters, they communicate to each other using the definitions 
+in these two files.
 
 
 =head3 Running
 
-To start or stop a pool of workers you use the C<bkpr> command. Given the above example config, this will start 4 processes running C<MyApp::Worker> code:
+To start or stop a pool of workers you use the C<bkpr> command. Given the above example config, 
+this will start 4 processes running C<MyApp::Worker> code:
 
   bkpr --pool-id "myapp" start
 
-When started it daemonize itself and fork all worker processes, then continue monitoring those forked processes and *immediately* respawn defunct ones.
+When started it daemonizes itself and forks all worker processes, then continues monitoring 
+those forked processes and immediately respawns defunct ones.
 
 The framework includes these command line tools to manage worker pools:
 
@@ -240,7 +251,7 @@ The framework includes these command line tools to manage worker pools:
 
 - C<bkpr-log> allows to monitor in real time the log output of all workers.
 
-- C<bkpr-restart> gracefully restart local or remote worker pools.
+- C<bkpr-restart> gracefully restarts local or remote worker pools.
 
 
 =head1 WARNING

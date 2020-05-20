@@ -8,7 +8,7 @@ A pool of worker processes handle requests and communicate with each other throu
 
 Clients send requests through a different set of message buses, which are isolated for security reasons.
 
-Requests and responses are shoveled between buses by few router processes.
+Requests and responses are shoveled between buses by a few router processes.
 
 
 **Benefits of this architecture:**
@@ -30,13 +30,13 @@ Requests and responses are shoveled between buses by few router processes.
 
 - Message marshalling is JSON.
 
-- No message persistence in the broker, it just pass on messages.
+- No message persistence in the broker, it just passes on messages.
 
 - No routing logic is defined in the broker, zero configuration is needed.
 
-- Efficient multicast and unicast pushed notifications.
+- Efficient multicast and unicast notifications.
 
-- Automatic load balancing.
+- Inherent load balancing.
 
 
 **What does this framework provides:**
@@ -45,7 +45,7 @@ Requests and responses are shoveled between buses by few router processes.
 
 - `Beekeeper::Client`, a class for writing service clients.
 
-- `bkpr` command which spawn and control worker processes.
+- `bkpr` command which spawns and controls worker processes.
 
 - Automatic message routing between frontend and backend buses.
 
@@ -60,9 +60,7 @@ Requests and responses are shoveled between buses by few router processes.
 
 ### Writing workers
 
-Workers provide a service accepting certain RPC calls from clients.
-
-The base class `Beekeeper::Worker` provides all the glue needed to accept requests and communicate trough the message bus with clients or another workers.
+Workers provide a service accepting certain RPC calls from clients. The base class `Beekeeper::Worker` provides all the glue needed to accept requests and communicate trough the message bus with clients or another workers.
 
 A worker class just declares on startup which methods it will accept, then implements them:
 
@@ -88,9 +86,9 @@ sub uppercase {
 
 ### Writing clients
 
-Clients provide an API to interact with the remote service.
+Clients of the service need an interface to use it without knowledge of the underlying RPC mechanisms. The class `Beekeeper::Client` provides simple methods to connect to the broker and make RPC calls.
 
-The class `Beekeeper::Client` provides methods to connect to the broker and make requests or send notifications. This is the API of the above service:
+This is the interface of the above service:
 
 ```
 package MyApp::Client;
@@ -132,7 +130,7 @@ The file `pool.config.json` defines all worker pools running on a host, specifyi
     },
 }]
 ```
-The file `bus.config.json` defines all logical buses used by the application, specifying the conection parameters to the brokers that will service them. For example:
+The file `bus.config.json` defines all logical buses used by the application, specifying the connection parameters to the brokers that will service them. For example:
 
 ```
 [{
@@ -152,7 +150,7 @@ To start or stop a pool of workers you use the `bkpr` command. Given the above e
 ```
 bkpr --pool-id "myapp" start
 ```
-When started it daemonize itself and fork all worker processes, then continue monitoring those forked processes and *immediately* respawn defunct ones.
+When started it daemonizes itself and forks all worker processes, then continues monitoring those forked processes and immediately respawns defunct ones.
 
 The framework includes these command line tools to manage worker pools:
 
@@ -160,12 +158,12 @@ The framework includes these command line tools to manage worker pools:
 
 - `bkpr-log` allows to monitor in real time the log output of all workers.
 
-- `bkpr-restart` gracefully restart local or remote worker pools.
+- `bkpr-restart` gracefully restarts local or remote worker pools.
 
 
 ## Performance
 
-Beekeeper is pretty lightweight, so the performance depends mostly of *the broker* performance. These are the numbers of a local setup running RabbitMQ:
+Beekeeper is pretty lightweight, so the performance depends mostly on *the broker* performance. These are the numbers of a local setup running RabbitMQ:
 
 - A `do_job` synchronous call to a remote method adds 1.5 ms of latency and involves 4 network round trips. This translates to a maximum of 650 synchronous calls per second.
 
@@ -185,7 +183,7 @@ Beekeeper is pretty lightweight, so the performance depends mostly of *the broke
 
 **Hypothetical example:**
 
-Suppose it is needed to handle 1000 requests per second to a task that take 25 ms to complete, uses 20 MB of memory and has 10% CPU load. Servers are in the same datacenter and the network roundtrip is 0.1 ms.
+Suppose it is needed to handle 1000 requests per second to a task that takes 25 ms to complete, uses 20 MB of memory and has 10% CPU load. Servers are in the same datacenter and the network roundtrip is 0.1 ms.
 
 Adding framework and network latency, a single worker can handle:
 ```

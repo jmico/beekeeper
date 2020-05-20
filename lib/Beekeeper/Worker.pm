@@ -397,6 +397,7 @@ sub accept_notifications {
 
         my $callback = $self->__get_cb_coderef($fq_meth, $args{$fq_meth});
 
+        #TODO: croak does not report correct caller
         croak "Already accepting notifications $fq_meth" if exists $callbacks->{"msg.$fq_meth"};
         $callbacks->{"msg.$fq_meth"} = $callback;
 
@@ -502,6 +503,7 @@ sub accept_jobs {
 
         my $callback = $self->__get_cb_coderef($fq_meth, $args{$fq_meth});
 
+        #TODO: croak does not report correct caller
         croak "Already accepting jobs $fq_meth" if exists $callbacks->{"req.$fq_meth"};
         $callbacks->{"req.$fq_meth"} = $callback;
 
