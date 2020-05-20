@@ -34,7 +34,7 @@ use Beekeeper::Worker::Util 'shared_cache';
 use Scalar::Util 'weaken';
 
 use constant SESSION_TIMEOUT => 1800;
-
+use constant SHUTDOWN_WAIT   => 2;
 
 sub authorize_request {
     my ($self, $req) = @_;
@@ -121,38 +121,47 @@ sub on_shutdown {
     my $backend_cluster = $self->{_BUS}->{cluster};
 
     my $cv = AnyEvent->condvar;
-    $cv->begin;
 
-    $backend_bus->unsubscribe(
-        destination => "/queue/msg.$frontend_cluster",
-        on_success  => sub { $cv->end },
-    );
-
+    # 1. Do not pull frontend requests anymore
     foreach my $frontend_bus (values %{$self->{FRONTEND}}) {
 
         $cv->begin;
-        $cv->begin;
-
-        my $frontend_id = $frontend_bus->bus_id;
-
-        $backend_bus->unsubscribe(
-            destination => "/queue/res.$frontend_id",
-            on_success  => sub { $cv->end },
-        );
-
         $frontend_bus->unsubscribe(
             destination => "/queue/req.$backend_cluster",
             on_success  => sub { $cv->end },
         );
     }
 
-    AnyEvent->now_update;
-
-    my $timeout = AnyEvent->timer(
-        after => 10,
-        cb    => sub { $cv->send },
+    # 2. Stop forwarding notifications to frontend
+    $cv->begin;
+    $backend_bus->unsubscribe(
+        destination => "/queue/msg.$frontend_cluster",
+        on_success  => sub { $cv->end },
     );
 
+    # 3. Wait for unsubscribe receipts, assuring that no more requests or messages are buffered 
+    my $tmr = AnyEvent->timer( after => 30, cb => sub { $cv->send });
+    $cv->recv;
+
+    # 4. Just in case of pool stop, wait for workers to finish their current jobs
+    my $wait = AnyEvent->condvar;
+    $tmr = AnyEvent->timer( after => SHUTDOWN_WAIT, cb => sub { $wait->send });
+    $wait->recv;
+
+    # 5. Stop forwarding responses to frontend
+    foreach my $frontend_bus (values %{$self->{FRONTEND}}) {
+
+        my $frontend_id = $frontend_bus->bus_id;
+
+        $cv->begin;
+        $backend_bus->unsubscribe(
+            destination => "/queue/res.$frontend_id",
+            on_success  => sub { $cv->end },
+        );
+    }
+
+    # 6. Wait for unsubscribe receipts, assuring that no more responses are buffered 
+    $tmr = AnyEvent->timer( after => 30, cb => sub { $cv->send });
     $cv->recv;
 
     # Disconnect from all frontends
@@ -163,7 +172,7 @@ sub on_shutdown {
         $frontend_bus->disconnect( blocking => 1 );
     }
 
-    # Disconnect from all frontends
+    # Disconnect from backend cluster
     $self->{Sessions}->disconnect;
 }
 
