@@ -72,6 +72,7 @@ use Carp;
 
 use constant TXN_CLIENT_SIDE => 1;
 use constant TXN_SERVER_SIDE => 2;
+use constant QUEUE_LANES     => 2;
 use constant REQ_TIMEOUT     => 60;
 
 use Exporter 'import';
@@ -225,7 +226,7 @@ sub send_notification {
     $remote_bus = $self->{_CLIENT}->{forward_to} unless (defined $remote_bus);
 
     if (defined $remote_bus) {
-        $send_args{'destination'}  = "/queue/msg.$remote_bus";
+        $send_args{'destination'}  = "/queue/msg.$remote_bus-" . int(rand(QUEUE_LANES)+1);
         $send_args{'x-forward-to'} = "/topic/msg.$remote_bus.$service.$method";
         $send_args{'x-forward-to'} .= "\@$addr" if (defined $addr && $addr =~ s/^\.//);
     }
@@ -531,7 +532,7 @@ sub __do_rpc_request {
     # Remote bus request sent to:  /queue/req.{remote_bus}
 
     if (defined $remote_bus) {
-        $send_args{'destination'}  = "/queue/req.$remote_bus";
+        $send_args{'destination'}  = "/queue/req.$remote_bus-" . int(rand(QUEUE_LANES)+1);
         $send_args{'x-forward-to'} = "/queue/req.$remote_bus.$service";
         $send_args{'x-forward-to'} .= "\@$addr" if (defined $addr && $addr =~ s/^\.//);
     }

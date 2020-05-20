@@ -35,6 +35,7 @@ use Scalar::Util 'weaken';
 
 use constant SESSION_TIMEOUT => 1800;
 use constant SHUTDOWN_WAIT   => 2;
+use constant QUEUE_LANES     => 2;
 
 sub authorize_request {
     my ($self, $req) = @_;
@@ -125,19 +126,25 @@ sub on_shutdown {
     # 1. Do not pull frontend requests anymore
     foreach my $frontend_bus (values %{$self->{FRONTEND}}) {
 
-        $cv->begin;
-        $frontend_bus->unsubscribe(
-            destination => "/queue/req.$backend_cluster",
-            on_success  => sub { $cv->end },
-        );
+        foreach my $lane (1..QUEUE_LANES) {
+
+            $cv->begin;
+            $frontend_bus->unsubscribe(
+                destination => "/queue/req.$backend_cluster-$lane",
+                on_success  => sub { $cv->end },
+            );
+        }
     }
 
     # 2. Stop forwarding notifications to frontend
-    $cv->begin;
-    $backend_bus->unsubscribe(
-        destination => "/queue/msg.$frontend_cluster",
-        on_success  => sub { $cv->end },
-    );
+    foreach my $lane (1..QUEUE_LANES) {
+
+        $cv->begin;
+        $backend_bus->unsubscribe(
+            destination => "/queue/msg.$frontend_cluster-$lane",
+            on_success  => sub { $cv->end },
+        );
+    }
 
     # 3. Wait for unsubscribe receipts, assuring that no more requests or messages are buffered 
     my $tmr = AnyEvent->timer( after => 30, cb => sub { $cv->send });
@@ -153,11 +160,14 @@ sub on_shutdown {
 
         my $frontend_id = $frontend_bus->bus_id;
 
-        $cv->begin;
-        $backend_bus->unsubscribe(
-            destination => "/queue/res.$frontend_id",
-            on_success  => sub { $cv->end },
-        );
+        foreach my $lane (1..QUEUE_LANES) {
+
+            $cv->begin;
+            $backend_bus->unsubscribe(
+                destination => "/queue/res.$frontend_id-$lane",
+                on_success  => sub { $cv->end },
+            );
+        }
     }
 
     # 6. Wait for unsubscribe receipts, assuring that no more responses are buffered 
@@ -196,60 +206,63 @@ sub pull_frontend_requests {
 
     my ($body_ref, $msg_headers);
 
-    $frontend_bus->subscribe(
-        destination    => "/queue/req.$backend_cluster",
-        ack            => 'auto', # means none
-        on_receive_msg => sub {
-            ($body_ref, $msg_headers) = @_;
+    foreach my $lane (1..QUEUE_LANES) {
 
-            # (!) UNTRUSTED REQUEST
+        $frontend_bus->subscribe(
+            destination    => "/queue/req.$backend_cluster-$lane",
+            ack            => 'auto', # means none
+            on_receive_msg => sub {
+                ($body_ref, $msg_headers) = @_;
 
-            my $destination = $msg_headers->{'x-forward-to'} || '';
-            return unless $destination =~ m|^/queue/req(\.(?!_)[\w-]+)+$|;
+                # (!) UNTRUSTED REQUEST
 
-            my $reply_to = $msg_headers->{'reply-to'} || '';
-            my $session_id;
+                my $destination = $msg_headers->{'x-forward-to'} || '';
+                return unless $destination =~ m|^/queue/req(\.(?!_)[\w-]+)+$|;
 
-            if ($RabbitMQ) {
-                # RabbitMQ reply-to: /reply-queue/amq.gen-B9LY-y22H8K9RLADnEh0Ww
-                return unless $reply_to =~ m|^/reply-queue/amq\.gen-([\w-]{22})$|;
-                $session_id = $1;
-            }
-            else {
-                return unless $reply_to =~ m|^/temp-queue/tmp\.([\w-]{16,22})$|;
-                $session_id = $1;
-            }
+                my $reply_to = $msg_headers->{'reply-to'} || '';
+                my $session_id;
 
-            #TODO: Do basic sanity checks (like max size) on $body_ref before forwarding it to backend
-
-            my @opt_headers;
-
-            my $session = $self->{Sessions}->get( $session_id );
-
-            if ($session) {
-                $self->{Sessions}->touch( $session_id );
-                if ( $session->[2] ) {
-                    push @opt_headers, ( 'x-auth-tokens' => $session->[2] );
+                if ($RabbitMQ) {
+                    # RabbitMQ reply-to: /reply-queue/amq.gen-B9LY-y22H8K9RLADnEh0Ww
+                    return unless $reply_to =~ m|^/reply-queue/amq\.gen-([\w-]{22})$|;
+                    $session_id = $1;
                 }
-            }
+                else {
+                    return unless $reply_to =~ m|^/temp-queue/tmp\.([\w-]{16,22})$|;
+                    $session_id = $1;
+                }
 
-            my $expiration = $msg_headers->{'expiration'} || '';
-            if ($expiration =~ m|^\d+$|) {
-                push @opt_headers, ( 'expiration' => $expiration );
-            }
+                #TODO: Do basic sanity checks (like max size) on $body_ref before forwarding it to backend
 
-            $backend_bus->send(
-                'destination'     => $destination,
-                'x-session'       => $session_id,
-                'reply-to'        => "/queue/res.$frontend_id",
-                'x-forward-reply' => "$reply_to\@$frontend_id",
-                'body'            => $body_ref,
-                 @opt_headers
-            );
+                my @opt_headers;
 
-            $self->{_WORKER}->{jobs_count}++;
-        },
-    );
+                my $session = $self->{Sessions}->get( $session_id );
+
+                if ($session) {
+                    $self->{Sessions}->touch( $session_id );
+                    if ( $session->[2] ) {
+                        push @opt_headers, ( 'x-auth-tokens' => $session->[2] );
+                    }
+                }
+
+                my $expiration = $msg_headers->{'expiration'} || '';
+                if ($expiration =~ m|^\d+$|) {
+                    push @opt_headers, ( 'expiration' => $expiration );
+                }
+
+                $backend_bus->send(
+                    'destination'     => $destination,
+                    'x-session'       => $session_id,
+                    'reply-to'        => "/queue/res.$frontend_id-$lane",
+                    'x-forward-reply' => "$reply_to\@$frontend_id",
+                    'body'            => $body_ref,
+                     @opt_headers
+                );
+
+                $self->{_WORKER}->{jobs_count}++;
+            },
+        );
+    }
 }
 
 sub pull_backend_responses {
@@ -264,21 +277,24 @@ sub pull_backend_responses {
 
     my ($body_ref, $msg_headers, $destination);
 
-    $backend_bus->subscribe(
+    foreach my $lane (1..QUEUE_LANES) {
 
-        destination    => "/queue/res.$frontend_id",
-        ack            => 'auto', # means none
-        on_receive_msg => sub {
-            ($body_ref, $msg_headers) = @_;
+        $backend_bus->subscribe(
 
-            ($destination) = split('@', $msg_headers->{'x-forward-reply'}, 2);
+            destination    => "/queue/res.$frontend_id-$lane",
+            ack            => 'auto', # means none
+            on_receive_msg => sub {
+                ($body_ref, $msg_headers) = @_;
 
-            $frontend_bus->send(
-                'destination' => $destination,
-                'body'        => $body_ref,
-            );
-        },
-    );
+                ($destination) = split('@', $msg_headers->{'x-forward-reply'}, 2);
+
+                $frontend_bus->send(
+                    'destination' => $destination,
+                    'body'        => $body_ref,
+                );
+            },
+        );
+    }
 }
 
 sub pull_backend_notifications {
@@ -300,47 +316,50 @@ sub pull_backend_notifications {
 
     my ($body_ref, $msg_headers, $destination, $address);
 
-    $backend_bus->subscribe(
+    foreach my $lane (1..QUEUE_LANES) {
 
-        destination    => "/queue/msg.$frontend_cluster",
-        ack            => 'auto', # means none
-        on_receive_msg => sub {
-            ($body_ref, $msg_headers) = @_;
+        $backend_bus->subscribe(
 
-            ($destination, $address) = split('@', $msg_headers->{'x-forward-to'}, 2);
+            destination    => "/queue/msg.$frontend_cluster-$lane",
+            ack            => 'auto', # means none
+            on_receive_msg => sub {
+                ($body_ref, $msg_headers) = @_;
 
-            if (defined $address) {
+                ($destination, $address) = split('@', $msg_headers->{'x-forward-to'}, 2);
 
-                # Unicast
-                my $dest_queues = $self->{Addr_to_queues}->{$address} || return;
+                if (defined $address) {
 
-                foreach my $queue (@$dest_queues) {
+                    # Unicast
+                    my $dest_queues = $self->{Addr_to_queues}->{$address} || return;
 
-                    my ($destination, $bus_id) = split('@', $queue, 2);
+                    foreach my $queue (@$dest_queues) {
 
-                    my $frontend_bus = $self->{FRONTEND}->{$bus_id} || next;
+                        my ($destination, $bus_id) = split('@', $queue, 2);
 
-                    $frontend_bus->send(
-                        'destination' => $destination,
-                        'body'        => $body_ref,
-                    );
+                        my $frontend_bus = $self->{FRONTEND}->{$bus_id} || next;
+
+                        $frontend_bus->send(
+                            'destination' => $destination,
+                            'body'        => $body_ref,
+                        );
+                    }
                 }
-            }
-            else {
+                else {
 
-                # Broadcast
-                foreach my $frontend_bus (values %{$self->{FRONTEND}}) {
+                    # Broadcast
+                    foreach my $frontend_bus (values %{$self->{FRONTEND}}) {
 
-                    $frontend_bus->send(
-                        'destination' => $destination,
-                        'body'        => $body_ref,
-                    );
+                        $frontend_bus->send(
+                            'destination' => $destination,
+                            'body'        => $body_ref,
+                        );
+                    }
                 }
-            }
 
-            $self->{_WORKER}->{notif_count}++;
-        },
-    );
+                $self->{_WORKER}->{notif_count}++;
+            },
+        );
+    }
 }
 
 sub _init_routing_table {

@@ -134,7 +134,7 @@ sub stop_all_workers {
 
     $class->stop_workers('INT', @forked_pids);
     $class->stop_workers('INT', $supervisor_pid);
-    $class->stop_workers('INT', $toybroker_pid);
+    $class->stop_workers('INT', $toybroker_pid) if $toybroker_pid;
 }
 
 sub stop_workers {

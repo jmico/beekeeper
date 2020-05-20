@@ -24,7 +24,10 @@ sub new {
     $self->{fh} = $args{'fh'} || \*STDIN;
 
     # Connect to bus 'frontend-A', wich will forward requests to 'backend'
-    $self->{client} = Beekeeper::Client->instance( bus_id => 'frontend-A', forward_to => 'backend' );
+    $self->{client} = Beekeeper::Client->instance( 
+        bus_id     => 'frontend-'.('A','B')[rand 2], 
+        forward_to => 'backend',
+    );
 
     $self->{chat} = MyApp::Service::Chat->new;
     $self->{auth} = MyApp::Service::Auth->new;

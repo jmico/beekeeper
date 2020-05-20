@@ -11,7 +11,7 @@ To run this example start worker pools:
 ```
 cd beekeper/examples/chat
 source setup.sh
-./run.sh
+./run.sh start
 ```
 Then open `chat.html` in a browser, or use the command line client:
 
@@ -41,26 +41,26 @@ rabbitmq-plugins enable rabbitmq_web_stomp
 rabbitmqctl add_user frontend abc123
 rabbitmqctl add_user backend def456
 
-rabbitmqctl add_vhost /frontend-1
-rabbitmqctl add_vhost /frontend-2
-rabbitmqctl add_vhost /backend-1
-rabbitmqctl add_vhost /backend-2
+rabbitmqctl add_vhost /frontend-A
+rabbitmqctl add_vhost /frontend-B
+rabbitmqctl add_vhost /backend-A
+rabbitmqctl add_vhost /backend-B
 
-rabbitmqctl set_permissions frontend -p /frontend-1 ".*" ".*" ".*"
-rabbitmqctl set_permissions frontend -p /frontend-2 ".*" ".*" ".*"
+rabbitmqctl set_permissions frontend -p /frontend-A ".*" ".*" ".*"
+rabbitmqctl set_permissions frontend -p /frontend-B ".*" ".*" ".*"
 
-rabbitmqctl set_permissions backend -p /backend-1  ".*" ".*" ".*"
-rabbitmqctl set_permissions backend -p /backend-2  ".*" ".*" ".*"
-rabbitmqctl set_permissions backend -p /frontend-1 ".*" ".*" ".*"
-rabbitmqctl set_permissions backend -p /frontend-2 ".*" ".*" ".*"
+rabbitmqctl set_permissions backend -p /backend-A  ".*" ".*" ".*"
+rabbitmqctl set_permissions backend -p /backend-B  ".*" ".*" ".*"
+rabbitmqctl set_permissions backend -p /frontend-A ".*" ".*" ".*"
+rabbitmqctl set_permissions backend -p /frontend-B ".*" ".*" ".*"
 
-rabbitmqctl set_policy expiry -p /backend-1  ".*" '{"expires":60000}' --apply-to queues
-rabbitmqctl set_policy expiry -p /backend-2  ".*" '{"expires":60000}' --apply-to queues
-rabbitmqctl set_policy expiry -p /frontend-1 ".*" '{"expires":60000}' --apply-to queues
-rabbitmqctl set_policy expiry -p /frontend-2 ".*" '{"expires":60000}' --apply-to queues
+rabbitmqctl set_policy expiry -p /backend-A  ".*" '{"expires":60000}' --apply-to queues
+rabbitmqctl set_policy expiry -p /backend-B  ".*" '{"expires":60000}' --apply-to queues
+rabbitmqctl set_policy expiry -p /frontend-A ".*" '{"expires":60000}' --apply-to queues
+rabbitmqctl set_policy expiry -p /frontend-B ".*" '{"expires":60000}' --apply-to queues
 
-rabbitmqctl set_topic_permissions frontend -p /frontend-1 amq.topic "" "^frontend.*"
-rabbitmqctl set_topic_permissions frontend -p /frontend-2 amq.topic "" "^frontend.*"
+rabbitmqctl set_topic_permissions frontend -p /frontend-A amq.topic "" "^msg.frontend.*"
+rabbitmqctl set_topic_permissions frontend -p /frontend-B amq.topic "" "^msg.frontend.*"
 
 #TODO: make /queue/req.backend write only for user frontend
 ```
