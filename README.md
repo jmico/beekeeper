@@ -47,9 +47,11 @@ Requests and responses are shoveled between buses by a few router processes.
 
 - `bkpr` command which spawns and controls worker processes.
 
-- Automatic message routing between frontend and backend buses.
-
 - Command line tools for monitoring and controlling remotely worker pools.
+
+- A simple internal broker handy for development or running tests. 
+
+- Automatic message routing between frontend and backend buses.
 
 - Centralized logging, which can be shoveled to an external monitoring application.
 
@@ -160,6 +162,10 @@ The framework includes these command line tools to manage worker pools:
 
 - `bkpr-restart` gracefully restarts local or remote worker pools.
 
+This is `bkpr-top` showing one of the examples running:
+
+![](./doc/images/bkpr-top.png)
+
 
 ## Performance
 
@@ -208,10 +214,12 @@ End user latency is:
 Backend broker receives 2000 msg/s and sends 2000 msg/s, giving a 4000 msg/s total traffic.
 Frontend broker receives 1000 msg/s and sends 1000 msg/s, giving a 2000 msg/s total traffic.
 
-These numbers will, of course, worsen if broker performance degrades under load.
+These numbers will, of course, worsen when broker performance degrades under heavy load.
 
 
 ## Examples
+
+This distribution includes some examples that can be run out of the box using an internal `ToyBroker` (so no install of a proper broker is needed):
 
 [examples/basic](./examples/basic) is a barebones example of the usage of Beekeper.
 

@@ -131,9 +131,11 @@ B<What does this framework provides:>
 
 - C<bkpr> command which spawns and controls worker processes.
 
-- Automatic message routing between frontend and backend buses.
-
 - Command line tools for monitoring and controlling remotely worker pools.
+
+- A simple internal broker handy for development or running tests. 
+
+- Automatic message routing between frontend and backend buses.
 
 - Centralized logging, which can be shoveled to an external monitoring application.
 

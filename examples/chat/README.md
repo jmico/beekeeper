@@ -26,6 +26,10 @@ Network traffic can be inspected with:
 ```
 tcpflow -i any -C -g port 61613
 ```
+This is `bkpr-top` showing this example running:
+
+![](./doc/images/bkpr-top.png)
+
 
 ---
 ## RabbitMQ setup
