@@ -13,7 +13,7 @@ Requests and responses are shoveled between buses by a few router processes.
 
 **Benefits of this architecture:**
 
-- Scales horizontally very well. It is easy to add or remove workers or brokers.
+- Scales horizontally very well. It is easy to add or remove workers, routers or brokers.
 
 - High availability. The system remains responsive even when several components fail.
 
@@ -162,10 +162,6 @@ The framework includes these command line tools to manage worker pools:
 
 - `bkpr-restart` gracefully restarts local or remote worker pools.
 
-This is `bkpr-top` showing one of the examples running:
-
-![](./doc/images/bkpr-top.png)
-
 
 ## Performance
 
@@ -243,7 +239,7 @@ apt install libtest-class-perl
 apt install procps
 ```
 
-## Licensing
+## License
 
 Copyright 2015 José Micó.
 
