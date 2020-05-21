@@ -564,12 +564,11 @@ sub __do_rpc_request {
         params  => $args{'params'},
     };
 
+    # Reuse or create a private reply queue which will receive the response
+    my $reply_queue = $client->{reply_queue} || $self->__create_reply_queue;
+    $send_args{'reply-to'} = $reply_queue;
+
     unless ($BACKGROUND) {
-
-        # Reuse or create a private reply queue which will receive the response
-        my $reply_queue = $client->{reply_queue} || $self->__create_reply_queue;
-        $send_args{'reply-to'} = $reply_queue;
-
         # Assign an unique request id (unique only for this client)
         $req_id = int(rand(90000000)+10000000) . '-' . $client->{correlation_id}++;
         $req->{'id'} = $req_id;
@@ -708,7 +707,6 @@ sub __create_reply_queue {
 
                 $cb->($resp->{params}, $resp);
             }
-
         },
     );
 
