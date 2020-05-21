@@ -18,6 +18,10 @@ Then open `chat.html` in a browser, or use the command line client:
 ```
 ./chat.pl
 ```
+The system can be stressed with:
+```
+./flood.pl -c 50 -r 500
+```
 When done, stop worker pools with:
 ```
 ./run.sh stop
@@ -28,7 +32,7 @@ tcpflow -i any -C -g port 61613
 ```
 This is `bkpr-top` showing this example running:
 
-![](./doc/images/bkpr-top.png)
+![](../../doc/images/bkpr-top.png)
 
 
 ---
