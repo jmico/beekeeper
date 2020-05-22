@@ -71,7 +71,7 @@ sub bind_connection {
 
     $self->do_job(
         method => '_bkpr.router.bind',
-        _auth_ => '0,BKPR_ROUTER',
+        __auth => 'BKPR_ROUTER',
         params => {
             address     => $address, 
             reply_queue => $req->{_headers}->{'x-forward-reply'},
@@ -86,7 +86,7 @@ sub unbind_connection {
 
     $self->do_job(
         method => '_bkpr.router.unbind',
-        _auth_ => '0,BKPR_ROUTER',
+        __auth => 'BKPR_ROUTER',
         params => {
             session_id => $self->{_CLIENT}->{session_id},
         },
@@ -98,7 +98,7 @@ sub unbind_address {
 
     $self->do_job(
         method => '_bkpr.router.unbind',
-        _auth_ => '0,BKPR_ROUTER',
+        __auth => 'BKPR_ROUTER',
         params => {
             address => $address, 
         },

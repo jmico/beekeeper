@@ -43,7 +43,9 @@ my @Log_buffer;
 sub authorize_request {
     my ($self, $req) = @_;
 
-    $req->has_auth_tokens('BKPR_ADMIN');
+    return unless $req->has_auth_tokens('BKPR_ADMIN');
+
+    return REQUEST_AUTHORIZED;
 }
 
 sub on_startup {

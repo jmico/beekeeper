@@ -83,8 +83,8 @@ our @EXPORT_OK = qw(
     do_async_job
     do_background_job
     wait_all_jobs
-    set_auth_credentials
-    get_current_uuid
+    set_auth_tokens
+    get_auth_tokens
     __do_rpc_request
     __create_reply_queue
 );
@@ -234,8 +234,8 @@ sub send_notification {
         $send_args{'destination'} = "/topic/msg.$local_bus.$service.$method";
     }
 
-    if (exists $args{'_auth_'}) {
-        $send_args{'x-auth-tokens'} = $args{'_auth_'};
+    if (exists $args{'__auth'}) {
+        $send_args{'x-auth-tokens'} = $args{'__auth'};
     }
     else {
         $send_args{'x-auth-tokens'} = $self->{_CLIENT}->{auth_tokens}  if defined $self->{_CLIENT}->{auth_tokens};
@@ -540,8 +540,8 @@ sub __do_rpc_request {
         $send_args{'destination'} = "/queue/req.$local_bus.$service";
     }
 
-    if (exists $args{'_auth_'}) {
-        $send_args{'x-auth-tokens'} = $args{'_auth_'};
+    if (exists $args{'__auth'}) {
+        $send_args{'x-auth-tokens'} = $args{'__auth'};
     }
     else {
         $send_args{'x-auth-tokens'} = $client->{auth_tokens}  if defined $client->{auth_tokens};
@@ -728,32 +728,39 @@ sub wait_all_jobs {
     $cv->recv;
 }
 
+=head3 set_auth_tokens ( @tokens )
 
-sub set_auth_credentials {
-    my ($self, %args) = @_;
+Add arbitrary auth tokens to subsequent jobs requests or notifications sent.
 
-    my $uuid   = $args{'uuid'}   || 0;
-    my $tokens = $args{'tokens'} || [];
+Workers get the caller tokens already set when executing jobs or notifications 
+callbacks, and then these are piggybacked automatically.
 
-    croak "Invalid uuid $uuid" unless ($uuid =~ m/^[\w-]+$/);
+This framework doesn't give any special meaning to these tokens.
 
-    $tokens = [ $tokens ] unless (ref $tokens eq 'ARRAY');
+=head3 get_auth_tokens
 
-    foreach my $token (@$tokens) {
-        croak "Invalid token $token" unless ($token =~ m/^\w+$/);
+Get the list of current auth tokens in use.
+
+=cut
+
+sub set_auth_tokens {
+    my ($self, @tokens) = @_;
+
+    foreach my $token (@tokens) {
+        croak "Invalid token $token" unless (defined $token && length $token && $token !~ m/[\x00\n\|]/);
     }
 
-    $self->{_CLIENT}->{auth_tokens} = join(',', $uuid, @$tokens);
+    $self->{_CLIENT}->{auth_tokens} = join('|', @tokens);
 }
 
-sub get_current_uuid {
+sub get_auth_tokens {
     my $self = shift;
 
-    my ($uuid) = split(',', $self->{_CLIENT}->{auth_tokens}); 
-
-    return $uuid;
+    return split(/\|/, $self->{_CLIENT}->{auth_tokens});
 }
 
+
+# Transactions are currently unsupported as few brokers implements them
 
 sub ___begin_transaction {
     my ($self, %args) = @_;
@@ -765,7 +772,6 @@ sub ___begin_transaction {
     if ($args{'client_side'}) {
         # Client side
         $self->{transaction} = TXN_CLIENT_SIDE;
-
     }
     else {
         # Server side

@@ -44,7 +44,7 @@ sub authorize_request {
     my ($self, $req) = @_;
 
     if ($req->{method} eq '_bkpr.sinkhole.unserviced_queues') {
-        return $req->has_auth_tokens('BKPR_SYSTEM');
+        return REQUEST_AUTHORIZED if $req->has_auth_tokens('BKPR_SYSTEM');
     }
     else {
         # All requests will be rejected actually
@@ -130,7 +130,7 @@ sub reject_job {
 
     # Just return a JSONRPC error response
 
-    if (defined $req->uuid) {
+    if ($req->get_auth_tokens) {
         # When client provided some kind of authentication tell him the truth
         # about the service being down. Otherwise the one trying to fix the 
         # issue may be deceived into looking for auth/permissions problems

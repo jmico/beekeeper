@@ -40,7 +40,9 @@ use constant QUEUE_LANES     => 2;
 sub authorize_request {
     my ($self, $req) = @_;
 
-    $req->has_auth_tokens('BKPR_ROUTER');
+    return unless $req->has_auth_tokens('BKPR_ROUTER');
+
+    return REQUEST_AUTHORIZED;
 }
 
 sub on_startup {
@@ -444,8 +446,8 @@ sub bind {
         die "Both address and reply queue must be specified";
     }
 
-    if (defined $auth_tokens && $auth_tokens !~ m/^[\w-]+(?:,[\w-]+)*$/) {
-        # eg: 101,USER
+    if (defined $auth_tokens && $auth_tokens =~ m/[\x00\n]/) {
+        # eg: TOKEN1|TOKEN2|{"foo":"bar"}
         die "Invalid auth tokens $auth_tokens";
     }
 

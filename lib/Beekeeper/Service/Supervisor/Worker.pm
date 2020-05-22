@@ -43,7 +43,9 @@ sub authorize_request {
         $required = 'BKPR_ADMIN';
     }
 
-    $req->has_auth_tokens($required);
+    return unless $req->has_auth_tokens( $required );
+
+    return REQUEST_AUTHORIZED;
 }
 
 sub on_startup {
@@ -307,7 +309,7 @@ sub check_queues {
 
     $self->send_notification(
         method => '_bkpr.sinkhole.unserviced_queues',
-        _auth_ => '0,BKPR_SYSTEM',
+        __auth => 'BKPR_SYSTEM',
         params => { queues => \@unserviced },
     );
 }

@@ -946,7 +946,7 @@ sub __report_status {
     # Tell any supervisor our stats
     $self->do_background_job(
         method => '_bkpr.supervisor.worker_status',
-        _auth_ => '0,BKPR_SYSTEM',
+        __auth => 'BKPR_SYSTEM',
         params => {
             class => ref($self),
             host  => $worker->{hostname},
@@ -969,7 +969,7 @@ sub __report_exit {
 
     $self->do_background_job(
         method => '_bkpr.supervisor.worker_exit',
-        _auth_ => '0,BKPR_SYSTEM',
+        __auth => 'BKPR_SYSTEM',
         params => {
             class => ref($self),
             host  => $worker->{hostname},

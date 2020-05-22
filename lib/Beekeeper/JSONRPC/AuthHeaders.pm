@@ -18,48 +18,46 @@ Version 0.01
 use Exporter 'import';
 
 our @EXPORT_OK = qw(
-    session_id
-    uuid
-    auth_tokens
+    connection_id
+    get_auth_tokens
     has_auth_tokens
-    _auth
 );
 
 our %EXPORT_TAGS = ('all' => \@EXPORT_OK );
 
 
-sub session_id {
-    $_[0]->{_headers} ? $_[0]->{_headers}->{'x-session'} : undef;
+sub connection_id {
+    my $self = shift;
+
+    return $self->{_headers}->{'x-session'};
 }
 
-sub uuid {
-    $_[0]->{_auth} ? $_[0]->{_auth}->{uuid} : $_[0]->_auth->{uuid};
-}
+sub get_auth_tokens {
+    my $self = shift;
 
-sub auth_tokens {
-    $_[0]->{_auth} ? $_[0]->{_auth}->{tokens} : $_[0]->_auth->{tokens};
-}
+    my $auth_hdr = $self->{_headers}->{'x-auth-tokens'};
 
-sub _auth {
-    my $auth = $_[0]->{_headers}->{'x-auth-tokens'};
-    return {} unless $auth && $auth =~ m/^ ([\w-]+) (,\w+)* $/x;
-    $_[0]->{_auth} = { uuid => $1, tokens => $2 };
+    return unless defined $auth_hdr;
+
+    return split(/\|/, $auth_hdr);
 }
 
 sub has_auth_tokens {
-    my ($self, @tokens) = @_;
+    my ($self, @check_tokens) = @_;
 
-    my $auth = $self->auth_tokens;
+    my $auth_hdr = $self->{_headers}->{'x-auth-tokens'};
 
-    return unless $auth;
-    return unless @tokens;
+    return unless defined $auth_hdr;
+    return unless @check_tokens;
 
-    foreach my $token (@tokens) {
-        return unless defined $token;
-        return unless $auth =~ m/\b$token\b/;
+    my @tokens = split(/\|/, $auth_hdr);
+
+    foreach my $token (@check_tokens) {
+        return unless defined $token && length $token;
+        return unless grep { $token eq $_ } @tokens;
     }
 
-    return Beekeeper::Worker::REQUEST_AUTHORIZED();
+    return 1;
 }
 
 1;
