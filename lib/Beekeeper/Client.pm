@@ -316,6 +316,7 @@ sub accept_notifications {
             on_receive_msg => sub {
                 my ($body_ref, $msg_headers) = @_;
 
+                local $@;
                 my $request = eval { decode_json($$body_ref) };
 
                 unless (ref $request eq 'HASH' && $request->{jsonrpc} eq '2.0') {
@@ -664,6 +665,7 @@ sub __create_reply_queue {
         on_receive_msg => sub {
             my ($body_ref, $msg_headers) = @_;
 
+            local $@;
             my $resp = eval { decode_json($$body_ref) };
 
             unless (ref $resp eq 'HASH' && $resp->{jsonrpc} eq '2.0') {
