@@ -3,15 +3,8 @@ package MyApp::Service::Chat::Worker;
 use strict;
 use warnings;
 
-use Beekeeper::Worker ':log';
-use base 'Beekeeper::Worker';
+use base 'MyApp::Service::Base';
 
-
-sub authorize_request {
-    my ($self, $req) = @_;
-
-    $req->has_auth_tokens('CHAT_USER');
-}
 
 sub on_startup {
     my $self = shift;
@@ -28,7 +21,7 @@ sub send_message {
     my ($self, $params) = @_;
 
     my $msg  = $params->{'message'};
-    my $from = $self->get_current_uuid;
+    my $from = $self->get_current_user_uuid;
 
     return unless (defined $msg && length $msg);
 
@@ -46,7 +39,7 @@ sub send_private_message {
     # For simplicity, this example avoids resolving username <--> uuid 
     my $uuid = $params->{'to_user'};
     my $msg  = $params->{'message'};
-    my $from = $self->get_current_uuid;
+    my $from = $self->get_current_user_uuid;
 
     return unless (defined $msg && length $msg);
 

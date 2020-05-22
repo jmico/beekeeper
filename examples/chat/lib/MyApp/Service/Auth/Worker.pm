@@ -3,23 +3,11 @@ package MyApp::Service::Auth::Worker;
 use strict;
 use warnings;
 
-use Beekeeper::Worker ':log';
-use base 'Beekeeper::Worker';
+use base 'MyApp::Service::Base';
 
 use Beekeeper::Service::Router ':all';
-
 use MyApp::Service::Chat;
 
-
-sub authorize_request {
-    my ($self, $req) = @_;
-
-    if ($req->{method} eq 'myapp.auth.login') {
-        return REQUEST_AUTHORIZED;
-    }
-
-    $req->has_auth_tokens('CHAT_USER');
-}
 
 sub on_startup {
     my $self = shift;
@@ -41,10 +29,7 @@ sub login {
     # mapping, and username and password are not verified at all
     my $uuid = $username;
 
-    $self->set_auth_credentials( 
-        uuid   => $uuid,
-        tokens => 'CHAT_USER',
-    );
+    $self->set_current_user_uuid( $uuid );
 
     # Assign an address to the user connection in order to push messages to him
     $self->bind_connection( "frontend.user-$uuid" );
@@ -60,7 +45,7 @@ sub login {
 sub logout {
     my ($self, $params) = @_;
 
-    my $uuid = $self->get_current_uuid;
+    my $uuid = $self->get_current_user_uuid;
 
     MyApp::Service::Chat->send_notice(
         to_uuid => $uuid,
