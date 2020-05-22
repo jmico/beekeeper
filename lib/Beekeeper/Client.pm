@@ -48,7 +48,20 @@ Version 0.01
 
 =head1 DESCRIPTION
 
-Make RPC calls through message bus.
+This module connects to the message broker and makes RPC calls through message bus.
+
+There are four different methods to do so:
+
+  ┌───────────────────┬──────────────┬────────┬────────┬────────┐
+  │ method            │ sent to      │ queued │ result │ blocks │
+  ├───────────────────┼──────────────┼────────┼────────┼────────┤
+  │ do_job            │ 1 worker     │ yes    │ yes    │ yes    │
+  │ do_async_job      │ 1 worker     │ yes    │ yes    │ no     │
+  │ do_background_job │ 1 worker     │ yes    │ no     │ no     │
+  │ send_notification │ many workers │ no     │ no     │ no     │
+  └───────────────────┴──────────────┴────────┴────────┴────────┘
+
+All methods in this module are exported by default to C<Beekeeper::Worker>.
 
 =head1 CONSTRUCTOR
 
@@ -178,7 +191,8 @@ sub instance {
 
 Broadcast a notification to the message bus.
 
-All clients and workers listening for C<method> will receive it.
+All clients and workers listening for C<method> will receive it. If no one is listening
+the notification is lost.
 
 =over4
 

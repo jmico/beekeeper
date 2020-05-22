@@ -5,21 +5,6 @@ use warnings;
 
 our $VERSION = '0.01';
 
-use Beekeeper::Worker ':log';
-use base 'Beekeeper::Worker';
-
-use Beekeeper::Config;
-
-use AnyEvent;
-use AnyEvent::Handle;
-use AnyEvent::Socket;
-use Scalar::Util 'weaken';
-
-our $MAX_MESSAGE_SIZE;
-our $MAX_HEADERS_SIZE;
-
-use constant DEBUG => 0;
-
 =head1 NAME
 
 Beekeeper::Service::ToyBroker::Worker - Basic STOMP 1.2 broker
@@ -36,6 +21,22 @@ Being single threaded it does not scale at all, but it is handy for development
 or running tests.
 
 =cut
+
+use Beekeeper::Worker ':log';
+use base 'Beekeeper::Worker';
+
+use Beekeeper::Config;
+
+use AnyEvent;
+use AnyEvent::Handle;
+use AnyEvent::Socket;
+use Scalar::Util 'weaken';
+
+our $MAX_MESSAGE_SIZE;
+our $MAX_HEADERS_SIZE;
+
+use constant DEBUG => 0;
+
 
 sub new {
     my ($class, %args) = @_;
