@@ -53,7 +53,9 @@ sub check_broker_connection : Test(startup => 1) {
     my $config = Beekeeper::Config->get_bus_config( bus_id => 'test' );
     my $bus = Beekeeper::Bus::STOMP->new( %$config, timeout => 1 );
     $Broker = eval { $bus->connect( blocking => 1 ); $bus->{server} };
-    $bus->disconnect if $Broker;
+
+    # Disconect now, otherwise forked workers will inherit this connection
+    $bus->disconnect( blocking => 1 ) if $Broker;
     %$bus = (); undef $bus;
 
     if ($Broker) {
@@ -133,7 +135,7 @@ sub stop_all_workers {
     my $class = shift;
 
     $class->stop_workers('INT', @forked_pids);
-    $class->stop_workers('INT', $supervisor_pid);
+    $class->stop_workers('INT', $supervisor_pid) if $supervisor_pid;
     $class->stop_workers('INT', $toybroker_pid) if $toybroker_pid;
 }
 

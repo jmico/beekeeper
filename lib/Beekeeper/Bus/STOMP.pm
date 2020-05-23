@@ -32,7 +32,7 @@ Version 0.01
   $stomp->subscribe(
       destination => '/topic/foo',
       on_receive_msg => sub {
-          my ($body, \$headers) = @_;
+          my ($body, $headers) = @_;
           print "Got message: $$body";
       },
   );
@@ -544,7 +544,7 @@ sub subscribe {
         "\n\x00",
     );
 
-    #TODO: do not assume subscribe success
+    # Assume subscribe success (otherwise connection will be closed by broker)
     $self->{subscriptions}->{$destination} = $subscr_id;
 
     return $subscr_id;

@@ -626,7 +626,7 @@ sub nack {
         return;
     }
 
-    $sent_msg->[1]->{'resend'}++;
+    $sent_msg->[1]->{'redelivered'}++;
 
     $self->receipt($fh, $hdr);
 
