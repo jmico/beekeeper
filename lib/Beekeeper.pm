@@ -106,7 +106,7 @@ B<Benefits of this architecture:>
 
 B<Key characteristics:>
 
-- Broker is a messaging server like RabbitMQ or Apache ActiveMQ.
+- Broker is a messaging server like Apache ActiveMQ or RabbitMQ.
 
 - Broker protocol is STOMP (see the specification at L<https://stomp.github.io/stomp-specification-1.2.html>).
 
@@ -116,7 +116,7 @@ B<Key characteristics:>
 
 - No message persistence in the broker, it just passes on messages.
 
-- No routing logic is defined in the broker, zero configuration is needed.
+- No routing logic is defined in the broker.
 
 - Efficient multicast and unicast notifications.
 

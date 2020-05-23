@@ -70,11 +70,11 @@ rabbitmqctl set_policy expiry -p /frontend-B ".*" '{"expires":60000}' --apply-to
 rabbitmqctl set_topic_permissions frontend -p /frontend-A amq.topic "" "^msg.frontend.*"
 rabbitmqctl set_topic_permissions frontend -p /frontend-B amq.topic "" "^msg.frontend.*"
 
-#TODO: make /queue/req.backend write only for user frontend
+#WARNING: /queue/req.backend cannot be made write-only for user frontend
 ```
 Also ensure that `host` addresses in `bus.config.json` and `config.js` match RabbitMQ one.
 
-**WARNING:** Permissions for user `frontend` must be heavily restricted in production enviroments!
+**WARNING:** RabbitMQ is easy to install and configure, but cannot be used in a frontend role because its STOMP permissions are not flexible enough to restrict unwanted consumption from `/queue/req.backend`.
 
 ---
 

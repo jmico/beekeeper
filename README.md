@@ -22,7 +22,7 @@ Requests and responses are shoveled between buses by a few router processes.
 
 **Key characteristics:**
 
-- Broker is a messaging server like RabbitMQ or Apache ActiveMQ.
+- Broker is a messaging server like Apache ActiveMQ or RabbitMQ.
 
 - Broker protocol is STOMP (see the [specification](https://stomp.github.io/stomp-specification-1.2.html)).
 
@@ -32,7 +32,7 @@ Requests and responses are shoveled between buses by a few router processes.
 
 - No message persistence in the broker, it just passes on messages.
 
-- No routing logic is defined in the broker, zero configuration is needed.
+- No routing logic is defined in the broker.
 
 - Efficient multicast and unicast notifications.
 
