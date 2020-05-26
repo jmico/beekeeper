@@ -204,6 +204,7 @@ sub pull_frontend_requests {
     my $backend_id      = $backend_bus->bus_id;
     my $backend_cluster = $backend_bus->cluster;
 
+    my $ActiveMQ = $frontend_bus->{is_activemq};
     my $RabbitMQ = $frontend_bus->{is_rabbitmq};
 
     my ($body_ref, $msg_headers);
@@ -224,12 +225,18 @@ sub pull_frontend_requests {
                 my $reply_to = $msg_headers->{'reply-to'} || '';
                 my $session_id;
 
-                if ($RabbitMQ) {
+                if ($ActiveMQ) {
+                    # ActiveMQ reply-to: /remote-temp-queue/ID\cbuster3-33691-1590497449073-3\c121\c1
+                    return unless $reply_to =~ m|^/remote-temp-queue/ID\\c([\w\\-]{20,})$|;
+                    $session_id = $1;
+                }
+                elsif ($RabbitMQ) {
                     # RabbitMQ reply-to: /reply-queue/amq.gen-B9LY-y22H8K9RLADnEh0Ww
                     return unless $reply_to =~ m|^/reply-queue/amq\.gen-([\w-]{22})$|;
                     $session_id = $1;
                 }
                 else {
+                    # Standard reply-to: /temp-queue/tmp.7nXDsxMDwgLUSedX@frontend-1
                     return unless $reply_to =~ m|^/temp-queue/tmp\.([\w-]{16,22})$|;
                     $session_id = $1;
                 }
@@ -427,8 +434,10 @@ sub bind {
 
     my $frontend_cluster = $self->{frontend_cluster};
 
-    unless (defined $session_id && $session_id =~ m/^[\w-]{8,}$/) {
-        # eg: B9LY-y22H8K9RLADnEh0Ww
+    unless (defined $session_id && $session_id =~ m/^[\w\\-]{16,}$/) {
+        # ActiveMQ eg: buster3-33691-1590497449073-3\c121\c1
+        # RabbitMQ eg: B9LY-y22H8K9RLADnEh0Ww
+        # Standard eg: 7nXDsxMDwgLUSedX
         die ( $session_id ? "Invalid session $session_id" : "Session not specified");
     }
 
@@ -437,8 +446,10 @@ sub bind {
         die "Invalid address $address";
     }
 
-    if (defined $reply_queue && $reply_queue !~ m!^/(reply|temp)-queue/\w+\.[\w-]+\@[\w-]+$!) {
-        # eg: /reply-queue/amq.gen-B9LY-y22H8K9RLADnEh0Ww@frontend-1
+    if (defined $reply_queue && $reply_queue !~ m!^/(remote-temp|reply|temp)-queue/[\w\.\\-]+\@[\w-]+$!) {
+        # ActiveMQ reply-to: /remote-temp-queue/ID\cbuster3-33691-1590497449073-3\c121\c1@frontend-1
+        # RabbitMQ reply-to: /reply-queue/amq.gen-B9LY-y22H8K9RLADnEh0Ww@frontend-1
+        # Standard reply-to: /temp-queue/tmp.7nXDsxMDwgLUSedX@frontend-1
         die "Invalid reply queue $reply_queue";
     }
 

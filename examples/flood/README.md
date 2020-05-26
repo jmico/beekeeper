@@ -23,7 +23,32 @@ When done, stop the worker pool with:
 ./run.sh stop
 ```
 
-Sample output running on a local RabbitMQ:
+Sample output running on a local ActiveMQ 5.15.12:
+
+```
+# flood -b
+
+1000 notifications    of   0 Kb  in  0.055 sec   18187 /sec   0.05 ms each
+1000 notifications    of   1 Kb  in  0.068 sec   14621 /sec   0.07 ms each
+1000 notifications    of   5 Kb  in  0.072 sec   13974 /sec   0.07 ms each
+1000 notifications    of  10 Kb  in  0.093 sec   10715 /sec   0.09 ms each
+
+1000 sync jobs        of   0 Kb  in  1.438 sec     695 /sec   1.44 ms each
+1000 sync jobs        of   1 Kb  in  1.448 sec     690 /sec   1.45 ms each
+1000 sync jobs        of   5 Kb  in  1.628 sec     614 /sec   1.63 ms each
+1000 sync jobs        of  10 Kb  in  1.974 sec     507 /sec   1.97 ms each
+
+1000 async jobs       of   0 Kb  in  0.277 sec    3611 /sec   0.28 ms each
+1000 async jobs       of   1 Kb  in  0.306 sec    3272 /sec   0.31 ms each
+1000 async jobs       of   5 Kb  in  0.336 sec    2973 /sec   0.34 ms each
+1000 async jobs       of  10 Kb  in  0.462 sec    2166 /sec   0.46 ms each
+
+1000 background jobs  of   0 Kb  in  0.134 sec    7488 /sec   0.13 ms each
+1000 background jobs  of   1 Kb  in  0.203 sec    4933 /sec   0.20 ms each
+1000 background jobs  of   5 Kb  in  0.216 sec    4624 /sec   0.22 ms each
+1000 background jobs  of  10 Kb  in  0.225 sec    4452 /sec   0.22 ms each
+```
+Sample output running on a local RabbitMQ 3.8.3:
 
 ```
 # flood -b

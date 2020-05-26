@@ -344,9 +344,9 @@ sub _connect {
                     # Extract server properties
                     $self->{version} = $frame_hdr{'version'};
                     $self->{server}  = $frame_hdr{'server'};
-                    $self->{is_rabbitmq} = 1 if ($self->{server} =~ m/RabbitMQ/i);
-                    $self->{is_activemq} = 1 if ($self->{server} =~ m/ActiveMQ/i);
-                    $self->{is_artemis}  = 1 if ($self->{server} =~ m/Artemis/i); # it is also ActiveMQ
+                    $self->{is_rabbitmq} = 1 if ($self->{server} =~ m|RabbitMQ/|i); # "RabbitMQ/3.8.3"
+                    $self->{is_activemq} = 1 if ($self->{server} =~ m|ActiveMQ/|i); # "ActiveMQ/5.15.12"
+                    $self->{is_artemis}  = 1 if ($self->{server} =~ m|Artemis/|i);  # "ActiveMQ-Artemis/2.12.0 ActiveMQ Artemis Messaging Engine"
                     # Call the user defined callback
                     my $cb = $self->{connect_cb};
                     $cb->(\%frame_hdr) if $cb;
@@ -509,9 +509,11 @@ sub subscribe {
     }
 
     if ($self->{is_activemq}) {
-        # Prefetch syntax is different in ActiveMQ
+        # Specific multi level wildcard for ActiveMQ
+        $headers{'destination'} =~ s/#/>/;
+        # Specific prefetch header for ActiveMQ
         my $prefetch = delete $headers{'prefetch-count'};
-        $headers{'prefetchSize'} = "$prefetch" if ($prefetch);
+        $headers{'activemq.prefetchSize'} = "$prefetch" if ($prefetch);
     }
 
     # Determine subscription id
