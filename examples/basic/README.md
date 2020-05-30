@@ -19,11 +19,22 @@ When done, stop the worker pool with:
 ```
 
 ---
-### RabbitMQ setup
+
+### ActiveMQ setup
 
 This example uses the internal ToyBroker to allow being run out of the box.
 
-To run this example using RabbitMQ set `use_toybroker` to false in config files, and configure RabbitMQ (enable STOMP, add an user `test` and a virtual host `/test`) with the following commands:
+To run this example on a fresh install of ActiveMQ just set `use_toybroker` to false in config file `pool.config.json`. Also ensure that `host` addresses in `bus.config.json` and `config.js` match ActiveMQ one.
+
+**WARNING:** A fresh install of ActiveMQ is completly open and does not provide any kind of security.
+
+
+### RabbitMQ setup
+
+To run this example on a fresh install of RabbitMQ set `use_toybroker` to false in config file
+`pool.config.json`. Also ensure that `host` addresses in `bus.config.json` and `config.js` match RabbitMQ one.
+
+Then configure RabbitMQ (enable STOMP, add an user `test` and a virtual host `/test`) with the following commands:
 
 ```
 rabbitmq-plugins enable rabbitmq_stomp
@@ -36,4 +47,3 @@ rabbitmqctl set_permissions test -p /test ".*" ".*" ".*"
 
 rabbitmqctl set_policy expiry -p /test ".*" '{"expires":60000}' --apply-to queues
 ```
-Also ensure that `host` address in `bus.config.json` match RabbitMQ one.

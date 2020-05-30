@@ -19,12 +19,12 @@ When done, stop the worker pool with:
 ```
 
 ---
+
 ### ActiveMQ setup
 
 This example uses the internal ToyBroker to allow being run out of the box, but to use `chat.html` the WebSockets capabilities of ActiveMQ or RabbitMQ are required (`chat.pl` works fine though).
 
-To run this example on a fresh install of ActiveMQ just set `use_toybroker` to false in config file
-`pool.config.json`. Also ensure that `host` addresses in `bus.config.json` and `config.js` match ActiveMQ one.
+To run this example on a fresh install of ActiveMQ just set `use_toybroker` to false in config file `pool.config.json`. Also ensure that `host` addresses in `bus.config.json` and `config.js` match ActiveMQ one.
 
 Note that ActiveMQ does not support virtual hosts, so this example will not use two different brokers as it should (it works anyway because queue names do not clash).
 
