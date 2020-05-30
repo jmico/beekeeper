@@ -9,6 +9,7 @@
     "listen_port" : "61613",
 
     "users" : {
-        "test" : { "password" : "abc123" },
+        "frontend" : { "password" : "abc123" },
+        "backend"  : { "password" : "def456" },
     },
 }

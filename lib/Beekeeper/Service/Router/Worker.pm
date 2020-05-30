@@ -57,7 +57,7 @@ sub on_startup {
     my $frontend_cluster = $worker_config->{'frontend_cluster'} || 'frontend';
     $self->{frontend_cluster} = $frontend_cluster;
 
-    my $frontends_config = Beekeeper::Config->get_cluster_config( cluster => $frontend_cluster );
+    my $frontends_config = Beekeeper::Config->get_cluster_config( bus_id => $frontend_cluster );
 
     unless (@$frontends_config) {
         die "No bus in cluster '$frontend_cluster' found into config file bus.config.json\n";

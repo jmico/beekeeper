@@ -10,10 +10,10 @@ function Calculator () { return {
         this.rpc = new JSON_RPC;
         this.rpc.connect({
    
-            url:      CONFIG.url,       // "ws://localhost:15674/ws"
-            login:    CONFIG.login,     // "test"
+            url:      CONFIG.url,       // "ws://localhost:61614"
+            login:    CONFIG.login,     // "frontend"
             password: CONFIG.password,  // "abc123"
-            vhost:    CONFIG.vhost,     // "/test"
+            vhost:    CONFIG.vhost,     // "/frontend"
             debug:    CONFIG.debug,
 
             on_ready: function() {
@@ -28,13 +28,6 @@ function Calculator () { return {
 
         var This = this;
 
-        this.rpc.accept_notifications({
-            method: "myapp.adserver.ads",
-            on_receive: function(params) {
-                This.echo("AD: " + params.msg, 'info');
-            }
-        });
-
         var cmdInput = document.getElementById('expr');
         cmdInput.onkeypress = function(e) {
             var event = e || window.event;
@@ -44,6 +37,8 @@ function Calculator () { return {
                 return false;
             }
         }
+
+        This.eval_expr();
     },
 
     echo: function(msg,style) {

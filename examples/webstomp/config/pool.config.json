@@ -23,6 +23,7 @@
 
         "workers" : {
             "MyApp::Service::Calculator"           : { "workers_count" : 4 },
+            "Beekeeper::Service::Router::Worker"   : { "workers_count" : 2 },
             "Beekeeper::Service::LogTail::Worker"  : { "workers_count" : 1 },
         },
     },
