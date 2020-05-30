@@ -239,6 +239,11 @@ apt install libtest-class-perl
 apt install procps
 ```
 
+## See also
+
+- Message routing [diagram](https://raw.githubusercontent.com/jmico/beekeeper/master/doc/images/routing.svg).
+
+
 ## License
 
 Copyright 2015 José Micó.
