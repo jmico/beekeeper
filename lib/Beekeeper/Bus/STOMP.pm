@@ -65,9 +65,9 @@ a randomly choosen node of the cluster.
 
 Port of the STOMP server. If not specified use the STOMP default of 61613.
 
-=item ssl
+=item tls
 
-Enable the use of SSL for STOMP connections.
+Enable the use of TLS for STOMP connections.
 
 =item vhost
 
@@ -216,8 +216,8 @@ sub _connect {
 
     # TCP connection args
     my $host = shift @$try_hosts;
-    my $ssl  = $config->{'ssl'}  || 0;
-    my $port = $config->{'port'} || ( $ssl ? 61612 : 61613 );
+    my $tls  = $config->{'tls'}  || 0;
+    my $port = $config->{'port'} || 61613;
 
     # STOMP connection args
     my %connect_hdr = (
@@ -239,7 +239,7 @@ sub _connect {
 
     $self->{handle} = AnyEvent::Handle->new(
         connect    => [ $host, $port ],
-        tls        => $ssl ? 'connect' : undef,
+        tls        => $tls ? 'connect' : undef,
         keepalive  => 1,
         no_delay   => 1,
         on_connect => sub { 
