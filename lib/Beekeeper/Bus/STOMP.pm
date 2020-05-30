@@ -509,11 +509,14 @@ sub subscribe {
     }
 
     if ($self->{is_activemq}) {
-        # Specific multi level wildcard for ActiveMQ
+        # Specific multi level wildcard
         $headers{'destination'} =~ s/#/>/;
-        # Specific prefetch header for ActiveMQ
+        # Specific prefetch header
         my $prefetch = delete $headers{'prefetch-count'};
-        $headers{'activemq.prefetchSize'} = "$prefetch" if ($prefetch);
+        $headers{'activemq.prefetchSize'} = $prefetch if (defined $prefetch);
+        # Specific exclusive header
+        my $exclusive = delete $headers{'exclusive'};
+        $headers{'activemq.exclusive'} = 'true' if ($exclusive);
     }
 
     # Determine subscription id
@@ -676,6 +679,12 @@ sub send {
         my $receipt_id = 'msg' . $self->{receipt_seq}++;
         $self->{receipt_cb}->{$receipt_id} = $cb;
         $headers{'receipt'} = $receipt_id;
+    }
+
+    if ($self->{is_activemq} && exists $headers{'expiration'}) {
+        # Specific expiration header for ActiveMQ
+        my $expiration = delete $headers{'expiration'};
+        $headers{'expires'} = $expiration ? int($expiration + AE::now * 1000) : 0;
     }
 
     my $buffer_id = delete $headers{'buffer_id'};

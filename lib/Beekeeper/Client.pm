@@ -661,7 +661,8 @@ sub __create_reply_queue {
 
     $self->{_BUS}->subscribe(
         destination    => $reply_queue,
-        ack            => 'auto',
+        ack            => 'auto',  # means none
+        exclusive      => 1,       # implicit in most brokers
         on_receive_msg => sub {
             my ($body_ref, $msg_headers) = @_;
 
