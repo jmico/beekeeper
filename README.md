@@ -34,6 +34,8 @@ Requests and responses are shoveled between buses by a few router processes.
 
 - No routing logic is defined in the broker.
 
+- Blends synchronous and asynchronous workers or clients.
+
 - Efficient multicast and unicast notifications.
 
 - Inherent load balancing.
@@ -41,7 +43,7 @@ Requests and responses are shoveled between buses by a few router processes.
 
 **What does this framework provides:**
 
-- `Beekeeper::Worker`, a base class for writing service workers with almost no additional code.
+- `Beekeeper::Worker`, a base class for writing service workers.
 
 - `Beekeeper::Client`, a class for writing service clients.
 
@@ -226,6 +228,13 @@ This distribution includes some examples that can be run out of the box using an
 [examples/chat](./examples/chat) implements a real world setup with isolated buses and redundancy.
 
 
+## See also
+
+- Notes on [supported brokers](./doc/Brokers.md) configuration.
+
+- Beekeeper [message routing](https://raw.githubusercontent.com/jmico/beekeeper/master/doc/images/routing.svg) diagram.
+
+
 ## Dependencies
 
 This framework requires `Anyevent`, `JSON::XS`, `Term::ReadKey`, `Test::Class`, and `ps`.
@@ -238,11 +247,6 @@ apt install libterm-readkey-perl
 apt install libtest-class-perl
 apt install procps
 ```
-
-## See also
-
-- Message routing [diagram](https://raw.githubusercontent.com/jmico/beekeeper/master/doc/images/routing.svg).
-
 
 ## License
 

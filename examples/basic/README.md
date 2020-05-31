@@ -17,7 +17,6 @@ When done, stop the worker pool with:
 ```
 ./run.sh stop
 ```
-
 ---
 
 ### ActiveMQ setup
@@ -25,8 +24,6 @@ When done, stop the worker pool with:
 This example uses the internal ToyBroker to allow being run out of the box.
 
 To run this example on a fresh install of ActiveMQ just set `use_toybroker` to false in config file `pool.config.json`. Also ensure that `host` addresses in `bus.config.json` and `config.js` match ActiveMQ one.
-
-**WARNING:** A fresh install of ActiveMQ is completly open and does not provide any kind of security.
 
 
 ### RabbitMQ setup

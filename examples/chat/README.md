@@ -34,7 +34,6 @@ This is `bkpr-top` showing this example running:
 
 ![](../../doc/images/bkpr-top.png)
 
-
 ---
 
 ### ActiveMQ setup
@@ -44,8 +43,6 @@ This example uses the internal ToyBroker to allow being run out of the box, but 
 To run this example on a fresh install of ActiveMQ just set `use_toybroker` to false in config file `pool.config.json`. Also ensure that `host` addresses in `bus.config.json` and `config.js` match ActiveMQ one.
 
 Note that ActiveMQ does not support virtual hosts, so this example will not use four different brokers as it should (it works anyway because queue names do not clash).
-
-**WARNING:** A fresh install of ActiveMQ is completly open and does not provide any kind of security.
 
 
 ### RabbitMQ setup
@@ -82,11 +79,7 @@ rabbitmqctl set_policy expiry -p /frontend-B ".*" '{"expires":60000}' --apply-to
 
 rabbitmqctl set_topic_permissions frontend -p /frontend-A amq.topic "" "^msg.frontend.*"
 rabbitmqctl set_topic_permissions frontend -p /frontend-B amq.topic "" "^msg.frontend.*"
-
-#WARNING: /queue/req.backend cannot be made write-only for user frontend
 ```
-**WARNING:** RabbitMQ cannot be used in a frontend role because its STOMP permissions are not flexible enough to restrict unwanted consumption from `/queue/req.backend`.
-
 ---
 
 This example uses the STOMP.js library Copyright 2010-2013 [Jeff Mesnil](http://jmesnil.net/), Copyright 2012 [FuseSource, Inc.](http://fusesource.com), Copyright 2017 [Deepak Kumar](https://www.kreatio.com).

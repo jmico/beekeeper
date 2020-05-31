@@ -98,7 +98,6 @@ Sample output running a ToyBroker:
 1000 background jobs  of   5 Kb  in  0.080 sec   12462 /sec   0.08 ms each
 1000 background jobs  of  10 Kb  in  0.099 sec   10082 /sec   0.10 ms each
 ```
-
 ---
 
 ### ActiveMQ setup
@@ -106,8 +105,6 @@ Sample output running a ToyBroker:
 This example uses the internal ToyBroker to allow being run out of the box.
 
 To run this example on a fresh install of ActiveMQ just set `use_toybroker` to false in config file `pool.config.json`. Also ensure that `host` addresses in `bus.config.json` and `config.js` match ActiveMQ one.
-
-**WARNING:** A fresh install of ActiveMQ is completly open and does not provide any kind of security.
 
 
 ### RabbitMQ setup
