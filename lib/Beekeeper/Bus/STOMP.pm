@@ -353,7 +353,8 @@ sub _connect {
                 }
                 elsif ($frame_cmd eq 'ERROR') {
                     # Server will close the connection after reporting any error
-                    my $errmsg = $frame_hdr{'message'} . ": " . $body;
+                    my $errmsg = $frame_hdr{'message'};
+                    $errmsg .= ": $body" if ($body && !$self->{is_activemq});
                     $self->_reset_connection;
                     my $cb = $self->{error_cb};
                     $cb ? $cb->($errmsg) : die "$errmsg\n";
