@@ -36,11 +36,24 @@ This is `bkpr-top` showing this example running:
 
 
 ---
-## RabbitMQ setup
 
-This example uses the internal ToyBroker to allow being run out of the box, but to use `chat.html` the WebSockets capabilities of RabbitMQ are required (`chat.pl` works fine though).
+### ActiveMQ setup
 
-To run this example using RabbitMQ set `use_toybroker` to false in config files, and configure RabbitMQ (enable STOMP and create the required users and virtual hosts) with the following commands:
+This example uses the internal ToyBroker to allow being run out of the box, but to use `chat.html` the WebSockets capabilities of ActiveMQ or RabbitMQ are required (`chat.pl` works fine though).
+
+To run this example on a fresh install of ActiveMQ just set `use_toybroker` to false in config file `pool.config.json`. Also ensure that `host` addresses in `bus.config.json` and `config.js` match ActiveMQ one.
+
+Note that ActiveMQ does not support virtual hosts, so this example will not use four different brokers as it should (it works anyway because queue names do not clash).
+
+**WARNING:** A fresh install of ActiveMQ is completly open and does not provide any kind of security.
+
+
+### RabbitMQ setup
+
+To run this example on a fresh install of RabbitMQ set `use_toybroker` to false in config file
+`pool.config.json`. Also ensure that `host` addresses in `bus.config.json` and `config.js` match RabbitMQ one.
+
+Then configure RabbitMQ (enable STOMP and create the required users and virtual hosts) with the following commands:
 
 ```
 rabbitmq-plugins enable rabbitmq_stomp
@@ -72,9 +85,7 @@ rabbitmqctl set_topic_permissions frontend -p /frontend-B amq.topic "" "^msg.fro
 
 #WARNING: /queue/req.backend cannot be made write-only for user frontend
 ```
-Also ensure that `host` addresses in `bus.config.json` and `config.js` match RabbitMQ one.
-
-**WARNING:** RabbitMQ is easy to install and configure, but cannot be used in a frontend role because its STOMP permissions are not flexible enough to restrict unwanted consumption from `/queue/req.backend`.
+**WARNING:** RabbitMQ cannot be used in a frontend role because its STOMP permissions are not flexible enough to restrict unwanted consumption from `/queue/req.backend`.
 
 ---
 

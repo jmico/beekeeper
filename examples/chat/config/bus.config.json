@@ -43,14 +43,14 @@
         "pass"    : "abc123",
         "vhost"   : "/frontend-A",
     },
-    {
-        "bus-id"  : "frontend-B",
-        "cluster" : "frontend",
-        "host"    : "localhost",
-        "user"    : "frontend",
-        "pass"    : "abc123",
-        "vhost"   : "/frontend-B",
-    },
+#   {
+#       "bus-id"  : "frontend-B",  # Can be uncommented when using ToyBroker or RabbitMQ
+#       "cluster" : "frontend",    # (ActiveMQ does not support virtual hosts)
+#       "host"    : "localhost",
+#       "user"    : "frontend",
+#       "pass"    : "abc123",
+#       "vhost"   : "/frontend-B",
+#   },
     {
         "bus-id"  : "toybroker",
         "host"    : "localhost",

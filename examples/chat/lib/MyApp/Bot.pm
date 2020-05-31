@@ -7,7 +7,7 @@ use MyApp::Service::Chat;
 use MyApp::Service::Auth;
 
 use Beekeeper::Client;
-
+use Beekeeper::Config;
 
 sub new {
     my ($class, %args) = @_;
@@ -16,11 +16,16 @@ sub new {
         username => $args{'username'},
     };
 
+    # Choose a random frontend
+    my $frontend_configs = Beekeeper::Config->get_cluster_config( cluster => 'frontend' );
+    my $frontend = $frontend_configs->[rand @$frontend_configs];
+    my $bus_id = $frontend->{'bus-id'};
+
     # Force a new connection
     local $Beekeeper::Client::singleton;
 
     $self->{client} = Beekeeper::Client->instance( 
-        bus_id     => 'frontend-'.('A','B')[rand 2], 
+        bus_id     => $bus_id,   # 'frontend-A' 
         forward_to => 'backend',
     );
 

@@ -23,9 +23,14 @@ sub new {
 
     $self->{fh} = $args{'fh'} || \*STDIN;
 
+    # Choose a random frontend
+    my $frontend_configs = Beekeeper::Config->get_cluster_config( cluster => 'frontend' );
+    my $frontend = $frontend_configs->[rand @$frontend_configs];
+    my $bus_id = $frontend->{'bus-id'};
+
     # Connect to bus 'frontend-A', wich will forward requests to 'backend'
     $self->{client} = Beekeeper::Client->instance( 
-        bus_id     => 'frontend-'.('A','B')[rand 2], 
+        bus_id     => $bus_id,   # 'frontend-A' 
         forward_to => 'backend',
     );
 

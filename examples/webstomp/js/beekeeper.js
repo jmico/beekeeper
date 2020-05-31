@@ -172,8 +172,10 @@ function JSON_RPC () { return {
             id: this.request_seq++
         };
 
+        var QUEUE_LANES = 2;
+
         this.stomp.send(
-            "/queue/req.backend-" + Math.floor(Math.random()*2+1),
+            "/queue/req.backend-" + Math.floor(Math.random()*QUEUE_LANES+1),
             {
                 "reply-to": this.reply_queue,
                 "x-forward-to": "/queue/req.backend." + args.method.replace(/\.[\w-]+$/,'')

@@ -20,6 +20,8 @@ function Chat () { return {
                 This.echo_info( 'Connected to ' + This.rpc.server + ' at ' + This.rpc.stomp.ws.url );
                 This.echo_info( 'Debug enabled, STOMP traffic is being dumped to console' );
                 This.init();
+
+                This.login_user();
             }
         });
     },

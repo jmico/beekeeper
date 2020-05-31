@@ -22,7 +22,7 @@ When done, stop the worker pool with:
 
 ### ActiveMQ setup
 
-This example uses the internal ToyBroker to allow being run out of the box, but to use `chat.html` the WebSockets capabilities of ActiveMQ or RabbitMQ are required (`chat.pl` works fine though).
+This example uses the internal ToyBroker to allow being run out of the box, but to use `client.html` the WebSockets capabilities of ActiveMQ or RabbitMQ are required (`client.pl` works fine though).
 
 To run this example on a fresh install of ActiveMQ just set `use_toybroker` to false in config file `pool.config.json`. Also ensure that `host` addresses in `bus.config.json` and `config.js` match ActiveMQ one.
 
