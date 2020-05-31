@@ -1,4 +1,4 @@
-# Supported brokers
+## Supported brokers
 
 - **ActiveMQ** (as of 5.15.12) works perfectly. It is a mature product and has good community support. On the downside it does not support STOMP virtual hosts, so it is not practical to emulate complex topologies 
 (simple pairs frontend/backend works anyway because queue names do not clash).
@@ -12,7 +12,7 @@
 Beekeeper, being broker agnostic as much as possible, allows to switch brokers at any time or mix them in different roles.
 
 
-# Security notes
+## Security notes
 
 - Enable TLS on any production system.
 
@@ -27,7 +27,7 @@ Beekeeper, being broker agnostic as much as possible, allows to switch brokers a
 - Broker must be configured to discard old, unconsumed messages. Otherwise it may eventually run out of memory.
 
 
-# ActiveMQ configuration
+## ActiveMQ configuration
 
 A fresh install of ActiveMQ is completly open and does not provide any kind of security, thus examples can be run out of the box.
 
@@ -64,7 +64,7 @@ To setup a restricted basic configuration suitable to run examples add to `broke
 A complex STOMP only configuration can be found ![here](https://activemq.apache.org/complex-single-broker-configuration-stomp-only).
 
 
-# RabbitMQ configuration
+## RabbitMQ configuration
 
 A fresh install of RabbitMQ need to be configured in order to run examples.
 
