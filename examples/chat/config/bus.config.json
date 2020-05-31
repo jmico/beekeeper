@@ -54,8 +54,8 @@
     {
         "bus-id"  : "toybroker",
         "host"    : "localhost",
-        "user"    : "broker",
-        "pass"    : "hij789",
+        "user"    : "backend",
+        "pass"    : "def456",
         "vhost"   : "/toybroker",
     },
 ]
