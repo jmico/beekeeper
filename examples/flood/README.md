@@ -28,25 +28,25 @@ Sample output running on a local ActiveMQ 5.15.12:
 ```
 # flood -b
 
-1000 notifications    of   0 Kb  in  0.055 sec   18187 /sec   0.05 ms each
-1000 notifications    of   1 Kb  in  0.068 sec   14621 /sec   0.07 ms each
-1000 notifications    of   5 Kb  in  0.072 sec   13974 /sec   0.07 ms each
-1000 notifications    of  10 Kb  in  0.093 sec   10715 /sec   0.09 ms each
+1000 notifications    of   0 Kb  in  0.049 sec   20390 /sec   0.05 ms each
+1000 notifications    of   1 Kb  in  0.066 sec   15215 /sec   0.07 ms each
+1000 notifications    of   5 Kb  in  0.070 sec   14266 /sec   0.07 ms each
+1000 notifications    of  10 Kb  in  0.093 sec   10762 /sec   0.09 ms each
 
-1000 sync jobs        of   0 Kb  in  1.438 sec     695 /sec   1.44 ms each
-1000 sync jobs        of   1 Kb  in  1.448 sec     690 /sec   1.45 ms each
-1000 sync jobs        of   5 Kb  in  1.628 sec     614 /sec   1.63 ms each
-1000 sync jobs        of  10 Kb  in  1.974 sec     507 /sec   1.97 ms each
+1000 sync jobs        of   0 Kb  in  1.344 sec     744 /sec   1.34 ms each
+1000 sync jobs        of   1 Kb  in  1.359 sec     736 /sec   1.36 ms each
+1000 sync jobs        of   5 Kb  in  1.515 sec     660 /sec   1.51 ms each
+1000 sync jobs        of  10 Kb  in  1.869 sec     535 /sec   1.87 ms each
 
-1000 async jobs       of   0 Kb  in  0.277 sec    3611 /sec   0.28 ms each
-1000 async jobs       of   1 Kb  in  0.306 sec    3272 /sec   0.31 ms each
-1000 async jobs       of   5 Kb  in  0.336 sec    2973 /sec   0.34 ms each
-1000 async jobs       of  10 Kb  in  0.462 sec    2166 /sec   0.46 ms each
+1000 async jobs       of   0 Kb  in  0.277 sec    3613 /sec   0.28 ms each
+1000 async jobs       of   1 Kb  in  0.281 sec    3562 /sec   0.28 ms each
+1000 async jobs       of   5 Kb  in  0.307 sec    3262 /sec   0.31 ms each
+1000 async jobs       of  10 Kb  in  0.374 sec    2676 /sec   0.37 ms each
 
-1000 background jobs  of   0 Kb  in  0.134 sec    7488 /sec   0.13 ms each
-1000 background jobs  of   1 Kb  in  0.203 sec    4933 /sec   0.20 ms each
-1000 background jobs  of   5 Kb  in  0.216 sec    4624 /sec   0.22 ms each
-1000 background jobs  of  10 Kb  in  0.225 sec    4452 /sec   0.22 ms each
+1000 background jobs  of   0 Kb  in  0.110 sec    9053 /sec   0.11 ms each
+1000 background jobs  of   1 Kb  in  0.120 sec    8301 /sec   0.12 ms each
+1000 background jobs  of   5 Kb  in  0.140 sec    7129 /sec   0.14 ms each
+1000 background jobs  of  10 Kb  in  0.181 sec    5528 /sec   0.18 ms each
 ```
 Sample output running on a local RabbitMQ 3.8.3:
 

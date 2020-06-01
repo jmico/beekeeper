@@ -167,17 +167,18 @@ The framework includes these command line tools to manage worker pools:
 
 ## Performance
 
-Beekeeper is pretty lightweight, so the performance depends mostly on *the broker* performance. These are the numbers of a local setup running RabbitMQ:
+Beekeeper is pretty lightweight, so the performance depends mostly on *the broker* performance. These are 
+ballpark performance measurements of a local setup running ActiveMQ:
 
-- A `do_job` synchronous call to a remote method adds 1.5 ms of latency and involves 4 network round trips. This translates to a maximum of 650 synchronous calls per second.
+- A `do_job` synchronous call to a remote method adds 1.5 ms of latency and involves 4 network round trips. This implies a maximum of 650 synchronous calls per second.
 
-- A `do_async_job` asynchronous call to a remote method takes 0.1 ms. This translates to a maximum of 10000 asynchronous calls per second (just the call, then it must wait for responses).
+- A `do_async_job` asynchronous call to a remote method takes 0.1 ms. This implies a maximum of 10000 asynchronous calls per second (just the call, then it must wait for responses).
 
-- Scheduling a remote task with `do_background_job` takes 0.1 ms. This translates to a maximum of 10000 calls per second.
+- Scheduling a remote task with `do_background_job` takes 0.1 ms. This implies a maximum of 10000 calls per second.
 
 - Sending a notification with `send_notification` takes 0.1 ms. A worker can emit 10000 notifications per second, even over 15000 if these are smaller than 1 KB.
 
-- A worker processing remote calls adds 0.42 ms of latency and involves 2 network round trips. So a single worker can handle a maximum of 2300 requests per second.
+- A worker processing remote calls adds 0.3 ms of latency and involves 2 network round trips. So a single worker can handle a maximum of 3300 requests per second.
 
 - A worker adds an overhead of 0,04% CPU load per request.
 
@@ -191,7 +192,7 @@ Suppose it is needed to handle 1000 requests per second to a task that takes 25 
 
 Adding framework and network latency, a single worker can handle:
 ```
-1000 ms / (25 ms + 0.42 ms + 0.1 ms * 2) = 39 req/s
+1000 ms / (25 ms + 0.3 ms + 0.1 ms * 2) = 39 req/s
 ```
 In order to handle 1000 requests per second:
 ```
@@ -207,12 +208,12 @@ The CPU needed is:
 ```
 End user latency is:
 ```
-25 ms + 0.42 ms + 5 ms + 0.1 ms * 6 = 31 ms + user latency
+25 ms + 0.3 ms + 5 ms + 0.1 ms * 6 = 31 ms + user latency
 ```
 Backend broker receives 2000 msg/s and sends 2000 msg/s, giving a 4000 msg/s total traffic.
 Frontend broker receives 1000 msg/s and sends 1000 msg/s, giving a 2000 msg/s total traffic.
 
-These numbers will, of course, worsen when broker performance degrades under heavy load.
+These numbers will improve a bit when running on beefier CPUs, and worsen a lot if broker performance degrades under heavy load.
 
 
 ## Examples
