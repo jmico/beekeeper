@@ -363,6 +363,10 @@ sub get_services_status {
     }
 
     foreach my $service (values %services) {
+        $service->{load} = $service->{load} / $service->{count};
+    }
+
+    foreach my $service (values %services) {
         $service->{jps}  = sprintf("%.2f", $service->{jps} );
         $service->{nps}  = sprintf("%.2f", $service->{nps} );
         $service->{cpu}  = sprintf("%.2f", $service->{cpu} );
