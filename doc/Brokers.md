@@ -59,6 +59,8 @@ To setup a restricted basic configuration suitable to run examples add to `broke
       </authorizationMap>
     </map>
   </authorizationPlugin>
+  <!-- 60000 ms = 1 minute -->
+  <timeStampingBrokerPlugin ttlCeiling="60000" zeroExpirationOverride="60000"/>
 </plugins>
 ```
 A complex STOMP only configuration can be found [here](https://activemq.apache.org/complex-single-broker-configuration-stomp-only).
