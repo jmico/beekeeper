@@ -6,16 +6,18 @@
 # In this example four logical buses are defined, all residing in the same
 # local broker. For development purposes is handy to use a single broker to 
 # hold all logical buses and easily simulate a complex topology, but in 
-# production enviroments is desirable to isolate brokers from each other.
+# production enviroments it is desirable to isolate brokers from each other.
 #
-# Each bus definition must contain the following parameters:
+# Each bus definition accepts the following parameters:
 #
-#  - bus-id  : unique identifier of the logical bus
-#  - cluster : unique identifier of the cluster which the bus belongs to
-#  - host    : hostname or IP address of the STOMP broker
-#  - user    : username used to connect to the STOMP broker
-#  - pass    : password used to connect to the STOMP broker
-#  - vhost   : virtual host of STOMP broker (may be omitted)
+#  - bus-id  : unique identifier of the logical bus (required)
+#  - cluster : identifier of the cluster of buses that this bus belongs to (if any)
+#  - host    : hostname or IP address of the broker (required)
+#  - port    : port of the broker (default is 61613)
+#  - tls     : if set to true enables the use of TLS on broker connection
+#  - user    : username used to connect to the broker (required)
+#  - pass    : password used to connect to the broker (required)
+#  - vhost   : virtual host on broker (ignored by some brokers)
 
 [
     {

@@ -64,17 +64,23 @@ enviroments brokers should be isolated from each other.
 
 The file format is in relaxed JSON, which allows comments and trailings commas.
 
-Each entry define a logical bus. Required parameters are:
+Each entry define a logical bus. Accepted parameters are:
 
-C<bus-id>: unique identifier for the logical bus
+C<bus-id>: unique identifier of the logical bus (required)
 
-C<host>: hostname or IP address of the STOMP broker
+C<cluster>: identifier of the cluster of logical buses that this bus belongs to (if any)
 
-C<user>: username used to connect to the STOMP broker
+C<host>: hostname or IP address of the broker (required)
 
-C<pass>: password used to connect to the STOMP broker
+C<port>: port of the broker (default is 61613)
 
-C<vhost>: virtual host of STOMP broker (may be omitted)
+C<tls>: if set to true enables the use of TLS on broker connection
+
+C<user>: username used to connect to the broker (required)
+
+C<pass>: password used to connect to the broker (required)
+
+C<vhost>: virtual host on broker (ignored by some brokers)
 
 Example:
 
