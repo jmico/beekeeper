@@ -61,7 +61,7 @@ To setup a restricted basic configuration suitable to run examples add to `broke
   </authorizationPlugin>
 </plugins>
 ```
-A complex STOMP only configuration can be found ![here](https://activemq.apache.org/complex-single-broker-configuration-stomp-only).
+A complex STOMP only configuration can be found [here](https://activemq.apache.org/complex-single-broker-configuration-stomp-only).
 
 
 ## RabbitMQ configuration
