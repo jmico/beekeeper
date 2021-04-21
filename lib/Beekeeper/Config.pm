@@ -232,6 +232,8 @@ sub read_config_file {
 
 1;
 
+=encoding utf8
+
 =head1 AUTHOR
 
 José Micó, C<jose.mico@gmail.com>

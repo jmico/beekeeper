@@ -121,6 +121,8 @@ Signal remote workers to finish their current tasks and restart.
 
 L<Beekeeper::Service::Supervisor>
 
+=encoding utf8
+
 =head1 AUTHOR
 
 José Micó, C<jose.mico@gmail.com>

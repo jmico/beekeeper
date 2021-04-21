@@ -985,6 +985,8 @@ sub __report_exit {
  
 L<Beekeeper::Client>, L<Beekeeper::WorkerPool>, L<Beekeeper::Logger>.
 
+=encoding utf8
+
 =head1 AUTHOR
 
 José Micó, C<jose.mico@gmail.com>

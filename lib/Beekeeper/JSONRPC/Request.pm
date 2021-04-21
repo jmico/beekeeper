@@ -87,6 +87,8 @@ sub success {
 
 1;
 
+=encoding utf8
+
 =head1 AUTHOR
 
 José Micó, C<jose.mico@gmail.com>

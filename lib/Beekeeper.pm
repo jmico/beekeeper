@@ -84,7 +84,7 @@ Beekeeper is a framework for building applications with a microservices architec
 
 =begin HTML
 
-<p><img src="httpa://github.com/jmico/beekeeper/doc/images/beekeeper.svg"/></p>
+<p><img src="https://raw.githubusercontent.com/jmico/beekeeper/master/doc/images/beekeeper.svg"/></p>
 
 =end HTML
 
@@ -267,6 +267,8 @@ L<Beekeeper::WorkerPool>, L<Beekeeper::Client>, L<Beekeeper::Worker>.
 =head1 SOURCE REPOSITORY
  
 The source code repository for Beekeeper can be found at L<https://github.com/jmico/beekeeper>
+
+=encoding utf8
 
 =head1 AUTHOR
 

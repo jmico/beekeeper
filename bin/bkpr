@@ -66,6 +66,8 @@ for in ENV C<BEEKEEPER_CONFIG_DIR>, C<~/.config/beekeeper>and then C</etc/beekee
  
 L<Beekeeper::WorkerPool>, L<Beekeeper::Config>.
 
+=encoding utf8
+
 =head1 AUTHOR
 
 José Micó, C<jose.mico@gmail.com>

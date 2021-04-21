@@ -493,6 +493,8 @@ sub _get_pool_index {
 
 1;
 
+=encoding utf8
+
 =head1 AUTHOR
 
 José Micó, C<jose.mico@gmail.com>

@@ -62,6 +62,8 @@ sub has_auth_tokens {
 
 1;
 
+=encoding utf8
+
 =head1 AUTHOR
 
 José Micó, C<jose.mico@gmail.com>

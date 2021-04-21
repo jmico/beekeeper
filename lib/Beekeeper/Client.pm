@@ -194,7 +194,7 @@ Broadcast a notification to the message bus.
 All clients and workers listening for C<method> will receive it. If no one is listening
 the notification is lost.
 
-=over4
+=over 4
 
 =item method
 
@@ -408,7 +408,7 @@ On error it will die unless C<raise_error> option is set to false.
 
 This method accepts the following parameters:
 
-=over4
+=over 4
 
 =item method
 
@@ -448,7 +448,7 @@ will have a defined C<response>.
 This method  accepts parameters C<method>, C<params>, C<address> and C<timeout> 
 the same as C<do_job>. Additionally two callbacks can be specified:
 
-=over4
+=over 4
 
 =item on_success
 
@@ -832,6 +832,8 @@ sub ___abort_transaction {
 }
 
 1;
+
+=encoding utf8
 
 =head1 SEE ALSO
  

@@ -99,6 +99,8 @@ sub get_services_status {
 
 1;
 
+=encoding utf8
+
 =head1 SEE ALSO
  
 L<bkpr-top>, L<bkpr-restart>.
