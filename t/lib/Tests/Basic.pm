@@ -30,7 +30,7 @@ sub test_01_notifications : Test(2) {
     );
 
     my $expected = 76;
-    my $max_wait = 100; while ($max_wait--) { last if $var == $expected; sleep 0.01; }
+    my $max_wait = 200; while ($max_wait--) { last if $var == $expected; sleep 0.01; }
     is( $var, $expected, "Notifications received by 2 workers");
 
     $cli->send_notification(
@@ -39,7 +39,7 @@ sub test_01_notifications : Test(2) {
     );
 
     $expected = 78;
-    $max_wait = 100; while ($max_wait--) { last if $var == $expected; sleep 0.01; }
+    $max_wait = 200; while ($max_wait--) { last if $var == $expected; sleep 0.01; }
     is( $var, $expected, "Catchall notifications received by 2 workers");
 }
 

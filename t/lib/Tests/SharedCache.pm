@@ -103,6 +103,12 @@ sub test_01_shared_cache_basic : Test(11) {
 sub test_02_shared_cache_stress : Test(20) {
     my $self = shift;
 
+    if ($ENV{'AUTOMATED_TESTING'}) {
+        # There is a chance of retrieving stale data from cache,
+        # specially when broker is running low of CPU resources
+        return "Shared cache stress tests are not deterministic";
+    }
+
     my $cli = Beekeeper::Client->instance;
     my $resp;
 
