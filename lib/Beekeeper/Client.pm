@@ -46,6 +46,8 @@ Version 0.01
   
   $client->wait_all_jobs;
 
+=encoding utf8
+
 =head1 DESCRIPTION
 
 This module connects to the message broker and makes RPC calls through message bus.
@@ -832,8 +834,6 @@ sub ___abort_transaction {
 }
 
 1;
-
-=encoding utf8
 
 =head1 SEE ALSO
  
