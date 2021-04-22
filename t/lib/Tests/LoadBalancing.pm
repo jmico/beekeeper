@@ -19,7 +19,7 @@ sub start_test_workers : Test(startup => 1) {
 sub test_01_load_balancing_async : Test(6) {
     my $self = shift;
 
-    if ($ENV{'AUTOMATED_TESTING'}) {
+    if ($ENV{'AUTOMATED_TESTING'} || $ENV{'PERL_BATCH'}) {
         # Broker may fail to load balance evenly when running low of CPU resources
         return "Load balancing tests are not deterministic";
     }
@@ -66,7 +66,7 @@ sub test_01_load_balancing_async : Test(6) {
 sub test_02_load_balancing_background : Test(6) {
     my $self = shift;
 
-    if ($ENV{'AUTOMATED_TESTING'}) {
+    if ($ENV{'AUTOMATED_TESTING'} || $ENV{'PERL_BATCH'}) {
         # Broker may fail to load balance evenly when running low of CPU resources
         return "Load balancing tests are not deterministic";
     }
@@ -112,7 +112,7 @@ sub test_02_load_balancing_background : Test(6) {
 sub test_03_slow_consumer_async : Test(6) {
     my $self = shift;
 
-    if ($ENV{'AUTOMATED_TESTING'}) {
+    if ($ENV{'AUTOMATED_TESTING'} || $ENV{'PERL_BATCH'}) {
         # Broker may fail to load balance evenly when running low of CPU resources
         return "Load balancing tests are not deterministic";
     }
