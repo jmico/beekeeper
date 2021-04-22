@@ -42,7 +42,17 @@ sub using_toybroker {
     return ($Broker =~ m/ToyBroker/);
 }
 
-sub check_broker_connection : Test(startup => 1) {
+sub check_01_supported_os : Test(startup => 1) {
+    my $class = shift;
+
+    unless ($^O eq 'linux' || $^O eq 'freebsd' || $^O eq 'darwin') {
+        BAIL_OUT "OS unsupported";
+    }
+
+    ok( 1, "Supported OS ($^O)");
+}
+
+sub check_02_broker_connection : Test(startup => 1) {
     my $class = shift;
     my $server;
     my $error;

@@ -14,6 +14,10 @@ use Test::More;
 
 plan tests => 17;
 
+unless ($^O eq 'linux' || $^O eq 'freebsd' || $^O eq 'darwin') {
+    BAIL_OUT "OS unsupported";
+}
+
 use_ok $_ for qw(
     Beekeeper
     Beekeeper::JSONRPC
