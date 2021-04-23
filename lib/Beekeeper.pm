@@ -155,9 +155,9 @@ another workers.
 
 A worker class just declares on startup which methods it will accept, then implements them:
 
-package MyApp::Worker;
+  package MyApp::Worker;
   
-use base 'Beekeeper::Worker';
+  use base 'Beekeeper::Worker';
   
   sub on_startup {
       my $self = shift;
