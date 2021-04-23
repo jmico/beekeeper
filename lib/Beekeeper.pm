@@ -276,7 +276,7 @@ C<examples/chat> implements a real world setup with isolated buses and redundanc
 =head3 TODO
 
 Since this project was started (and even then) STOMP has been completely surpassed 
-as a fast and simple messaging protocol by superior MQTT. And since 2019, when MQTT
+as a fast and simple messaging protocol by MQTT. And since 2019, when MQTT
 version 5.0 was released, many brokers started to implement the routing features
 needed by Beekeeper to run.
 
