@@ -77,7 +77,8 @@ sub check_02_broker_connection : Test(startup => 1) {
     $toybroker_pid = $class->_spawn_worker('Beekeeper::Service::ToyBroker::Worker');
     $Broker = 'ToyBroker';
 
-    sleep 0.5;
+    # Wait until ToyBroker is ready
+    sleep (($ENV{'AUTOMATED_TESTING'} || $ENV{'PERL_BATCH'}) ? 2 : 0.5 );
 
     ok( 1, "Using ToyBroker");
 }
