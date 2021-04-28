@@ -45,7 +45,7 @@ sub using_toybroker {
 sub check_01_supported_os : Test(startup => 1) {
     my $class = shift;
 
-    unless ($^O eq 'linux' || $^O eq 'freebsd' || $^O eq 'darwin') {
+    unless ($^O eq 'linux' || $^O eq 'freebsd') {
         BAIL_OUT "OS unsupported";
     }
 
