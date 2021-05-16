@@ -76,7 +76,7 @@ to connect using the configuration from config file C<bus.config.json>.
 
 =cut
 
-use Beekeeper::Bus::STOMP;
+use Beekeeper::Bus::MQTT;
 use Beekeeper::JSONRPC;
 use Beekeeper::Config;
 
@@ -85,10 +85,8 @@ use Sys::Hostname;
 use Time::HiRes;
 use Carp;
 
-use constant TXN_CLIENT_SIDE => 1;
-use constant TXN_SERVER_SIDE => 2;
-use constant QUEUE_LANES     => 2;
-use constant REQ_TIMEOUT     => 60;
+use constant QUEUE_LANES => 2;
+use constant REQ_TIMEOUT => 60;
 
 use Exporter 'import';
 
@@ -101,7 +99,7 @@ our @EXPORT_OK = qw(
     set_auth_tokens
     get_auth_tokens
     __do_rpc_request
-    __create_reply_queue
+    __create_response_topic
 );
 
 our %EXPORT_TAGS = ('worker' => \@EXPORT_OK );
@@ -119,8 +117,7 @@ sub new {
 
     $self->{_CLIENT} = {
         forward_to     => $args{'forward_to'},
-        reply_queue    => undef,
-        correlation_id => undef,
+        response_topic => undef,
         in_progress    => undef,
         transaction    => undef,
         transaction_id => undef,
@@ -128,6 +125,7 @@ sub new {
         auth_tokens    => undef,
         session_id     => undef,
         async_cv       => undef,
+        correlation_id => 1,
         callbacks      => {},
     };
 
@@ -160,9 +158,22 @@ sub new {
         }
     }
 
-    $self->{_BUS} = Beekeeper::Bus::STOMP->new( %args );
+    # Start a fresh new MQTT session on connect
+    $args{'clean_start'} = 1;
 
-    # Connect to STOMP broker
+    # Make the MQTT session ends when the connection is closed
+    $args{'session_expiry_interval'} = 0;
+
+    # Keep only 1 unacked message (of QoS 1) in flight
+    $args{'receive_maximum'} = 1;
+
+    # Do not use topic aliases
+    $args{'topic_alias_maximum'} = 0;
+
+
+    $self->{_BUS} = Beekeeper::Bus::MQTT->new( %args );
+
+    # Connect to MQTT broker
     $self->{_BUS}->connect( blocking => 1 );
 
     bless $self, $class;
@@ -242,12 +253,17 @@ sub send_notification {
     $remote_bus = $self->{_CLIENT}->{forward_to} unless (defined $remote_bus);
 
     if (defined $remote_bus) {
-        $send_args{'destination'}  = "/queue/msg.$remote_bus-" . int(rand(QUEUE_LANES)+1);
-        $send_args{'x-forward-to'} = "/topic/msg.$remote_bus.$service.$method";
-        $send_args{'x-forward-to'} .= "\@$addr" if (defined $addr && $addr =~ s/^\.//);
+
+        $send_args{'topic'}  = "msg/$remote_bus-" . int( rand(QUEUE_LANES) + 1 );
+        $send_args{'topic'} =~ tr|.|/|;
+
+        $send_args{'fwd_to'} = "msg/$remote_bus/$service/$method";
+        $send_args{'fwd_to'} .= "\@$addr" if (defined $addr && $addr =~ s/^\.//);
+        $send_args{'fwd_to'} =~ tr|.|/|;
     }
     else {
-        $send_args{'destination'} = "/topic/msg.$local_bus.$service.$method";
+        $send_args{'topic'} = "msg/$local_bus/$service/$method";
+        $send_args{'topic'} =~ tr|.|/|;
     }
 
     if (exists $args{'__auth'}) {
@@ -259,11 +275,10 @@ sub send_notification {
     }
 
     if ($self->{transaction}) {
-        my $hdr = $self->{transaction} == TXN_CLIENT_SIDE ? 'buffer_id' : 'transaction';
-        $send_args{$hdr} = $self->{transaction_id};
+        $send_args{'buffer_id'} = $self->{transaction_id};
     }
 
-    $self->{_BUS}->send( body => \$json, %send_args );
+    $self->{_BUS}->publish( payload => \$json, %send_args );
 }
 
 =head3 accept_notifications ( $method => $callback, ... )
@@ -312,10 +327,12 @@ sub accept_notifications {
 
         my $local_bus = $self->{_BUS}->{cluster};
 
+        my $topic = "msg/$local_bus/$service/$method";
+        $topic =~ tr|.*|/#|;
+
         $self->{_BUS}->subscribe(
-            destination    => "/topic/msg.$local_bus.$service.$method",
-            ack            => 'auto', # means none
-            on_receive_msg => sub {
+            topic      => $topic,
+            on_publish => sub {
                 my ($body_ref, $msg_headers) = @_;
 
                 local $@;
@@ -377,9 +394,12 @@ sub stop_accepting_notifications {
 
         my $local_bus = $self->{_BUS}->{cluster};
 
+        my $topic = "msg/$local_bus/$service/$method";
+        $topic =~ tr|.*|/#|;
+
         $self->{_BUS}->unsubscribe(
-            destination => "/topic/msg.$local_bus.$service.$method",
-            on_success  => sub {
+            topic       => $topic,
+            on_unsuback => sub {
 
                 delete $self->{_CLIENT}->{callbacks}->{"msg.$fq_meth"};
 
@@ -545,16 +565,21 @@ sub __do_rpc_request {
 
     $remote_bus = $client->{forward_to} unless (defined $remote_bus);
 
-    # Local bus request sent to:   /queue/req.{local_bus}.{service_class}
-    # Remote bus request sent to:  /queue/req.{remote_bus}
+    # Local bus request sent to:  req/{local_bus}/{service_class}
+    # Remote bus request sent to: req/{remote_bus}
 
     if (defined $remote_bus) {
-        $send_args{'destination'}  = "/queue/req.$remote_bus-" . int(rand(QUEUE_LANES)+1);
-        $send_args{'x-forward-to'} = "/queue/req.$remote_bus.$service";
-        $send_args{'x-forward-to'} .= "\@$addr" if (defined $addr && $addr =~ s/^\.//);
+
+        $send_args{'topic'} = "req/$remote_bus-" . int( rand(QUEUE_LANES) + 1 );
+        $send_args{'topic'} =~ tr|.|/|;
+
+        $send_args{'fwd_to'} = "req/$remote_bus/$service";
+        $send_args{'fwd_to'} .= "\@$addr" if (defined $addr && $addr =~ s/^\.//);
+        $send_args{'fwd_to'} =~ tr|.|/|;
     }
     else {
-        $send_args{'destination'} = "/queue/req.$local_bus.$service";
+        $send_args{'topic'} = "req/$local_bus/$service";
+        $send_args{'topic'} =~ tr|.|/|;
     }
 
     if (exists $args{'__auth'}) {
@@ -566,7 +591,7 @@ sub __do_rpc_request {
     }
 
     my $timeout = $args{'timeout'} || REQ_TIMEOUT;
-    $send_args{'expiration'} = int( $timeout * 1000 );
+    $send_args{'message_expiry'} = $timeout;
 
 
     my $BACKGROUND  = $args{req_type} eq 'BACKGROUND';
@@ -581,25 +606,28 @@ sub __do_rpc_request {
         params  => $args{'params'},
     };
 
-    # Reuse or create a private reply queue which will receive the response
-    my $reply_queue = $client->{reply_queue} || $self->__create_reply_queue;
-    $send_args{'reply-to'} = $reply_queue;
+    # Reuse or create a private topic which will receive responses
+    $send_args{'response_topic'} = $client->{response_topic} ||
+                                   $self->__create_response_topic;
 
     unless ($BACKGROUND) {
         # Assign an unique request id (unique only for this client)
-        $req_id = int(rand(90000000)+10000000) . '-' . $client->{correlation_id}++;
+        $req_id = $client->{correlation_id}++;
         $req->{'id'} = $req_id;
     }
 
     my $json = encode_json($req);
 
     if ($BACKGROUND && $self->{transaction}) {
-        my $hdr = $self->{transaction} == TXN_CLIENT_SIDE ? 'buffer_id' : 'transaction';
-        $send_args{$hdr} = $self->{transaction_id};
+        $send_args{'buffer_id'} = $self->{transaction_id};
     }
 
     # Send request
-    $self->{_BUS}->send( body => \$json, %send_args );
+    $self->{_BUS}->publish( 
+        payload => \$json,
+        qos     => 1,
+        %send_args,
+    );
 
     if ($BACKGROUND) {
          # Nothing else to do
@@ -651,21 +679,19 @@ sub __do_rpc_request {
     return $req;
 }
 
-sub __create_reply_queue {
+sub __create_response_topic {
     my $self = shift;
     my $client = $self->{_CLIENT};
 
-    # Create an exclusive auto-delete queue for receiving RPC responses.
+    # Subscribe to an exclusive topic for receiving RPC responses
 
-    my $reply_queue = '/temp-queue/tmp.';
-    $reply_queue .= ('A'..'Z','a'..'z','0'..'9')[rand 62] for (1..16);
-    $client->{reply_queue} = $reply_queue;
+    my $response_topic = 'priv/' . $self->{_BUS}->{client_id};
+    $client->{response_topic} = $response_topic;
 
     $self->{_BUS}->subscribe(
-        destination    => $reply_queue,
-        ack            => 'auto',  # means none
-        exclusive      => 1,       # implicit in most brokers
-        on_receive_msg => sub {
+        topic       => $response_topic,
+        maximum_qos => 0,
+        on_publish  => sub {
             my ($body_ref, $msg_headers) = @_;
 
             local $@;
@@ -729,14 +755,15 @@ sub __create_reply_queue {
         },
     );
 
-    return $reply_queue;
+    return $response_topic;
 }
 
 sub wait_all_jobs {
-    my $self = shift;
+    my ($self) = @_;
 
     # Wait for all pending jobs
     my $cv = delete $self->{_CLIENT}->{async_cv};
+    return unless $cv;
 
     # Make AnyEvent to allow one level of recursive condvar blocking, as we may
     # block both in $worker->__work_forever and here
@@ -788,15 +815,7 @@ sub ___begin_transaction {
 
     $self->{transaction_id}++;
 
-    if ($args{'client_side'}) {
-        # Client side
-        $self->{transaction} = TXN_CLIENT_SIDE;
-    }
-    else {
-        # Server side
-        $self->{transaction} = TXN_SERVER_SIDE;
-        $self->{_BUS}->begin( transaction => $self->{transaction_id} );
-    }
+    $self->{transaction} = 1;
 }
 
 sub ___commit_transaction {
@@ -804,14 +823,7 @@ sub ___commit_transaction {
 
     croak "No transaction was previously started" unless $self->{transaction};
 
-    if ($self->{transaction} == TXN_CLIENT_SIDE) {
-        # Client side
-        $self->{_BUS}->flush_buffer( buffer_id => $self->{transaction_id} );
-    }
-    else {
-        # Server side
-        $self->{_BUS}->commit( transaction => $self->{transaction_id} );
-    }
+    $self->{_BUS}->flush_buffer( buffer_id => $self->{transaction_id} );
 
     $self->{transaction} = undef;
 }
@@ -821,14 +833,7 @@ sub ___abort_transaction {
 
     croak "No transaction was previously started" unless $self->{transaction};
 
-    if ($self->{transaction} == TXN_CLIENT_SIDE) {
-        # Client side
-        $self->{_BUS}->discard_buffer( buffer_id => $self->{transaction_id} );
-    }
-    else {
-        # Server side
-        $self->{_BUS}->abort( transaction => $self->{transaction_id} );
-    }
+    $self->{_BUS}->discard_buffer( buffer_id => $self->{transaction_id} );
 
     $self->{transaction} = undef;
 }
@@ -837,7 +842,7 @@ sub ___abort_transaction {
 
 =head1 SEE ALSO
  
-L<Beekeeper::Bus::STOMP>, L<Beekeeper::Worker>.
+L<Beekeeper::Bus::MQTT>, L<Beekeeper::Worker>.
 
 =head1 AUTHOR
 

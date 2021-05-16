@@ -65,11 +65,12 @@ sub on_startup {
 
     # Watch the Supervisor data traffic in order to stop rejecting
     # requests as soon as a worker handling these becomes online
+
     $self->{_BUS}->subscribe(
-        destination    => "/topic/msg.$local_bus._sync.workers.set",
-        on_receive_msg => sub {
-            my ($body_ref, $msg_headers) = @_;
-            $self->on_worker_status( decode_json($$body_ref)->[1] );
+        topic      => "msg/$local_bus/_sync/workers/set",
+        on_publish => sub {
+            my ($payload_ref, $properties) = @_;
+            $self->on_worker_status( decode_json($$payload_ref)->[1] );
         }
     );
 }
@@ -96,7 +97,7 @@ sub on_unserviced_queues {
         $self->{Draining}->{$queue} = 1;
 
         my $local_bus = $self->{_BUS}->{cluster};
-        log_error "Draining unserviced /queue/req.$local_bus.$queue";
+        log_error "Draining unserviced req/$local_bus/$queue";
 
         $self->accept_jobs( "$queue.*" => 'reject_job' );
     }
@@ -119,7 +120,7 @@ sub on_worker_status {
         delete $self->{Draining}->{$queue};
 
         my $local_bus = $self->{_BUS}->{cluster};
-        log_warn "Stopped draining /queue/req.$local_bus.$queue";
+        log_warn "Stopped draining req/$local_bus/$queue";
 
         $self->stop_accepting_jobs( "$queue.*" );
     }

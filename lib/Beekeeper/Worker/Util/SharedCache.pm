@@ -130,16 +130,10 @@ sub _connect_to_all_brokers {
             next;
         }
 
-        my $bus; $bus = Beekeeper::Bus::STOMP->new( 
+        my $bus; $bus = Beekeeper::Bus::MQTT->new( 
             %$config,
-            bus_id     => $bus_id,
-            timeout    => 300,
-            on_connect => sub {
-                # Setup
-                log_debug "Connected to $bus_id";
-                $self->_setup_sync_listeners($bus);
-                $self->_accept_sync_requests($bus) if $self->{synced};
-            },
+            bus_id   => $bus_id,
+            timeout  => 300,
             on_error => sub {
                 # Reconnect
                 my $errmsg = $_[0] || ""; $errmsg =~ s/\s+/ /sg;
@@ -154,7 +148,14 @@ sub _connect_to_all_brokers {
 
         push @$cluster, $bus;
 
-        $bus->connect;
+        $bus->connect(
+            on_connack => sub {
+                # Setup
+                log_debug "Connected to $bus_id";
+                $self->_setup_sync_listeners($bus);
+                $self->_accept_sync_requests($bus) if $self->{synced};
+            },
+        );
     }
 }
 
@@ -167,8 +168,8 @@ sub _setup_sync_listeners {
     my $local_bus = $bus->{cluster};
 
     $bus->subscribe(
-        destination    => "/topic/msg.$local_bus._sync.$cache_id.set",
-        on_receive_msg => sub {
+        topic      => "msg/$local_bus/_sync/$cache_id/set",
+        on_publish => sub {
             my ($body_ref, $msg_headers) = @_;
 
             my $entry = decode_json($$body_ref);
@@ -178,8 +179,8 @@ sub _setup_sync_listeners {
     );
 
     $bus->subscribe(
-        destination    => "/temp-queue/reply-$uid",
-        on_receive_msg => sub {
+        topic      => "priv/reply-$uid",
+        on_publish => sub {
             my ($body_ref, $msg_headers) = @_;
 
             my $dump = decode_json($$body_ref);
@@ -202,10 +203,9 @@ sub _send_sync_request {
     my $uid       = $self->{uid};
     my $local_bus = $bus->{cluster};
 
-    $bus->send(
-        destination => "/queue/req.$local_bus._sync.$cache_id.dump",
-       'reply-to'   => "/temp-queue/reply-$uid",
-        body        => "",
+    $bus->publish(
+        topic          => "req/$local_bus/_sync/$cache_id/dump",
+        response_topic => "priv/reply-$uid",
     );
 
     # When a fresh cluster is started nobody will answer, and determining which
@@ -237,7 +237,7 @@ sub _sync_completed {
 
     # On a fresh cluster, the first worker to timeout the sync request
     # will act as a master and relpy all sync requests remaining
-    log_debug( $success ? "Sync completed" : "Acting as master" );
+    log_debug( "Shared cache '$self->{id}': " . ($success ? "Sync completed" : "Acting as master"));
 
     $self->{synced} = 1;
 
@@ -260,26 +260,20 @@ sub _accept_sync_requests {
     my $bus_id    = $bus->{bus_id};
     my $local_bus = $bus->{cluster};
 
-    log_debug "Accepting $cache_id sync requests from $local_bus";
+    #TODO: MQTT: Not reached
+
+    log_debug "Shared cache '$self->{id}': Accepting sync requests from $local_bus";
 
     $bus->subscribe(
-        destination     => "/queue/req.$local_bus._sync.$cache_id.dump",
-        ack             => 'client', # manual ack
-       'prefetch-count' => '1',
-        on_receive_msg  => sub {
+        topic      => "\$share/BKPR/req/$local_bus/_sync/$cache_id/dump",
+        on_publish => sub {
             my ($body_ref, $msg_headers) = @_;
 
             my $dump = encode_json( $self->dump );
 
-            $bus->send(
-                destination => $msg_headers->{'reply-to'},
-                body        => \$dump,
-            );
-
-            $bus->ack(
-                id           => $msg_headers->{'ack'},
-               'message-id'  => $msg_headers->{'message-id'},
-                subscription => $msg_headers->{'subscription'}, 
+            $bus->publish(
+                topic   => $msg_headers->{'response_topic'},
+                payload => \$dump,
             );
         }
     );
@@ -318,9 +312,9 @@ sub set {
         my $local_bus = $bus->{cluster};
         my $cache_id = $self->{id};
 
-        $bus->send(
-            destination => "/topic/msg.$local_bus._sync.$cache_id.set",
-            body        => \$json,
+        $bus->publish(
+            topic    => "msg/$local_bus/_sync/$cache_id/set",
+            payload  => \$json,
         );
     }
 

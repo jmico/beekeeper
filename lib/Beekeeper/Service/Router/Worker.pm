@@ -36,6 +36,10 @@ use Scalar::Util 'weaken';
 use constant SESSION_TIMEOUT => 1800;
 use constant SHUTDOWN_WAIT   => 2;
 use constant QUEUE_LANES     => 2;
+use constant DEBUG           => 0;
+
+DEBUG && $Beekeeper::Worker::LogLevel = 9;
+
 
 sub authorize_request {
     my ($self, $req) = @_;
@@ -47,6 +51,12 @@ sub authorize_request {
 
 sub on_startup {
     my $self = shift;
+
+    log_info "Router started";
+
+    my $backend_bus = $self->{_BUS};
+    my $backend_id  = $backend_bus->bus_id;
+    log_debug "Connected to backend bus \@$backend_id";
 
     $self->_init_routing_table;
 
@@ -83,19 +93,10 @@ sub init_frontend_connection {
 
     $self->{wait_frontends_up}->begin;
 
-    my $bus; $bus = Beekeeper::Bus::STOMP->new( 
+    my $bus; $bus = Beekeeper::Bus::MQTT->new( 
         %$config,
-        bus_id     => $bus_id,
-        timeout    => 60,
-        on_connect => sub {
-            # Setup routing
-            log_debug "Connected to $bus_id";
-            $self->{FRONTEND}->{$bus_id} = $bus;
-            $self->{wait_frontends_up}->end;
-            $self->pull_frontend_requests( frontend => $bus );
-            $self->pull_backend_responses( frontend => $bus );
-            $self->pull_backend_notifications;
-        },
+        bus_id   => $bus_id,
+        timeout  => 60,
         on_error => sub {
             # Reconnect
             my $errmsg = $_[0] || ""; $errmsg =~ s/\s+/ /sg;
@@ -110,7 +111,17 @@ sub init_frontend_connection {
         },
     );
 
-    $bus->connect;
+    $bus->connect(
+        on_connack => sub {
+            # Setup routing
+            log_debug "Connected to frontend bus \@$bus_id";
+            $self->{FRONTEND}->{$bus_id} = $bus;
+            $self->{wait_frontends_up}->end;
+            $self->pull_frontend_requests( frontend => $bus );
+            $self->pull_backend_responses( frontend => $bus );
+            $self->pull_backend_notifications( frontend => $bus );
+        },
+    );
 }
 
 sub on_shutdown {
@@ -132,8 +143,9 @@ sub on_shutdown {
 
             $cv->begin;
             $frontend_bus->unsubscribe(
-                destination => "/queue/req.$backend_cluster-$lane",
-                on_success  => sub { $cv->end },
+              # destination => "/queue/req.$backend_cluster-$lane",
+                topic        => "\$share/BKPR/req/$backend_cluster-$lane",
+                on_unsuback  => sub { $cv->end },
             );
         }
     }
@@ -143,8 +155,9 @@ sub on_shutdown {
 
         $cv->begin;
         $backend_bus->unsubscribe(
-            destination => "/queue/msg.$frontend_cluster-$lane",
-            on_success  => sub { $cv->end },
+          # destination => "/queue/msg.$frontend_cluster-$lane",
+            topic        => "\$share/BKPR/msg/$frontend_cluster-$lane",
+            on_unsuback  => sub { $cv->end },
         );
     }
 
@@ -166,8 +179,9 @@ sub on_shutdown {
 
             $cv->begin;
             $backend_bus->unsubscribe(
-                destination => "/queue/res.$frontend_id-$lane",
-                on_success  => sub { $cv->end },
+              # destination => "/queue/res.$frontend_id-$lane",
+                topic       => "\$share/BKPR/res/$frontend_id-$lane",
+                on_unsuback => sub { $cv->end },
             );
         }
     }
@@ -175,13 +189,13 @@ sub on_shutdown {
     # 6. Wait for unsubscribe receipts, assuring that no more responses are buffered 
     $tmr = AnyEvent->timer( after => 30, cb => sub { $cv->send });
     $cv->recv;
-
+ 
     # Disconnect from all frontends
     my @frontends = values %{$self->{FRONTEND}};
     foreach my $frontend_bus (@frontends) {
 
         next unless ($frontend_bus->{is_connected});
-        $frontend_bus->disconnect( blocking => 1 );
+        $frontend_bus->disconnect;
     }
 
     # Disconnect from backend cluster
@@ -194,8 +208,8 @@ sub pull_frontend_requests {
 
     # Get requests from frontend bus and forward them to backend bus
     #
-    # src:  frontend /queue/req.backend
-    # dest: backend  /queue/req.backend.class
+    # from:  req/backend-n                @frontend
+    # to:    req/backend/{app}/{service}  @backend
 
     my $frontend_bus = $args{frontend};
     my $frontend_id  = $frontend_bus->bus_id;
@@ -204,71 +218,60 @@ sub pull_frontend_requests {
     my $backend_id      = $backend_bus->bus_id;
     my $backend_cluster = $backend_bus->cluster;
 
-    my $ActiveMQ = $frontend_bus->{is_activemq};
-    my $RabbitMQ = $frontend_bus->{is_rabbitmq};
-
-    my ($body_ref, $msg_headers);
-
     foreach my $lane (1..QUEUE_LANES) {
 
+        my $src_queue = "\$share/BKPR/req/$backend_cluster-$lane";
+
+        my ($payload_ref, $msg_prop);
+        my ($dest_queue, $reply_to, $session_id, $session);
+        my %pub_args;
+
         $frontend_bus->subscribe(
-            destination    => "/queue/req.$backend_cluster-$lane",
-            ack            => 'auto', # means none
-            on_receive_msg => sub {
-                ($body_ref, $msg_headers) = @_;
+            topic       => $src_queue,
+            maximum_qos => 0,
+            on_publish  => sub {
+                ($payload_ref, $msg_prop) = @_;
 
                 # (!) UNTRUSTED REQUEST
 
-                my $destination = $msg_headers->{'x-forward-to'} || '';
-                return unless $destination =~ m|^/queue/req(\.(?!_)[\w-]+)+$|;
+                # eg: req/backend/myapp/service
+                $dest_queue = $msg_prop->{'fwd_to'} || '';
+                return unless $dest_queue =~ m|^req(/(?!_)[\w-]+)+$|;
 
-                my $reply_to = $msg_headers->{'reply-to'} || '';
-                my $session_id;
+                # eg: priv/7nXDsxMDwgLUSedX@frontend-1
+                $reply_to = $msg_prop->{'response_topic'} || '';
+                return unless $reply_to =~ m|^priv/(\w{16,22})$|;
+                $session_id = $1;
 
-                if ($ActiveMQ) {
-                    # ActiveMQ reply-to: /remote-temp-queue/ID\cbuster3-33691-1590497449073-3\c121\c1
-                    return unless $reply_to =~ m|^/remote-temp-queue/ID\\c([\w\\-]{20,})$|;
-                    $session_id = $1;
-                }
-                elsif ($RabbitMQ) {
-                    # RabbitMQ reply-to: /reply-queue/amq.gen-B9LY-y22H8K9RLADnEh0Ww
-                    return unless $reply_to =~ m|^/reply-queue/amq\.gen-([\w-]{22})$|;
-                    $session_id = $1;
-                }
-                else {
-                    # Standard reply-to: /temp-queue/tmp.7nXDsxMDwgLUSedX@frontend-1
-                    return unless $reply_to =~ m|^/temp-queue/tmp\.([\w-]{16,22})$|;
-                    $session_id = $1;
-                }
+                #TODO: Extra sanity checks could be done here before forwarding to backend
 
-                #TODO: Do basic sanity checks (like max size) on $body_ref before forwarding it to backend
-
-                my @opt_headers;
-
-                my $session = $self->{Sessions}->get( $session_id );
-
-                if ($session) {
-                    $self->{Sessions}->touch( $session_id );
-                    if ( $session->[2] ) {
-                        push @opt_headers, ( 'x-auth-tokens' => $session->[2] );
-                    }
-                }
-
-                my $expiration = $msg_headers->{'expiration'} || '';
-                if ($expiration =~ m|^\d+$|) {
-                    push @opt_headers, ( 'expiration' => $expiration );
-                }
-
-                $backend_bus->send(
-                    'destination'     => $destination,
-                    'x-session'       => $session_id,
-                    'reply-to'        => "/queue/res.$frontend_id-$lane",
-                    'x-forward-reply' => "$reply_to\@$frontend_id",
-                    'body'            => $body_ref,
-                     @opt_headers
+                %pub_args = (
+                    topic          => $dest_queue,
+                   'x-session'     => $session_id,
+                    response_topic => "res/$frontend_id-$lane",
+                    fwd_reply      => "$reply_to\@$frontend_id",
+                    payload        => $payload_ref,
                 );
 
+                $session = $self->{Sessions}->get( $session_id );
+
+                if (defined $session) {
+                    $self->{Sessions}->touch( $session_id );
+                    $pub_args{'x-auth-tokens'} = $session->[2];
+                }
+
+                if (exists $msg_prop->{'message_expiry'}) {
+                    $pub_args{'message_expiry'} = $msg_prop->{'message_expiry'};
+                }
+
+                $backend_bus->publish( %pub_args );
+
+                DEBUG && log_trace "Forwarded request:  $src_queue \@$frontend_id --> $dest_queue \@$backend_id";
+
                 $self->{_WORKER}->{jobs_count}++;
+            },
+            on_suback => sub {
+                log_debug "Forwarding $src_queue \@$frontend_id --> req/$backend_cluster/{app}/{service} \@$backend_id";
             },
         );
     }
@@ -277,30 +280,40 @@ sub pull_frontend_requests {
 sub pull_backend_responses {
     my ($self, %args) = @_;
 
-    # Get responses from backend and send them back to frontend
+    # Get responses from backend bus and forward them to frontend bus
+    #
+    # from:  res/frontend-n     @backend
+    # to:    priv/{session_id}  @frontend
 
     my $frontend_bus = $args{frontend};
     my $frontend_id  = $frontend_bus->bus_id;
 
     my $backend_bus  = $self->{_BUS};
-
-    my ($body_ref, $msg_headers, $destination);
+    my $backend_id   = $backend_bus->bus_id;
 
     foreach my $lane (1..QUEUE_LANES) {
 
+        my $src_queue = "\$share/BKPR/res/$frontend_id-$lane";
+
+        my ($payload_ref, $msg_prop, $dest_queue);
+
         $backend_bus->subscribe(
+            topic       => $src_queue,
+            maximum_qos => 0,
+            on_publish  => sub {
+                ($payload_ref, $msg_prop) = @_;
 
-            destination    => "/queue/res.$frontend_id-$lane",
-            ack            => 'auto', # means none
-            on_receive_msg => sub {
-                ($body_ref, $msg_headers) = @_;
+                ($dest_queue) = split('@', $msg_prop->{'fwd_reply'}, 2);
 
-                ($destination) = split('@', $msg_headers->{'x-forward-reply'}, 2);
-
-                $frontend_bus->send(
-                    'destination' => $destination,
-                    'body'        => $body_ref,
+                $frontend_bus->publish(
+                    topic   => $dest_queue,
+                    payload => $payload_ref,
                 );
+
+                DEBUG && log_trace "Forwarded response: $src_queue \@$backend_id --> $dest_queue \@$frontend_id";
+            },
+            on_suback => sub {
+                log_debug "Forwarding $src_queue \@$backend_id --> priv/{session_id} \@$frontend_id";
             },
         );
     }
@@ -310,31 +323,39 @@ sub pull_backend_notifications {
     my ($self, %args) = @_;
     weaken($self);
 
-    # Get notifications from backend and broadcast them to frontend
+    # Get notifications from backend bus and broadcast them to all frontend buses
+    #
+    # from:  msg/frontend-n                @backend
+    # to:    msg/{app}/{service}/{method}  @frontend
 
     unless (keys %{$self->{FRONTEND}} && $self->{wait_frontends_up}->ready) {
         # Wait until connected to all (working) frontends before pulling 
         # notifications otherwise messages cannot be broadcasted properly
+        #TODO: MQTT: broker will discard messages unless someone subscribes
         return;
     }
 
     my $frontend_bus = $args{frontend};
+    my $frontend_id  = $frontend_bus->bus_id;
+
     my $backend_bus  = $self->{_BUS};
+    my $backend_id   = $backend_bus->bus_id;
 
     my $frontend_cluster = $self->{frontend_cluster};
 
-    my ($body_ref, $msg_headers, $destination, $address);
-
     foreach my $lane (1..QUEUE_LANES) {
 
+        my $src_queue = "\$share/BKPR/msg/$frontend_cluster-$lane",
+
+        my ($payload_ref, $msg_prop, $destination, $address);
+
         $backend_bus->subscribe(
+            topic       => $src_queue,
+            maximum_qos => 0,
+            on_publish  => sub {
+                ($payload_ref, $msg_prop) = @_;
 
-            destination    => "/queue/msg.$frontend_cluster-$lane",
-            ack            => 'auto', # means none
-            on_receive_msg => sub {
-                ($body_ref, $msg_headers) = @_;
-
-                ($destination, $address) = split('@', $msg_headers->{'x-forward-to'}, 2);
+                ($destination, $address) = split('@', $msg_prop->{'fwd_to'}, 2);
 
                 if (defined $address) {
 
@@ -347,10 +368,12 @@ sub pull_backend_notifications {
 
                         my $frontend_bus = $self->{FRONTEND}->{$bus_id} || next;
 
-                        $frontend_bus->send(
-                            'destination' => $destination,
-                            'body'        => $body_ref,
+                        $frontend_bus->publish(
+                            topic   => $destination,
+                            payload => $payload_ref,
                         );
+
+                        DEBUG && log_trace "Forwarded notific:  $src_queue \@$backend_id --> $destination \@$frontend_id";
                     }
                 }
                 else {
@@ -358,14 +381,19 @@ sub pull_backend_notifications {
                     # Broadcast
                     foreach my $frontend_bus (values %{$self->{FRONTEND}}) {
 
-                        $frontend_bus->send(
-                            'destination' => $destination,
-                            'body'        => $body_ref,
+                        $frontend_bus->publish(
+                            topic   => $destination,
+                            payload => $payload_ref,
                         );
+
+                        DEBUG && log_trace "Forwarded notific:  $src_queue \@$backend_id --> $destination \@$frontend_id";
                     }
                 }
 
                 $self->{_WORKER}->{notif_count}++;
+            },
+            on_suback => sub {
+                log_debug "Forwarding $src_queue \@$backend_id --> msg/{app}/{service}/{method} \@$frontend_id";
             },
         );
     }
@@ -434,10 +462,8 @@ sub bind {
 
     my $frontend_cluster = $self->{frontend_cluster};
 
-    unless (defined $session_id && $session_id =~ m/^[\w\\-]{16,}$/) {
-        # ActiveMQ eg: buster3-33691-1590497449073-3\c121\c1
-        # RabbitMQ eg: B9LY-y22H8K9RLADnEh0Ww
-        # Standard eg: 7nXDsxMDwgLUSedX
+    unless (defined $session_id && $session_id =~ m/^\w{16,}$/) {
+        # eg: 7nXDsxMDwgLUSedX
         die ( $session_id ? "Invalid session $session_id" : "Session not specified");
     }
 
@@ -446,10 +472,8 @@ sub bind {
         die "Invalid address $address";
     }
 
-    if (defined $reply_queue && $reply_queue !~ m!^/(remote-temp|reply|temp)-queue/[\w\.\\-]+\@[\w-]+$!) {
-        # ActiveMQ reply-to: /remote-temp-queue/ID\cbuster3-33691-1590497449073-3\c121\c1@frontend-1
-        # RabbitMQ reply-to: /reply-queue/amq.gen-B9LY-y22H8K9RLADnEh0Ww@frontend-1
-        # Standard reply-to: /temp-queue/tmp.7nXDsxMDwgLUSedX@frontend-1
+    if (defined $reply_queue && $reply_queue !~ m!^priv/\w+\@[\w-]+$!) {
+        # eg: priv/7nXDsxMDwgLUSedX@frontend-1
         die "Invalid reply queue $reply_queue";
     }
 
@@ -477,7 +501,7 @@ sub unbind {
 
     my $frontend_cluster = $self->{frontend_cluster};
 
-    if (defined $session_id && $session_id !~ m/^[\w-]{8,}$/) {
+    if (defined $session_id && $session_id !~ m/^[\w]{16,}$/) {
         # eg: B9LY-y22H8K9RLADnEh0Ww
         die "Invalid session $session_id";
     }

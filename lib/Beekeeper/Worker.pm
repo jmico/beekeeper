@@ -68,7 +68,7 @@ use Sys::Hostname;
 use Scalar::Util 'blessed';
 use Carp;
 
-#TODO: our @CARP_NOT = ('AnyEvent', 'Beekeeper::Bus::STOMP');
+#TODO: our @CARP_NOT = ('AnyEvent', 'Beekeeper::Bus::MQTT');
 
 use constant COMPILE_ERROR_EXIT_CODE => 99;
 use constant REPORT_STATUS_PERIOD    => 10;
@@ -403,11 +403,13 @@ sub accept_notifications {
 
         my $local_bus = $self->{_BUS}->{cluster};
 
+        my $topic = "msg/$local_bus/$service/$method";
+        $topic =~ tr|.*|/#|;
+
         $self->{_BUS}->subscribe(
-            destination    => "/topic/msg.$local_bus.$service.$method",
-            ack            => 'auto', # means none
-            on_receive_msg => sub {
-                # ($body_ref, $msg_headers) = @_;
+            topic      => $topic,
+            on_publish => sub {
+                # ($payload_ref, $properties) = @_;
 
                 # Enqueue notification
                 push @{$worker->{job_queue_high}}, [ @_ ];
@@ -516,11 +518,13 @@ sub accept_jobs {
 
         my $local_bus = $self->{_BUS}->{cluster};
 
+        my $queue = "\$share/BKPR/req/$local_bus/$service";
+        $queue =~ tr|.*|/#|;
+
         $self->{_BUS}->subscribe(
-            destination     => "/queue/req.$local_bus.$service",
-            ack             => 'client', # manual ack
-           'prefetch-count' => '1',
-            on_receive_msg  => sub {
+            topic       => $queue,
+            maximum_qos => 1,
+            on_publish  => sub {
                 # ($body_ref, $msg_headers) = @_;
 
                 # Enqueue job
@@ -705,35 +709,31 @@ sub __drain_task_queue {
                     $json = $JSON->encode( $response );
                 }
 
-                # Request is marked as received just before sending the response. So, if the
+                # Request is ack'ed as received just after sending the response. So, if the
                 # process is abruptly interrupted here, the broker will send the request to
                 # another worker and it will be executed twice! (acking the request just before 
                 # processing it may cause unprocessed requests or undelivered responses)
 
-                $self->{_BUS}->ack(
-                    'id'           => $msg_headers->{'ack'},          # STOMP 1.2
-                    'message-id'   => $msg_headers->{'message-id'},   # STOMP 1.1
-                    'subscription' => $msg_headers->{'subscription'}, # STOMP 1.1
-                    'buffer_id'    => "txn-$request_id",
+                $self->{_BUS}->publish(
+                    topic     => $msg_headers->{'response_topic'},
+                    fwd_reply => $msg_headers->{'fwd_reply'},
+                    payload   => \$json,
+                    buffer_id => 'response',
                 );
 
-                $self->{_BUS}->send(
-                    'destination'     => $msg_headers->{'reply-to'},
-                    'x-forward-reply' => $msg_headers->{'x-forward-reply'},
-                    'buffer_id'       => "txn-$request_id",
-                    'body'            => \$json,
+                $self->{_BUS}->puback(
+                    packet_id => $msg_headers->{'packet_id'},
+                    buffer_id => 'response',
                 );
 
-                $self->{_BUS}->flush_buffer( 'buffer_id' => "txn-$request_id", );
+                $self->{_BUS}->flush_buffer( buffer_id => 'response' );
             }
             else {
 
                 # Background jobs doesn't expect responses
 
-                $self->{_BUS}->ack(
-                    'id'           => $msg_headers->{'ack'},
-                    'message-id'   => $msg_headers->{'message-id'},
-                    'subscription' => $msg_headers->{'subscription'},
+                $self->{_BUS}->puback(
+                    packet_id => $msg_headers->{'packet_id'},
                 );
             }
         }
@@ -777,13 +777,16 @@ sub stop_accepting_notifications {
 
         my $local_bus = $self->{_BUS}->{cluster};
 
+        my $topic = "msg/$local_bus/$service/$method";
+        $topic =~ tr|.*|/#|;
+
         $self->{_BUS}->unsubscribe(
-            destination => "/topic/msg.$local_bus.$service.$method",
-            on_success  => sub {
+            topic       => $topic,
+            on_unsuback => sub {
 
                 delete $self->{_WORKER}->{callbacks}->{"msg.$fq_meth"};
 
-                # Discard notifications already queued
+                # Discard unprocessed notifications already queued
                 my $job_queue = $self->{_WORKER}->{job_queue_high};
 
                 @$job_queue = grep {
@@ -829,32 +832,34 @@ sub stop_accepting_jobs {
         my @cb_keys = grep { $_ =~ m/^req.\Q$service\E\b/ } keys %$callbacks;
 
         unless (@cb_keys) {
+            #TODO: BUG: carp reports caller as Beekeeper/WorkerPool.pm line 440
             carp "Not previously accepting jobs $fq_meth";
             next;
         }
 
         my $local_bus = $self->{_BUS}->{cluster};
 
+        my $topic = "\$share/BKPR/req/$local_bus/$service";
+        $topic =~ tr|.*|/#|;
+
+        if ($self->{_CLIENT}->{curr_request}) {
+            #TODO: MQTT: Unsubscribing from within a job method callback will cause the
+            # current request to be resent to another worker, and thus being executed 
+            # twice. Unsubscription should be postponed until after the response was sent
+        }
+
         $self->{_BUS}->unsubscribe(
-            destination => "/queue/req.$local_bus.$service",
-            on_success  => sub {
+            topic        => $topic,
+            on_unsuback  => sub {
 
                 delete $callbacks->{$_} foreach @cb_keys;
 
                 my $job_queue = $self->{_WORKER}->{job_queue_low};
 
-                while (@$job_queue) {
-
-                    # NACK and discard jobs already queued
-                    my $task = shift @$job_queue;
-                    my ($body_ref, $msg_headers) = @$task;
-
-                    $self->{_BUS}->nack(
-                        'id'           => $msg_headers->{'ack'},          # STOMP 1.2
-                        'message-id'   => $msg_headers->{'message-id'},   # STOMP 1.1
-                        'subscription' => $msg_headers->{'subscription'}, # STOMP 1.1
-                    );
-                }
+                # Discard any unprocessed job already queued. As unsubscription 
+                # was completed, the broker should have already resent any 
+                # unacked request to another worker
+                @$job_queue = ();
             }
         );
     }
@@ -885,7 +890,7 @@ sub __work_forever {
     }
 
     if ($self->{_BUS}->{is_connected}) {
-        $self->{_BUS}->disconnect( blocking => 1 );
+        $self->{_BUS}->disconnect;
     }
 }
 

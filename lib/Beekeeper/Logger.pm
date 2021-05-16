@@ -180,9 +180,13 @@ sub log {
     local $@;
 
     eval {
-        $bus->send(
-            'destination' => "/topic/log.$level.$self->{service}",
-            'body'        => \$json,
+
+        my $service = $self->{service};
+        $service =~ tr|.|/|;
+
+        $bus->publish(
+            topic   => "log/$level/$service",
+            payload => \$json,
         );
     };
 

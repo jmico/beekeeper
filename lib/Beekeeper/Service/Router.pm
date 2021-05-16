@@ -74,7 +74,7 @@ sub bind_connection {
         __auth => 'BKPR_ROUTER',
         params => {
             address     => $address, 
-            reply_queue => $req->{_headers}->{'x-forward-reply'},
+            reply_queue => $req->{_headers}->{'fwd_reply'},
             session_id  => $self->{_CLIENT}->{session_id},
             auth_tokens => $self->{_CLIENT}->{auth_tokens},
         },

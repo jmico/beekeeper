@@ -79,7 +79,7 @@ sub _connect_to_all_brokers {
             next;
         }
 
-        my $bus; $bus = Beekeeper::Bus::STOMP->new( 
+        my $bus; $bus = Beekeeper::Bus::MQTT->new( 
             %$config,
             bus_id     => $bus_id,
             timeout    => 300,
@@ -109,11 +109,11 @@ sub _collect_log {
     my ($self, $bus) = @_;
     weaken($self);
 
-    # Default logger logs to topics /topic/log.$level.$service
+    # Default logger logs to topic log/$level/$service
 
     $bus->subscribe(
-        destination    => "/topic/log.#",
-        on_receive_msg => sub {
+        topic      => "log/#",
+        on_publish => sub {
             my ($body_ref, $msg_headers) = @_;
 
             my $req = decode_json($$body_ref);
