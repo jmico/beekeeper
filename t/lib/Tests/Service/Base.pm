@@ -61,15 +61,18 @@ sub check_02_broker_connection : Test(startup => 1) {
 
     # Try to connect to broker
     my $config = Beekeeper::Config->get_bus_config( bus_id => 'test' );
-    my $bus = Beekeeper::Bus::STOMP->new( %$config, timeout => 1 );
-    $Broker = eval { $bus->connect( blocking => 1 ); $bus->{server} };
+    my $bus = Beekeeper::Bus::MQTT->new( %$config, timeout => 1 );
+    $Broker = eval { 
+        $bus->connect( blocking => 1 );
+        $bus->{server_prop}->{host}; 
+    };
 
     # Disconect now, otherwise forked workers will inherit this connection
     $bus->disconnect( blocking => 1 ) if $Broker;
     %$bus = (); undef $bus;
 
     if ($Broker) {
-        ok( 1, "Can connect to STOMP broker $Broker");
+        ok( 1, "Can connect to MQTT broker at $Broker");
         return;
     }
 
@@ -106,7 +109,7 @@ sub start_workers {
 
         # Wait until supervisor is running (this blocks for few seconds)
         diag "Waiting for supervisor" if DEBUG;
-        my $max_wait = 100;
+        my $max_wait = 5;
         while ($max_wait--) {
             my $status = Beekeeper::Service::Supervisor->get_services_status( class => 'Beekeeper::Service::Supervisor::Worker' );
             my $running = $status->{'Beekeeper::Service::Supervisor::Worker'}->{count} || 0;
@@ -181,6 +184,7 @@ sub _spawn_worker {
 
     if ($worker_pid) {
         # Parent stops here
+        Time::HiRes::sleep(0.1);
         return $worker_pid;
     }
 

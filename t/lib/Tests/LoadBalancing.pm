@@ -8,6 +8,8 @@ use base 'Tests::Service::Base';
 use Test::More;
 use Time::HiRes 'sleep';
 
+use constant DEBUG => 0;
+
 
 sub start_test_workers : Test(startup => 1) {
     my $self = shift;
@@ -55,7 +57,7 @@ sub test_01_load_balancing_async : Test(6) {
         my $dev = abs( $offs / $expected * 100 );
         $total += $got;
 
-        # diag "$pid: $got  $offs  $dev %";
+        DEBUG && diag "$pid: $got  $offs  $dev %";
 
         cmp_ok($dev,'<', 60, "expected average $expected async runs, got $got");
     }
@@ -101,7 +103,7 @@ sub test_02_load_balancing_background : Test(6) {
         my $dev = abs( $offs / $expected * 100 );
         $total += $got;
 
-        # diag "$pid: $got  $offs  $dev %";
+        DEBUG && diag "$pid: $got  $offs  $dev %";
 
         cmp_ok($dev,'<', 60, "expected average $expected background runs, got $got");
     }
@@ -109,7 +111,7 @@ sub test_02_load_balancing_background : Test(6) {
     is( $total, $tasks, "expected total $tasks background runs, got $total");
 }
 
-sub test_03_slow_consumer_async : Test(6) {
+sub test_03_slow_consumer_async : Test(7) {
     my $self = shift;
 
     if ($ENV{'AUTOMATED_TESTING'} || $ENV{'PERL_BATCH'}) {
@@ -125,14 +127,17 @@ sub test_03_slow_consumer_async : Test(6) {
     my $slow = 2;
 
     my $expected_fast = int(($tasks - $slow) / ($workers - $slow));
-    my $expected_slow = 1;
+    my $expected_slow = $slow;
 
     my @jobs;
+
+    # Send a few jobs that take a lot to complete. The workers that
+    # process these slower jobs should get less requests than the others
 
     for (1..$slow) {
         push @jobs, $cli->do_async_job(
             method  => 'cache.bal',
-            params  => { dset => 'C', sleep => 1.5 },
+            params  => { dset => 'C', sleep => 3 },
         );
     }
 
@@ -152,26 +157,42 @@ sub test_03_slow_consumer_async : Test(6) {
     );
 
     my $runs = $resp->result;
+
+    my %slowed_workers;
+    my $slowed_workers_count = 0;
+
+    foreach my $pid (sort keys %$runs) {
+        my $got = $runs->{$pid};
+        next unless ($got < $expected_fast * 0.20);
+        $slowed_workers{$pid} = 1;
+        $slowed_workers_count++;
+    }
+
+    TODO: {
+        local $TODO = "Broker does simple round robin, ignoring backlog";
+        is($slowed_workers_count, $expected_slow, "expected $expected_slow slowed workers, got $slowed_workers_count");
+    }
+
     my $total = 0;
 
     foreach my $pid (sort keys %$runs) {
+
         my $got = $runs->{$pid};
-        next unless ($got < $expected_fast / 10);
-        delete $runs->{$pid};
-        $total += $got;
 
-        is($got, $expected_slow, "expected average $expected_slow slow runs, got $got");
-    }
+        if ($slowed_workers{$pid}) {
 
-    foreach my $pid (sort keys %$runs) {
-        my $got = $runs->{$pid};
-        my $offs = $got - $expected_fast;
-        my $dev = abs( $offs / $expected_fast * 100 );
-        $total += $got;
+            cmp_ok($got,'<', $expected_fast * 0.20, "expected average 1 slow runs, got $got");
+        }
+        else {
+            my $offs = $got - $expected_fast;
+            my $dev = abs( $offs / $expected_fast * 100 );
 
-        # diag "$pid: $got  $offs  $dev %";
+            DEBUG && diag "$pid: $got  $offs  $dev %";
 
-        cmp_ok($dev,'<', 60, "expected average $expected_fast runs, got $got");
+            cmp_ok($dev,'<', 60, "expected average $expected_fast fast runs, got $got");
+        }
+
+        $total += $got;        
     }
 
     is($total, $tasks, "expected total $tasks async runs, got $total");

@@ -155,7 +155,7 @@ sub test_03_background_jobs : Test(1) {
     is( $var, $expected, "Background job executed 3 times");
 }
 
-sub test_04_async_jobs : Test(13) {
+sub test_04_async_jobs : Test(18) {
     my $self = shift;
 
     my $cli = Beekeeper::Client->instance;
@@ -177,9 +177,10 @@ sub test_04_async_jobs : Test(13) {
     is( $req->result, "baz" );
 
     my @reqs;
+    my $count = 10;
     my $var = 239;
 
-    foreach my $n (0..4) {
+    foreach my $n (1..$count) {
         my $req = $cli->do_async_job(
             method => 'test.echo',
             params => $var + $n,
@@ -189,8 +190,8 @@ sub test_04_async_jobs : Test(13) {
 
     $cli->wait_all_jobs;
 
-    foreach my $n (0..4) {
-        is( $reqs[$n]->result, $var + $n );
+    foreach my $n (1..$count) {
+        is( $reqs[$n-1]->result, $var + $n );
     }
 
     # Timeout
@@ -231,7 +232,7 @@ sub test_05_client_api : Test(8) {
     is( $resp->result, 'foo');
 
 
-    $resp = $svc->fibonacci_1( 2 );
+    $resp = $svc->fibonacci_1( 1 ); #TODO: 2 or 3
 
     isa_ok($resp, 'Beekeeper::JSONRPC::Response');
     is( $resp->success, 1 );
