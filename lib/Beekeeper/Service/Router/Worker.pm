@@ -38,7 +38,7 @@ use constant SHUTDOWN_WAIT   => 2;
 use constant QUEUE_LANES     => 2;
 use constant DEBUG           => 0;
 
-DEBUG && $Beekeeper::Worker::LogLevel = 9;
+$Beekeeper::Worker::LogLevel = 9 if DEBUG;
 
 
 sub authorize_request {
@@ -251,6 +251,7 @@ sub pull_frontend_requests {
                     response_topic => "res/$frontend_id-$lane",
                     fwd_reply      => "$reply_to\@$frontend_id",
                     payload        => $payload_ref,
+                    qos            => 1, # because workers consume using QoS 1
                 );
 
                 $session = $self->{Sessions}->get( $session_id );

@@ -19,7 +19,7 @@ Version 0.01
   
   use Beekeeper::Worker ':log';
   use base 'Beekeeper::Worker';
-
+  
   sub on_startup {
       my $self = shift;
       
@@ -39,7 +39,7 @@ Version 0.01
   
       return REQUEST_AUTHORIZED;
   }
-
+  
   sub got_message {
       my ($self, $params) = @_;
       warn $params->{message};
@@ -721,10 +721,17 @@ sub __drain_task_queue {
                     buffer_id => 'response',
                 );
 
-                $self->{_BUS}->puback(
-                    packet_id => $msg_headers->{'packet_id'},
-                    buffer_id => 'response',
-                );
+                if (exists $msg_headers->{'packet_id'}) {
+
+                    $self->{_BUS}->puback(
+                        packet_id => $msg_headers->{'packet_id'},
+                        buffer_id => 'response',
+                    );
+                }
+                else {
+                    # Should not happen
+                    log_warn "Request $method was published with QoS 0";
+                }
 
                 $self->{_BUS}->flush_buffer( buffer_id => 'response' );
             }
