@@ -1458,6 +1458,11 @@ sub publish {
         $raw_prop .= pack("C N", MQTT_MESSAGE_EXPIRY_INTERVAL, delete $args{'message_expiry'});
     }
 
+    if (exists $args{'message_expiry_interval'}) {
+        # 3.3.2.3.3  Message Expiry Interval  (long int)
+        $raw_prop .= pack("C N", MQTT_MESSAGE_EXPIRY_INTERVAL, delete $args{'message_expiry_interval'});
+    }
+
     if ($topic_alias) {
         # 3.3.2.3.4  Topic Alias  (short int)
         $raw_prop .= pack("C n", MQTT_TOPIC_ALIAS, $topic_alias);
