@@ -543,7 +543,7 @@ sub disconnect {
     foreach my $bus (@{$self->{_CLUSTER}}) {
 
         next unless ($bus->{is_connected});
-        $bus->disconnect( blocking => 1 );
+        $bus->disconnect;
     }
 }
 

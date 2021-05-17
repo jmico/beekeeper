@@ -68,7 +68,7 @@ sub check_02_broker_connection : Test(startup => 1) {
     };
 
     # Disconect now, otherwise forked workers will inherit this connection
-    $bus->disconnect( blocking => 1 ) if $Broker;
+    $bus->disconnect if $Broker;
     %$bus = (); undef $bus;
 
     if ($Broker) {
