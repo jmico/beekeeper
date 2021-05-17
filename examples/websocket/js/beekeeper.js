@@ -1,297 +1,358 @@
 /*
 
-    Beekeeper client (JSON-RPC over STOMP)
+    Beekeeper client (JSON-RPC over MQTT)
 
-    Copyright 2015 José Micó
+    Copyright 2015-2021 José Micó
 
     For protocol references see: 
-    - http://www.jsonrpc.org/specification
-    - http://stomp.github.com/stomp-specification-1.2.html
+    - https://mqtt.org/mqtt-specification
+    - https://www.jsonrpc.org/specification
 
-    This uses the STOMP.js library originally written by Jeff Mesnil
-    - http://www.jmesnil.net/stomp-websocket/doc/
-    - https://github.com/stomp-js/stomp-websocket
+    This uses the MQTT.js library:
+    - https://github.com/mqttjs/MQTT.js
 
-    var rpc = new JSON_RPC;
+    var bkpr = new BeekeeperClient;
 
-    rpc.connect({
-        login:    "test",
-        password: "abc123",
-        url:      "ws://localhost:15674/ws",
-        on_ready: function() {
-            console.log('Connected');
-        }
+    bkpr.connect({
+        url:       "ws://localhost:8000/mqtt",
+        username:  "guest",
+        password:  "guest",
+        on_connect: function() {...}
     });
 
-    rpc.debug();
-
-    rpc.notify({
+    bkpr.send_notification({
         method: "test.foo",
         params: { foo: "bar" }
     });
 
-    rpc.call({
-        method: "test.bar",
-        params: { foo: "baz" },
-        on_success: function(result) {
-            console.log(result);
-        }
+    bkpr.call_remote_method({
+        method:    "test.bar",
+        params:     { foo: "baz" },
+        on_success: function(result) {...},
+        on_error:   function(error) {...}
     });
 
-    rpc.accept_notifications({
-        method: "test.foo",
-        on_receive: function(params) {
-            console.log(params);
-        }
+    bkpr.accept_notifications({
+        method:    "test.foo.*",
+        on_receive: function(params) {...}
     });
 
-    rpc.accept_calls({
-        method: "test.bar",
-        on_receive: function(params) {
-            return params;
-        }
+    bkpr.accept_remote_calls({
+        method:    "test.bar",
+        on_receive: function(params) {...}
     });
 */
 
-function JSON_RPC () { return {
+function BeekeeperClient () { return {
 
-    stomp: null,
-    server: null,
-    reply_queue: null,
+    mqtt: null,
+    host: null,
+    client_id: null,
+    response_topic: null,
     request_seq: 1,
+    subscr_seq: 1,
     pending_req: {},
-    callbacks: {},
-    connected: false,
+    subscr_cb: {},
+    subscr_re: {},
+
+   _debug: function () {},
+    debug: function(enabled) {
+        if (enabled) {
+            this._debug = function (msg) { console.log("BeekeeperClient: " + msg) };
+        }
+        else {
+            this._debug = function () {};
+        }
+    },
 
     connect: function(args) {
 
         var This = this;
 
-        // Connect to STOMP broker using websockets
-        this.stomp = Stomp.client(args.url);
+        if ('debug' in args) this.debug(args.debug);
 
-        if (args.debug) {
-            this.stomp.debug = function(str) { console.log(str) }
-        }
+        this._debug("Connecting to MQTT broker at " + args.url);
 
-        this.stomp.heartbeat.outgoing = 10000;
-        this.stomp.heartbeat.incoming = 0;
+        var id = ''; for(;id.length < 16;) id += (Math.random() * 36 | 0).toString(36);
+        this.client_id = id;
 
-        this.stomp.connect(
-            {
-                "login":    args.login    || 'guest', 
-                "passcode": args.password || 'guest',
-                "host":     args.vhost    || '/'
-            },
-            function(frame) {
-                // Connect success
-                clearTimeout(This.reconnTout);
-                This.connected = true;
-                This.server = frame.headers.server;
-                This._create_reply_queue();
-                if (args.on_ready) args.on_ready();
-            },
-            function(error) {
-                // Connect error or error frame
-                if (This.connected) console.log(error);
-                This.connected = false;
-                This.stomp.disconnect();
-                This.reconnTout = setTimeout( function() {
-                    This.connect(args);
-                }, 1000);
-            }
-        );
+        // It is possible to iterate over a list of servers specifying:
+        // url: [{ host: 'localhost', port: 1883 }, ... ]
 
-        window.addEventListener("unload", function(evt) {
-            This.stomp.disconnect();
+        // Connect to MQTT broker using websockets
+        this.mqtt = mqtt.connect( args.url, {
+            username: args.username || 'guest',
+            password: args.password || 'guest',
+            clientId: this.client_id,
+            protocolVersion: 5,
+            clean: true,
+            keepalive: 60,
+            reconnectPeriod: 1000,
+            connectTimeout: 30 * 1000
+        });
+
+        this.mqtt.on('connect', function (connack) {
+            This.host = This.mqtt.options.host;
+            This._debug("Connected to MQTT broker at " + This.host);
+            This._create_response_topic();
+            if (args.on_connect) args.on_connect(connack.properties);
+        });
+
+        this.mqtt.on('reconnect', function () {
+            // Emitted when a reconnect starts
+            This._debug("Reconnecting...");
+        });
+
+        this.mqtt.on('close', function () {
+            // Emitted after a disconnection
+            This._debug("Disconnected");
+        });
+
+        this.mqtt.on('disconnect', function (packet) {
+            // Emitted after receiving disconnect packet from broker
+            This._debug("Disconnected by broker");
+        });
+
+        this.mqtt.on('offline', function () {
+            // Emitted when the client goes offline
+            This._debug("Client offline");
+        });
+
+        this.mqtt.on('error', function (error) {
+            // Emitted when the client cannot connect
+            This._debug(error);
+        });
+
+        this.mqtt.on('message', function (topic, message, packet) {
+
+            var jsonrpc;
+            try { jsonrpc = JSON.parse( message.toString() ) }
+            catch (e) { throw "Received invalid JSON: " + e }
+            This._debug("Got  << " + message);
+
+            var subscr_id = packet.properties.subscriptionIdentifier;
+            var subscr_cb = This.subscr_cb[subscr_id];
+
+            subscr_cb(jsonrpc, packet.properties);
         });
     },
 
-    debug: function(enabled) {
-        if (enabled == null || enabled) {
-            this.stomp.debug = function(str) { console.log(str) }
-            console.log("JSON-RPC debug enabled, all traffic is dumped to console");
-        }
-        else {
-            this.stomp.debug = null;
-            console.log("JSON-RPC debug disabled");
-        }
-    },
+    send_notification: function(args) {
 
-    notify: function(args) {
+        if (!this.mqtt.connected) throw "Not connected to MQTT broker";
 
-        if (!this.connected) {
-            console.log("Not connected to STOMP broker");
-            return;
-        }
-
-        var msg = {
+        var json = JSON.stringify({
             jsonrpc: "2.0",
             method: args.method,
             params: args.params
-        };
+        });
 
-        this.stomp.send(
-            "/topic/msg." + args.method,
-            {},
-            JSON.stringify(msg)
+        this._debug("Sent >> " + json);
+
+        this.mqtt.publish(
+            'msg/' + args.method.replace(/\./g,'/'),
+            json,
+            {}
         );
     },
 
-    accept_notifications: function(args) {
+    accept_notifications: function (args) {
 
-        if (!this.connected) {
-            console.log("Not connected to STOMP broker");
-            return;
-        }
+        if (!this.mqtt.connected) throw "Not connected to MQTT broker";
 
-        this.callbacks[args.method] = args.on_receive;
+        var subscr_id = this.subscr_seq++;
+        var on_receive = args.on_receive;
 
-        this.stomp.subscribe(
-            "/topic/msg.backend." + args.method, 
-            function(message) {
-                var msg = JSON.parse(message.body);  //TODO: catch parse exceptions
-                try { args.on_receive(msg.params) }
-                catch(e) { console.log("RPC: Exception into on_receive callback of '" + args.method + "': " + e) }
+        this.subscr_cb[subscr_id] = function(jsonrpc, packet_prop) {
+
+            // Incoming notification
+
+            try { on_receive( jsonrpc.params, packet_prop ) }
+            catch(e) { This._debug("Uncaught exception into on_receive callback of " + jsonrpc.method + ": " + e) }
+        };
+
+        this.subscr_re[subscr_id] = new RegExp('^' + args.method.replace(/\./g,'\\.').replace(/\*/g,'.+') + '$');
+
+        // Private notifications are received on response_topic subscription
+        if (args.private) return;
+
+        var topic = 'msg/backend/' + args.method.replace(/\./g,'/').replace(/\*/g,'#');
+
+        this.mqtt.subscribe(
+            topic,
+            { properties: { subscriptionIdentifier: subscr_id }},
+            function (err, granted) {
+                if (err) throw "Failed to subscribe to " + topic + ": " + err;
             }
         );
     },
 
-    call: function(args) {
+    call_remote_method: function(args) {
 
-        if (!this.connected) {
-            var err = { code: -32603, message: "Not connected to STOMP broker" };
-            (args.on_error) ? args.on_error(err) : console.log(err.message);
-            return;
-        }
+        if (!this.mqtt.connected) throw "Not connected to MQTT broker";
 
-        var req = {
+        var req_id = this.request_seq++;
+
+        var json = JSON.stringify({
             jsonrpc: "2.0",
             method: args.method,
             params: args.params,
-            id: this.request_seq++
-        };
+            id:     req_id
+        });
 
         var QUEUE_LANES = 2;
+        var topic = 'req/backend-' + Math.floor( Math.random() * QUEUE_LANES + 1 );
+        var fwd_to = 'req/backend/' + args.method.replace(/\.[\w-]+$/,'').replace(/\./g,'/');
 
-        this.stomp.send(
-            "/queue/req.backend-" + Math.floor(Math.random()*QUEUE_LANES+1),
-            {
-                "reply-to": this.reply_queue,
-                "x-forward-to": "/queue/req.backend." + args.method.replace(/\.[\w-]+$/,'')
-             // "content-type": "application/json;charset=utf-8",
-            },
-            JSON.stringify(req)
+        this.mqtt.publish(
+            topic,
+            json,
+            { properties: {
+                responseTopic: this.response_topic,
+                userProperties: { fwd_to: fwd_to }
+            }}
         );
 
-        this.pending_req[req.id] = {
+        this._debug("Sent >> " + json);
+
+        this.pending_req[req_id] = {
+            method:     args.method,
             on_success: args.on_success,
-            on_error: args.on_error,
-            method: args.method,
-            timeout: null
+            on_error:   args.on_error,
+            timeout:    null
         };
 
         var This = this;
 
-        this.pending_req[req.id].timeout = setTimeout( function() {
-            delete This.pending_req[req.id];
+        this.pending_req[req_id].timeout = setTimeout( function() {
+            delete This.pending_req[req_id];
             if (args.on_error) {
-                try { args.on_error({ code: -32603, message: "RPC call timeout" }) }
-                catch(e) { console.log("RPC: Exception into on_error callback of '" + args.method + "': " + e) }
+                try { args.on_error({ code: -32603, message: "Remote method call timed out" }) }
+                catch(e) { This._debug("Uncaught exception into on_error callback of " + args.method + ": " + e) }
             }
             else {
-                console.log("RPC: Call to '" + args.method + "' timed out");
+                This._debug("Call to " + args.method + " timed out");
             }
         }, (args.timeout || 30) * 1000);
     },
 
-    _create_reply_queue: function() {
+    _create_response_topic: function() {
 
+        var response_topic = 'priv/' + this.client_id;
+        this.response_topic = response_topic;
+
+        var subscr_id = this.subscr_seq++;
         var This = this;
-        var on_receive_reply = function(message) {
-            var resp = JSON.parse(message.body);  //TODO: catch parse exceptions
-            if (!resp.id) {
-                // Unicasted notification
-                var cb = This.callbacks[resp.method];
-                if (cb) {
-                    try { cb(resp.params) }
-                    catch(e) { console.log("RPC: Exception into callback of '" + resp.method + "': " + e) }
+
+        this.subscr_cb[subscr_id] = function(jsonrpc, packet_prop) {
+
+            if (!jsonrpc.id) {
+
+                // Incoming private notification
+
+                var on_receive;
+                for (var subscr_id in This.subscr_re) {
+                    if (jsonrpc.method.match( This.subscr_re[subscr_id] )) {
+                        on_receive = This.subscr_cb[subscr_id];
+                        break;
+                    }
+                }
+
+                if (on_receive) {
+                    try { on_receive( jsonrpc.params, packet_prop ) }
+                    catch(e) { This._debug("Uncaught exception into on_receive callback of " + jsonrpc.method + ": " + e) }
                 }
                 else {
-                    console.log("RPC: Received unhandled notification '" + args.method + "'");
+                    This._debug("Received unhandled private notification " + jsonrpc.method);
                 }
+
                 return;
             }
+
+            // Incoming remote call response
+
+            var resp = jsonrpc;
             var req = This.pending_req[resp.id];
             delete This.pending_req[resp.id];
             if (!req) return;
+
             clearTimeout(req.timeout);
-            if ("result" in resp) {
+
+            if ('result' in resp) {
                 if (req.on_success) {
-                    try { req.on_success(resp.result) }
-                    catch(e) { console.log("RPC: Exception into on_success callback of '" + req.method + "': " + e) }
+                    try { req.on_success( resp.result, packet_prop ) }
+                    catch(e) { This._debug("Uncaught exception into on_success callback of " + req.method + ": " + e) }
                 }
             }
             else {
                 if (req.on_error) {
-                    try { req.on_error(resp.error) }
-                    catch(e) { console.log("RPC: Exception into on_error callback of '" + req.method + "': " + e) }
+                    try { req.on_error( resp.error, packet_prop ) }
+                    catch(e) { This._debug("Uncaught exception into on_error callback of " + req.method + ": " + e) }
                 }
                 else {
-                    console.log("RPC: Got error from '" + req.method + "' call: " + resp.error.message);
+                    This._debug("Error response from " + req.method + " call: " + resp.error.message);
                 }
             }
         };
 
-        var sid = ''; for(;sid.length < 16;) sid += (Math.random() * 36 | 0).toString(36);
-
-        this.reply_queue = "/temp-queue/tmp." + sid;
-
-        if (this.server.match(/^RabbitMQ/)) {
-            // HACK: Inject callback without actually subscribing, as RabbitMQ
-            // automagically create temp-queues when used in reply-to headers
-            // and subscribe to it with a subscription id equal to destination
-            this.stomp.subscriptions[this.reply_queue] = on_receive_reply;
-        }
-        else {
-            this.stomp.subscribe( this.reply_queue, on_receive_reply );
-        }
+        this.mqtt.subscribe(
+            response_topic,
+            { properties: { subscriptionIdentifier: subscr_id }},
+            function (err, granted) {
+                if (err) throw "Failed to subscribe to " + response_topic + ": " + err;
+            }
+        );
     },
 
-    accept_calls: function(args) {
+    accept_remote_calls: function(args) {
 
-        if (!this.connected) {
-            console.log("Not connected to STOMP broker");
-            return;
-        }
+        // This is included for reference, but note that frontend clients 
+        // should *not* be allowed to even connect to the backend broker
 
+        if (!this.mqtt.connected) throw "Not connected to MQTT broker";
+
+        var subscr_id = this.subscr_seq++;
+        var on_receive = args.on_receive;
         var This = this;
 
-        this.stomp.subscribe(
-            "/queue/req." + args.method, 
-            function(message) {
-                var req = JSON.parse(message.body);  //TODO: catch parse exceptions
-                var resp;
-                try {
-                    var result = args.on_receive(req.params);
-                    resp = {
-                        jsonrpc: "2.0",
-                        result: result,
-                        id: req.id
-                    };
-                }
-                catch (e) {
-                    resp = {
-                        jsonrpc: "2.0",
-                        error: { code: -32603, message: e.message },
-                        id: req.id
-                    };
-                }
-                This.stomp.send(
-                    message.headers['reply-to'],
-                    {},
-                    JSON.stringify(resp)
-                );
+        this.subscr_cb[subscr_id] = function(jsonrpc, packet_prop) {
+
+            // Incoming remote request
+
+            var json;
+
+            try {
+                var result = on_receive( jsonrpc.params, packet_prop );
+                json = JSON.stringify({
+                    jsonrpc: "2.0",
+                    result: result,
+                    id: req.id
+                });
+            }
+            catch (e) {
+                json = JSON.stringify({
+                    jsonrpc: "2.0",
+                    error: { code: -32603, message: e.message },
+                    id: req.id
+                });
+            }
+
+            This.mqtt.publish(
+                packet_prop.responseTopic,
+                json,
+                {}
+            );
+
+            This._debug("Sent >> " + json);
+        };
+
+        var topic = '$share/BKPR/req/backend/' + args.method.replace(/\./g,'/');
+
+        this.mqtt.subscribe(
+            topic,
+            { properties: { subscriptionIdentifier: subscr_id }},
+            function (err, granted) {
+                if (err) throw "Failed to subscribe to " + topic + ": " + err;
             }
         );
     },

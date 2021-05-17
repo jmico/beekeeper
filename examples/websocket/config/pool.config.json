@@ -19,7 +19,7 @@
         "pool-id"       : "myapp",
         "bus-id"        : "backend",
         "description"   : "pool of MyApp workers",
-        "use_toybroker" :  1,
+        "use_toybroker" :  0,
 
         "workers" : {
             "MyApp::Service::Calculator"           : { "workers_count" : 4 },

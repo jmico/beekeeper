@@ -43,7 +43,7 @@ sub eval_expr {
     if ($@) {
         # Throw an unhandled exception which will be automatically logged
         # The client will receive a generic error response (try division by zero)
-        die $@;
+        die "Died while processing '$expr': $@";
     }
 
     return $result;

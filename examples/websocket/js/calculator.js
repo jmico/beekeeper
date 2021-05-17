@@ -1,26 +1,20 @@
 
 function Calculator () { return {
 
-    rpc: null,
+    bkpr: null,
 
     connect: function() {
 
         var This = this;
 
-        this.rpc = new JSON_RPC;
-        this.rpc.connect({
-   
-            url:      CONFIG.url,       // "ws://localhost:61614"
-            login:    CONFIG.login,     // "frontend"
-            password: CONFIG.password,  // "abc123"
-            vhost:    CONFIG.vhost,     // "/frontend"
-            debug:    CONFIG.debug,
+        this.bkpr = new BeekeeperClient;
 
-            on_ready: function() {
-                This.echo_info( 'Connected to ' + This.rpc.server + ' at ' + This.rpc.stomp.ws.url );
-                This.echo_info( 'Debug enabled, STOMP traffic is being dumped to console' );
-                This.init();
-            }
+        this.bkpr.connect({
+            url:        CONFIG.url,       // "ws://localhost:8000/mqtt"
+            username:   CONFIG.username,  // "frontend"
+            password:   CONFIG.password,  // "abc123"
+            debug:      CONFIG.debug,
+            on_connect: function() { This.init() }
         });
     },
 
@@ -29,53 +23,51 @@ function Calculator () { return {
         var This = this;
 
         var cmdInput = document.getElementById('expr');
-        cmdInput.onkeypress = function(e) {
-            var event = e || window.event;
-            var charCode = event.which || event.keyCode;
-            if (charCode == '13') { // Enter
-                This.eval_expr();
-                return false;
-            }
-        }
+        cmdInput.addEventListener('input', function(e) {
+            This.eval_expr();
+        });
 
         This.eval_expr();
     },
 
-    echo: function(msg,style) {
-        var div = document.getElementById('results');
-        div.innerHTML = div.innerHTML + '<div class="'+style+'">' + msg + '</div>';
-        div.scrollTop = div.scrollHeight;
+    _display: function(msg,style) {
+        var div = document.getElementById('result');
+        div.innerHTML = msg;
+        div.className = style;
     },
 
-    echo_msg: function(msg) {
-        this.echo(msg,'msg');
+    display_success: function(msg) {
+        this._display(msg,'result success');
     },
 
-    echo_info: function(msg) {
-        this.echo(msg,'info');
-    },
-
-    echo_error: function(msg) {
-        this.echo(msg,'error');
+    display_error: function(msg) {
+        this._display(msg,'result error');
     },
 
     eval_expr: function() {
 
         var cmdInput = document.getElementById('expr');
         var expr = cmdInput.value;
-        if (!expr.length) return;
+
+        if (!expr.length) {
+            this.display_success('');
+            return;
+        }
 
         var This = this;
 
-        this.rpc.call({
+        this.bkpr.call_remote_method({
             method: 'myapp.calculator.eval_expr', 
             params: { "expr": expr },
             on_success: function(result) {
-                This.echo_msg( expr + " = " + result );
+                This.display_success( expr + " = " + result );
             },
             on_error: function(error) {
-                This.echo_error( expr + " : " + error.message );
+                This.display_error( expr + " : " + error.message );
             }
         });
     }
 }};
+
+var Calc = new Calculator;
+Calc.connect();
