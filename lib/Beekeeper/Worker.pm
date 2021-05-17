@@ -729,8 +729,8 @@ sub __drain_task_queue {
                     );
                 }
                 else {
-                    # Should not happen
-                    log_warn "Request $method was published with QoS 0";
+                    # Should not happen (clients must publish with QoS 1)
+                    log_warn "Request published with QoS 0 to " . $msg_headers->{'topic'};
                 }
 
                 $self->{_BUS}->flush_buffer( buffer_id => 'response' );
