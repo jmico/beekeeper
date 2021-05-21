@@ -11,12 +11,10 @@ my $bus_config_json = qq<
 
 [
     {
-        "bus-id"  : "test",
-        "host"    : "localhost",
-        "user"    : "test",
-        "pass"    : "abc123",
-        "vhost"   : "/test",
-        "default" : 1,
+        "bus-id"   : "test",
+        "host"     : "localhost",
+        "username" : "test",
+        "password" : "abc123",
     },
 ]>;
 
@@ -26,7 +24,7 @@ my $toybroker_config_json = qq<
 
 {
     "listen_addr" : "127.0.0.1",
-    "listen_port" : "61613",
+    "listen_port" : "1883",
 
     "users" : {
         "test" : { "password" : "abc123" },

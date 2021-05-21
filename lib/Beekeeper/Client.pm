@@ -129,7 +129,7 @@ sub new {
         callbacks      => {},
     };
 
-    unless (exists $args{'host'} && exists $args{'user'} && exists $args{'pass'}) {
+    unless (exists $args{'host'} && exists $args{'username'} && exists $args{'password'}) {
 
         # Get broker connection parameters from config file
 
