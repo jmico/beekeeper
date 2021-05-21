@@ -6,11 +6,25 @@ use warnings;
 use AnyEvent::Impl::Perl; #TODO: Do not force implementation
 use AnyEvent::Handle;
 use List::Util 'shuffle';
+use Exporter 'import';
 use Carp;
 
 our $VERSION = '0.01';
+our $DEBUG = 0;
 
-my $DEBUG = 0;
+our @EXPORT_OK;
+our %EXPORT_TAGS;
+
+EXPORT: {
+    my (@const, @encode);
+    foreach (keys %{Beekeeper::Bus::MQTT::}) {
+        push @const, $_ if m/^MQTT_/;
+        push @encode, $_ if m/^_(en|de)code/;
+    }
+    @EXPORT_OK = (@const, @encode);
+    $EXPORT_TAGS{'const'} = \@const;
+    $EXPORT_TAGS{'decode'} = \@encode;
+}
 
 =head1 NAME
  
@@ -32,7 +46,7 @@ Version 0.01
       blocking => 1,
       on_connack => sub {
           my ($success, $properties) = @_;
-          print $properties->{reason_string} unless $success;
+          die $properties->{reason_string} unless $success;
       },
   );
   
@@ -40,15 +54,15 @@ Version 0.01
       topic => 'foo/bar',
       on_publish => sub {
           my ($payload, $properties) = @_;
-          print "Got message: $$payload";
+          print "Got a message: $$payload";
       },
   );
-
+  
   $mqtt->publish(
       topic   => 'foo/bar',
       payload => 'Hello',
   );
-
+  
   $mqtt->unsubscribe(
       topic => 'foo/bar',
   );
@@ -455,7 +469,6 @@ sub _connect {
         on_read => sub {
             my ($fh) = @_;
 
-            my $packet;
             my $packet_type;
             my $packet_flags;
 
@@ -484,7 +497,7 @@ sub _connect {
                         last unless ($byte & 0x80);
                         return if ($offs >= $rbuff_len); # Not enough data
                         $mult *= 128;
-                        redo;
+                        redo if ($offs < 5);
                     }
 
                     #TODO: Check max packet size
@@ -616,7 +629,6 @@ sub _send_connect {
 
     if (exists $prop{'request_response_information'}) {
         # 3.1.2.11.6  Request Response Information  (byte)  
-        #The Client uses this value to request the Server to return Response Information
         $raw_prop .= pack("C C", MQTT_REQUEST_RESPONSE_INFORMATION, delete $prop{'request_response_information'});
     }
 
@@ -836,7 +848,7 @@ sub _receive_connack {
 }
 
 
-=head3 disconnect ( $reason_code )
+=head3 disconnect ( %args )
 
 A client can disconnect from the server at anytime by closing the socket but 
 there is no guarantee that the previously sent packets have been received by
@@ -855,23 +867,60 @@ Default is zero, meaning normal disconnection.
 =cut
 
 sub disconnect {
-    my ($self, $reason_code) = @_;
+    my ($self, %args) = @_;
 
     unless (defined $self->{handle}) {
         carp "Already disconnected from MQTT broker";
         return;
     }
 
-    $self->{handle}->push_write( 
-        pack( "C C C C",
-            MQTT_DISCONNECT << 4,  # 3.14.1      Packet type 
-            2,                     # 3.14.1      Remaining length
-            $reason_code || 0,     # 3.14.2.1    Disconnect Reason Code
-            0,                     # 3.14.2.2.1  Property Length
-        )
-    );
+    my $reason_code = delete $args{'reason_code'};
 
-    #TODO: $self->{handle}->push_shutdown
+    # 3.14.2.2  Properties
+
+    my $raw_prop = '';
+
+    if (exists $args{'session_expiry_interval'}) {
+        # 3.14.2.2.2  Session Expiry Interval  (long int)
+        utf8::encode( $args{'session_expiry_interval'} );
+        $raw_prop .= pack("C n/a*", MQTT_SESSION_EXPIRY_INTERVAL, delete $args{'session_expiry_interval'});
+    }
+
+    if (exists $args{'reason_string'}) {
+        # 3.14.2.2.3  Reason String  (utf8 string)
+        utf8::encode( $args{'reason_string'} );
+        $raw_prop .= pack("C n/a*", MQTT_REASON_STRING, delete $args{'reason_string'});
+    }
+
+    if (exists $args{'server_reference'}) {
+        # 3.14.2.2.5  Server Reference  (utf8 string)
+        utf8::encode( $args{'server_reference'} );
+        $raw_prop .= pack("C n/a*", MQTT_SERVER_REFERENCE, delete $args{'server_reference'});
+    }
+
+    foreach my $key (keys %args) {
+        # 3.14.2.2.4  User Property  (utf8 string pair)
+        my $val = $args{$key};
+        next unless defined $val;
+        utf8::encode( $key );
+        utf8::encode( $val );
+        $raw_prop .= pack("C n/a* n/a*", MQTT_USER_PROPERTY, $key, $val);
+    }
+
+    # 3.14.2  Variable Header
+
+    # 3.14.2.1  Disconnect Reason Code  (byte)
+    my $raw_mqtt = pack("C", $reason_code || 0);
+
+    # 3.14.2.2  Properties
+    $raw_mqtt .= _encode_var_int(length $raw_prop);
+    $raw_mqtt .= $raw_prop;
+
+    $self->{handle}->push_write( 
+        pack("C", MQTT_DISCONNECT << 4)   .  # 3.14.1  Packet type 
+        _encode_var_int(length $raw_mqtt) .  # 3.14.1  Packet length
+        $raw_mqtt
+    );
 
     $self->_reset_connection;
 }
@@ -879,7 +928,6 @@ sub disconnect {
 sub _reset_connection {
     my ($self) = @_;
 
-    $self->{handle}->destroy if defined $self->{handle};
     $self->{handle} = undef;
 
     $self->{is_connected}  = undef;
@@ -956,8 +1004,7 @@ sub _receive_disconnect {
         $disconn_cb->(\%prop);
     }
     else {
-        #TODO: "MQTT broker at $host:$port..."
-        $self->_fatal("MQTT broker disconnect: $prop{reason}");
+        $self->_fatal("Disconnected from MQTT broker: $prop{reason}");
     }
 }
 
@@ -1030,6 +1077,7 @@ C<retain_handling> is sent as an "User Property" (a key-value pair of utf8 strin
 =back
 
 =cut
+
 sub subscribe {
     my ($self, %args) = @_;
 
@@ -1169,7 +1217,7 @@ sub _receive_suback {
             $success = 0;
         }
 
-        $DEBUG && print "Subbed: $topic\n";
+        $DEBUG && warn "Subscribed to: $topic\n";
 
         push @properties, {
             topic       => $topic,
@@ -1413,7 +1461,7 @@ sub publish {
 
     croak "Message topic was not specified" unless defined $topic;
 
-    $DEBUG && print "Sent msg: $topic\n";
+    $DEBUG && warn "Sent message to: $topic\n";
 
     $payload = '' unless defined $payload;
     my $payload_ref = (ref $payload eq 'SCALAR') ? $payload : \$payload;
@@ -1472,6 +1520,23 @@ sub publish {
         # 3.3.2.3.5  Response Topic  (utf8 string)
         utf8::encode( $args{'response_topic'} );
         $raw_prop .= pack("C n/a*", MQTT_RESPONSE_TOPIC, delete $args{'response_topic'});
+    }
+
+    if (exists $args{'correlation_data'}) {
+        # 3.3.2.3.6  Correlation Data  (binary data)
+        $raw_prop .= pack("C n/a*", MQTT_CORRELATION_DATA, delete $args{'correlation_data'});
+    }
+
+    # if (exists $args{'subscription_identifier'}) {
+    #     # 3.3.2.3.8  Subscription Identifier  (variable int)
+    #     my $id = delete $args{'subscription_identifier'};
+    #     $raw_prop .= pack("C", MQTT_SUBSCRIPTION_IDENTIFIER) . _encode_var_int($id);
+    # }
+
+    if (exists $args{'content_type'}) {
+        # 3.3.2.3.9  Content Type  (utf8 string)
+        utf8::encode( $args{'content_type'} );
+        $raw_prop .= pack("C n/a*", MQTT_CONTENT_TYPE, delete $args{'content_type'});
     }
 
     foreach my $key (keys %args) {
@@ -1538,7 +1603,7 @@ sub _receive_publish {
     my $offs = 2 + length $topic;
     utf8::decode($topic);
 
-    $DEBUG && print "Got msg: $topic\n";
+    $DEBUG && warn "Got message from: $topic\n";
 
     my %prop = (
         'topic' => $topic,
@@ -1571,7 +1636,7 @@ sub _receive_publish {
         }
         elsif ($prop_id == MQTT_MESSAGE_EXPIRY_INTERVAL) {
             # 3.3.2.3.3  Message Expiry Interval  (long int)
-            $prop{'message_expiry'} = unpack("N", substr($$packet, $offs, 4));
+            $prop{'message_expiry_interval'} = unpack("N", substr($$packet, $offs, 4));
             $offs += 4;
         }
         elsif ($prop_id == MQTT_TOPIC_ALIAS) {
