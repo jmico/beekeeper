@@ -61,7 +61,7 @@ sub check_02_broker_connection : Test(startup => 1) {
 
     # Try to connect to broker
     my $config = Beekeeper::Config->get_bus_config( bus_id => 'test' );
-    my $bus = Beekeeper::Bus::MQTT->new( %$config, timeout => 1 );
+    my $bus = Beekeeper::MQTT->new( %$config, timeout => 1 );
     $Broker = eval { 
         $bus->connect( blocking => 1 );
         $bus->{server_prop}->{host}; 
@@ -111,10 +111,10 @@ sub start_workers {
         diag "Waiting for supervisor" if DEBUG;
         my $max_wait = 5;
         while ($max_wait--) {
+            Time::HiRes::sleep(0.5);
             my $status = Beekeeper::Service::Supervisor->get_services_status( class => 'Beekeeper::Service::Supervisor::Worker' );
             my $running = $status->{'Beekeeper::Service::Supervisor::Worker'}->{count} || 0;
             last if $running == 1;
-            Time::HiRes::sleep(0.1);
         }
 
         $SIG{'USR2'} = sub {

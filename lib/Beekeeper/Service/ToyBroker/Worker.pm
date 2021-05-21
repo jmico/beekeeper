@@ -26,7 +26,7 @@ use AnyEvent::Impl::Perl;
 use Beekeeper::Worker ':log';
 use base 'Beekeeper::Worker';
 
-use Beekeeper::Bus::MQTT qw(:const :decode);
+use Beekeeper::MQTT qw(:const :decode);
 use Beekeeper::Config;
 
 use AnyEvent;

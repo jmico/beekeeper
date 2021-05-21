@@ -5,7 +5,7 @@ use warnings;
 
 use base 'Tests::Service::Base';
 use Tests::Service::Config;
-use Beekeeper::Bus::MQTT;
+use Beekeeper::MQTT;
 
 use Test::More;
 use Time::HiRes 'sleep';
@@ -27,8 +27,8 @@ sub read_bus_config : Test(startup => 1) {
 sub test_01_topic : Test(3) {
     my $self = shift;
 
-    my $bus1 = Beekeeper::Bus::MQTT->new( %$bus_config );
-    my $bus2 = Beekeeper::Bus::MQTT->new( %$bus_config );
+    my $bus1 = Beekeeper::MQTT->new( %$bus_config );
+    my $bus2 = Beekeeper::MQTT->new( %$bus_config );
 
     $bus1->connect( blocking => 1 );
     $bus2->connect( blocking => 1 );
@@ -83,8 +83,8 @@ sub test_01_topic : Test(3) {
 sub test_02_topic_wildcard : Test(7) {
     my $self = shift;
 
-    my $bus1 = Beekeeper::Bus::MQTT->new( %$bus_config );
-    my $bus2 = Beekeeper::Bus::MQTT->new( %$bus_config );
+    my $bus1 = Beekeeper::MQTT->new( %$bus_config );
+    my $bus2 = Beekeeper::MQTT->new( %$bus_config );
 
     $bus1->connect( blocking => 1 );
     $bus2->connect( blocking => 1 );
@@ -169,8 +169,8 @@ sub test_02_topic_wildcard : Test(7) {
 sub test_03_shared_topic : Test(4) {
     my $self = shift;
 
-    my $bus1 = Beekeeper::Bus::MQTT->new( %$bus_config );
-    my $bus2 = Beekeeper::Bus::MQTT->new( %$bus_config );
+    my $bus1 = Beekeeper::MQTT->new( %$bus_config );
+    my $bus2 = Beekeeper::MQTT->new( %$bus_config );
 
     $bus1->connect( blocking => 1 );
     $bus2->connect( blocking => 1 );
@@ -239,9 +239,9 @@ sub test_03_shared_topic : Test(4) {
 sub test_04_exclusive_topic : Test(11) {
     my $self = shift;
 
-    my $bus1 = Beekeeper::Bus::MQTT->new( %$bus_config );
-    my $bus2 = Beekeeper::Bus::MQTT->new( %$bus_config );
-    my $bus3 = Beekeeper::Bus::MQTT->new( %$bus_config );
+    my $bus1 = Beekeeper::MQTT->new( %$bus_config );
+    my $bus2 = Beekeeper::MQTT->new( %$bus_config );
+    my $bus3 = Beekeeper::MQTT->new( %$bus_config );
 
     $bus1->connect( blocking => 1 );
     $bus2->connect( blocking => 1 );
@@ -395,8 +395,8 @@ return;
 sub test_05_shared_topic_queuing : Test(6) {
     my $self = shift;
 
-    my $bus1 = Beekeeper::Bus::MQTT->new( %$bus_config );
-    my $bus2 = Beekeeper::Bus::MQTT->new( %$bus_config );
+    my $bus1 = Beekeeper::MQTT->new( %$bus_config );
+    my $bus2 = Beekeeper::MQTT->new( %$bus_config );
 
     $bus1->connect( blocking => 1 );
     $bus2->connect( blocking => 1 );
@@ -519,7 +519,7 @@ sub test_06_topic_timeout : Test(2) {
 
     return "ToyBroker does not honor expiration yet" if $self->using_toybroker;
 
-    my $bus1 = Beekeeper::Bus::MQTT->new( %$bus_config );
+    my $bus1 = Beekeeper::MQTT->new( %$bus_config );
 
     $bus1->connect( blocking => 1 );
 

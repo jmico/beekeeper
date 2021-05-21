@@ -76,7 +76,7 @@ to connect using the configuration from config file C<bus.config.json>.
 
 =cut
 
-use Beekeeper::Bus::MQTT;
+use Beekeeper::MQTT;
 use Beekeeper::JSONRPC;
 use Beekeeper::Config;
 
@@ -171,7 +171,7 @@ sub new {
     $args{'topic_alias_maximum'} = 0;
 
 
-    $self->{_BUS} = Beekeeper::Bus::MQTT->new( %args );
+    $self->{_BUS} = Beekeeper::MQTT->new( %args );
 
     # Connect to MQTT broker
     $self->{_BUS}->connect( blocking => 1 );
@@ -842,7 +842,7 @@ sub ___abort_transaction {
 
 =head1 SEE ALSO
  
-L<Beekeeper::Bus::MQTT>, L<Beekeeper::Worker>.
+L<Beekeeper::MQTT>, L<Beekeeper::Worker>.
 
 =head1 AUTHOR
 

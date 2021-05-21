@@ -68,7 +68,7 @@ use Sys::Hostname;
 use Scalar::Util 'blessed';
 use Carp;
 
-#TODO: our @CARP_NOT = ('AnyEvent', 'Beekeeper::Bus::MQTT');
+#TODO: our @CARP_NOT = ('AnyEvent', 'Beekeeper::MQTT');
 
 use constant COMPILE_ERROR_EXIT_CODE => 99;
 use constant REPORT_STATUS_PERIOD    => 10;

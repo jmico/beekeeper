@@ -93,7 +93,7 @@ sub init_frontend_connection {
 
     $self->{wait_frontends_up}->begin;
 
-    my $bus; $bus = Beekeeper::Bus::MQTT->new( 
+    my $bus; $bus = Beekeeper::MQTT->new( 
         %$config,
         bus_id   => $bus_id,
         timeout  => 60,

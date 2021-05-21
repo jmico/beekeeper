@@ -1,4 +1,4 @@
-package Beekeeper::Bus::MQTT;
+package Beekeeper::MQTT;
 
 use strict;
 use warnings;
@@ -17,7 +17,7 @@ our %EXPORT_TAGS;
 
 EXPORT: {
     my (@const, @encode);
-    foreach (keys %{Beekeeper::Bus::MQTT::}) {
+    foreach (keys %{Beekeeper::MQTT::}) {
         push @const, $_ if m/^MQTT_/;
         push @encode, $_ if m/^_(en|de)code/;
     }
@@ -28,7 +28,7 @@ EXPORT: {
 
 =head1 NAME
  
-Beekeeper::Bus::MQTT - A lightweight asynchronous MQTT 5.0 client.
+Beekeeper::MQTT - A lightweight asynchronous MQTT 5.0 client.
  
 =head1 VERSION
  
@@ -36,7 +36,7 @@ Version 0.01
 
 =head1 SYNOPSIS
 
-  my $mqtt = Beekeeper::Bus::MQTT->new(
+  my $mqtt = Beekeeper::MQTT->new(
       host     => 'localhost',
       username => 'guest',
       password => 'guest',

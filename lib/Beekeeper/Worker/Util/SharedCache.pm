@@ -130,7 +130,7 @@ sub _connect_to_all_brokers {
             next;
         }
 
-        my $bus; $bus = Beekeeper::Bus::MQTT->new( 
+        my $bus; $bus = Beekeeper::MQTT->new( 
             %$config,
             bus_id   => $bus_id,
             timeout  => 300,
