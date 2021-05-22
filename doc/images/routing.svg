@@ -84,37 +84,37 @@
       <polygon style="fill: #ffd15f; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="32,328 24,322 32,316 144,316 144,328 "/>
       <polygon style="fill: #ffd15f; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="32,344 24,338 32,332 144,332 144,344 "/>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="34" y="307.954">
-        <tspan x="34" y="307.954">/temp-queue/tmp.xxxxxxx</tspan>
+        <tspan x="34" y="307.954">priv/xxxxxxxxxxxx</tspan>
       </text>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="34" y="323.954">
-        <tspan x="34" y="323.954">/temp-queue/tmp.xxxxxxx</tspan>
+        <tspan x="34" y="323.954">priv/xxxxxxxxxxxx</tspan>
       </text>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="34" y="339.954">
-        <tspan x="34" y="339.954">/temp-queue/tmp.xxxxxxx</tspan>
+        <tspan x="34" y="339.954">priv/xxxxxxxxxxxx</tspan>
       </text>
       <polygon style="fill: #77ff73; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="32,368 24,362 32,356 144,356 144,368 "/>
       <polygon style="fill: #77ff73; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="32,384 24,378 32,372 144,372 144,384 "/>
       <polygon style="fill: #77ff73; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="32,400 24,394 32,388 144,388 144,400 "/>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="34" y="363.954">
-        <tspan x="34" y="363.954">/topic/msg.app.class.method_A</tspan>
+        <tspan x="34" y="363.954">msg/app/class/method_A</tspan>
       </text>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="34" y="379.954">
-        <tspan x="34" y="379.954">/topic/msg.app.class.method_B</tspan>
+        <tspan x="34" y="379.954">msg/app/class/method_B</tspan>
       </text>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="34" y="395.954">
-        <tspan x="34" y="395.954">/topic/msg.app.class.method_...</tspan>
+        <tspan x="34" y="395.954">msg/app/class/method ...</tspan>
       </text>
       <polygon style="fill: #8cb2ff; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="28,256 28,244 140,244 148,250 140,256 "/>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="34" y="251.954">
-        <tspan x="34" y="251.954">/queue/req.backend-1</tspan>
+        <tspan x="34" y="251.954">req/backend-1</tspan>
       </text>
       <polygon style="fill: #8cb2ff; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="28,272 28,260 140,260 148,266 140,272 "/>
       <polygon style="fill: #8cb2ff; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="28,288 28,276 140,276 148,282 140,288 "/>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="34" y="283.954">
-        <tspan x="34" y="283.954">/queue/req.backend-...</tspan>
+        <tspan x="34" y="283.954">req/backend-n</tspan>
       </text>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="34" y="267.954">
-        <tspan x="34" y="267.954">/queue/req.backend-2</tspan>
+        <tspan x="34" y="267.954">req/backend-2</tspan>
       </text>
     </g>
     <g>
@@ -125,38 +125,38 @@
       <polygon style="fill: #77ff73; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="292,384 284,378 292,372 404,372 404,384 "/>
       <polygon style="fill: #77ff73; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="292,400 284,394 292,388 404,388 404,400 "/>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="294" y="379.954">
-        <tspan x="294" y="379.954">/queue/msg.frontend-1</tspan>
+        <tspan x="294" y="379.954">msg/frontend-1</tspan>
       </text>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="294" y="395.954">
-        <tspan x="294" y="395.954">/queue/msg.frontend-...</tspan>
+        <tspan x="294" y="395.954">msg/frontend-n</tspan>
       </text>
       <polygon style="fill: #ffd15f; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="292,312 284,306 292,300 404,300 404,312 "/>
       <polygon style="fill: #ffd15f; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="292,328 284,322 292,316 404,316 404,328 "/>
       <polygon style="fill: #ffd15f; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="292,344 284,338 292,332 404,332 404,344 "/>
       <polygon style="fill: #ffd15f; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="292,360 284,354 292,348 404,348 404,360 "/>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="294" y="307.954">
-        <tspan x="294" y="307.954">/queue/res.frontend-A-1</tspan>
+        <tspan x="294" y="307.954">res/frontend-A-1</tspan>
       </text>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="294" y="323.954">
-        <tspan x="294" y="323.954">/queue/res.frontend-A-...</tspan>
+        <tspan x="294" y="323.954">res/frontend-A-n</tspan>
       </text>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="294" y="339.954">
-        <tspan x="294" y="339.954">/queue/res.frontend-B-1</tspan>
+        <tspan x="294" y="339.954">res/frontend-B-1</tspan>
       </text>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="294" y="355.954">
-        <tspan x="294" y="355.954">/queue/res.frontend-B-...</tspan>
+        <tspan x="294" y="355.954">res/frontend-B-n</tspan>
       </text>
       <polygon style="fill: #8cb2ff; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="288,256 288,244 400,244 408,250 400,256 "/>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="294" y="251.954">
-        <tspan x="294" y="251.954">/queue/req.backend.app.class_A</tspan>
+        <tspan x="294" y="251.954">req/backend/app/class_A</tspan>
       </text>
       <polygon style="fill: #8cb2ff; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="288,272 288,260 400,260 408,266 400,272 "/>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="294" y="267.954">
-        <tspan x="294" y="267.954">/queue/req.backend.app.class_B</tspan>
+        <tspan x="294" y="267.954">req/backend/app/class_B</tspan>
       </text>
       <polygon style="fill: #8cb2ff; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="288,288 288,276 400,276 408,282 400,288 "/>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="294" y="283.954">
-        <tspan x="294" y="283.954">/queue/req.backend.app.class_...</tspan>
+        <tspan x="294" y="283.954">req/backend/app/class ...</tspan>
       </text>
     </g>
     <g>
@@ -167,38 +167,38 @@
       <polygon style="fill: #77ff73; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="292,184 284,178 292,172 404,172 404,184 "/>
       <polygon style="fill: #77ff73; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="292,200 284,194 292,188 404,188 404,200 "/>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="294" y="179.954">
-        <tspan x="294" y="179.954">/queue/msg.frontend-1</tspan>
+        <tspan x="294" y="179.954">msg/frontend-1</tspan>
       </text>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="294" y="195.954">
-        <tspan x="294" y="195.954">/queue/msg.frontend-...</tspan>
+        <tspan x="294" y="195.954">msg/frontend-n</tspan>
       </text>
       <polygon style="fill: #ffd15f; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="292,112 284,106 292,100 404,100 404,112 "/>
       <polygon style="fill: #ffd15f; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="292,128 284,122 292,116 404,116 404,128 "/>
       <polygon style="fill: #ffd15f; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="292,144 284,138 292,132 404,132 404,144 "/>
       <polygon style="fill: #ffd15f; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="292,160 284,154 292,148 404,148 404,160 "/>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="294" y="107.954">
-        <tspan x="294" y="107.954">/queue/res.frontend-A-1</tspan>
+        <tspan x="294" y="107.954">res/frontend-A-1</tspan>
       </text>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="294" y="123.954">
-        <tspan x="294" y="123.954">/queue/res.frontend-A-...</tspan>
+        <tspan x="294" y="123.954">res/frontend-A-n</tspan>
       </text>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="294" y="139.954">
-        <tspan x="294" y="139.954">/queue/res.frontend-B-1</tspan>
+        <tspan x="294" y="139.954">res/frontend-B-1</tspan>
       </text>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="294" y="155.954">
-        <tspan x="294" y="155.954">/queue/res.frontend-B-...</tspan>
+        <tspan x="294" y="155.954">res/frontend-B-n</tspan>
       </text>
       <polygon style="fill: #8cb2ff; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="288,56 288,44 400,44 408,50 400,56 "/>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="294" y="51.9541">
-        <tspan x="294" y="51.9541">/queue/req.backend.app.class_A</tspan>
+        <tspan x="294" y="51.9541">req/backend/app/class_A</tspan>
       </text>
       <polygon style="fill: #8cb2ff; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="288,72 288,60 400,60 408,66 400,72 "/>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="294" y="67.9541">
-        <tspan x="294" y="67.9541">/queue/req.backend.app.class_B</tspan>
+        <tspan x="294" y="67.9541">req/backend/app/class_B</tspan>
       </text>
       <polygon style="fill: #8cb2ff; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="288,88 288,76 400,76 408,82 400,88 "/>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="294" y="83.9541">
-        <tspan x="294" y="83.9541">/queue/req.backend.app.class_...</tspan>
+        <tspan x="294" y="83.9541">req/backend/app/class ...</tspan>
       </text>
     </g>
     <g>
@@ -210,37 +210,37 @@
       <polygon style="fill: #ffd15f; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="32,128 24,122 32,116 144,116 144,128 "/>
       <polygon style="fill: #ffd15f; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="32,144 24,138 32,132 144,132 144,144 "/>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="34" y="107.954">
-        <tspan x="34" y="107.954">/temp-queue/tmp.xxxxxxx</tspan>
+        <tspan x="34" y="107.954">priv/xxxxxxxxxxxx</tspan>
       </text>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="34" y="123.954">
-        <tspan x="34" y="123.954">/temp-queue/tmp.xxxxxxx</tspan>
+        <tspan x="34" y="123.954">priv/xxxxxxxxxxxx</tspan>
       </text>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="34" y="139.954">
-        <tspan x="34" y="139.954">/temp-queue/tmp.xxxxxxx</tspan>
+        <tspan x="34" y="139.954">priv/xxxxxxxxxxxx</tspan>
       </text>
       <polygon style="fill: #77ff73; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="32,168 24,162 32,156 144,156 144,168 "/>
       <polygon style="fill: #77ff73; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="32,184 24,178 32,172 144,172 144,184 "/>
       <polygon style="fill: #77ff73; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="32,200 24,194 32,188 144,188 144,200 "/>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="34" y="163.954">
-        <tspan x="34" y="163.954">/topic/msg.app.class.method_A</tspan>
+        <tspan x="34" y="163.954">msg/app/class/method_A</tspan>
       </text>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="34" y="179.954">
-        <tspan x="34" y="179.954">/topic/msg.app.class.method_B</tspan>
+        <tspan x="34" y="179.954">msg/app/class/method_B</tspan>
       </text>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="34" y="195.954">
-        <tspan x="34" y="195.954">/topic/msg.app.class.method_...</tspan>
+        <tspan x="34" y="195.954">msg/app/class/method ...</tspan>
       </text>
       <polygon style="fill: #8cb2ff; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="28,56 28,44 140,44 148,50 140,56 "/>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="34" y="51.9541">
-        <tspan x="34" y="51.9541">/queue/req.backend-1</tspan>
+        <tspan x="34" y="51.9541">req/backend-1</tspan>
       </text>
       <polygon style="fill: #8cb2ff; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="28,72 28,60 140,60 148,66 140,72 "/>
       <polygon style="fill: #8cb2ff; fill-opacity: 1; stroke-opacity: 1; stroke-width: 0.4; stroke: #000000" fill-rule="evenodd" points="28,88 28,76 140,76 148,82 140,88 "/>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="34" y="83.9541">
-        <tspan x="34" y="83.9541">/queue/req.backend-...</tspan>
+        <tspan x="34" y="83.9541">req/backend-n</tspan>
       </text>
       <text font-size="5.64444" style="fill: #000000; fill-opacity: 1; stroke: none;text-anchor:start;font-family:sans-serif;font-style:normal;font-weight:normal" x="34" y="67.9541">
-        <tspan x="34" y="67.9541">/queue/req.backend-2</tspan>
+        <tspan x="34" y="67.9541">req/backend-2</tspan>
       </text>
     </g>
     <g>
