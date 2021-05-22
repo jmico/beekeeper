@@ -141,11 +141,15 @@ sub on_shutdown {
 
         foreach my $lane (1..QUEUE_LANES) {
 
+            my $topic = "\$share/BKPR/req/$backend_cluster-$lane";
             $cv->begin;
             $frontend_bus->unsubscribe(
-              # destination => "/queue/req.$backend_cluster-$lane",
-                topic        => "\$share/BKPR/req/$backend_cluster-$lane",
-                on_unsuback  => sub { $cv->end },
+                topic       => $topic,
+                on_unsuback => sub {
+                    my ($success, $prop) = @_;
+                    log_error "Could not unsubscribe from $topic" unless $success;
+                    $cv->end;
+                }
             );
         }
     }
@@ -153,15 +157,19 @@ sub on_shutdown {
     # 2. Stop forwarding notifications to frontend
     foreach my $lane (1..QUEUE_LANES) {
 
+        my $topic = "\$share/BKPR/msg/$frontend_cluster-$lane";
         $cv->begin;
         $backend_bus->unsubscribe(
-          # destination => "/queue/msg.$frontend_cluster-$lane",
-            topic        => "\$share/BKPR/msg/$frontend_cluster-$lane",
-            on_unsuback  => sub { $cv->end },
+            topic       => $topic,
+            on_unsuback => sub {
+                my ($success, $prop) = @_;
+                log_error "Could not unsubscribe from $topic" unless $success;
+                $cv->end;
+            }
         );
     }
 
-    # 3. Wait for unsubscribe receipts, assuring that no more requests or messages are buffered 
+    # 3. Wait for unsubacks, assuring that no more requests or messages are buffered 
     my $tmr = AnyEvent->timer( after => 30, cb => sub { $cv->send });
     $cv->recv;
 
@@ -177,16 +185,20 @@ sub on_shutdown {
 
         foreach my $lane (1..QUEUE_LANES) {
 
+            my $topic = "\$share/BKPR/res/$frontend_id-$lane";
             $cv->begin;
             $backend_bus->unsubscribe(
-              # destination => "/queue/res.$frontend_id-$lane",
-                topic       => "\$share/BKPR/res/$frontend_id-$lane",
-                on_unsuback => sub { $cv->end },
+                topic       => $topic,
+                on_unsuback => sub {
+                    my ($success, $prop) = @_;
+                    log_error "Could not unsubscribe from $topic" unless $success;
+                    $cv->end;
+                }
             );
         }
     }
 
-    # 6. Wait for unsubscribe receipts, assuring that no more responses are buffered 
+    # 6. Wait for unsubacks, assuring that no more responses are buffered 
     $tmr = AnyEvent->timer( after => 30, cb => sub { $cv->send });
     $cv->recv;
  
@@ -238,9 +250,9 @@ sub pull_frontend_requests {
                 $dest_queue = $msg_prop->{'fwd_to'} || '';
                 return unless $dest_queue =~ m|^req(/(?!_)[\w-]+)+$|;
 
-                # eg: priv/7nXDsxMDwgLUSedX@frontend-1
+                # eg: priv/7nXDsxMDwgLUSedX
                 $reply_to = $msg_prop->{'response_topic'} || '';
-                return unless $reply_to =~ m|^priv/(\w{16,22})$|;
+                return unless $reply_to =~ m|^priv/(\w{16,23})$|;
                 $session_id = $1;
 
                 #TODO: Extra sanity checks could be done here before forwarding to backend
@@ -261,8 +273,8 @@ sub pull_frontend_requests {
                     $pub_args{'x-auth-tokens'} = $session->[2];
                 }
 
-                if (exists $msg_prop->{'message_expiry'}) {
-                    $pub_args{'message_expiry'} = $msg_prop->{'message_expiry'};
+                if (exists $msg_prop->{'message_expiry_interval'}) {
+                    $pub_args{'message_expiry_interval'} = $msg_prop->{'message_expiry_interval'};
                 }
 
                 $backend_bus->publish( %pub_args );
@@ -273,7 +285,7 @@ sub pull_frontend_requests {
             },
             on_suback => sub {
                 log_debug "Forwarding $src_queue \@$frontend_id --> req/$backend_cluster/{app}/{service} \@$backend_id";
-            },
+            }
         );
     }
 }
@@ -315,7 +327,7 @@ sub pull_backend_responses {
             },
             on_suback => sub {
                 log_debug "Forwarding $src_queue \@$backend_id --> priv/{session_id} \@$frontend_id";
-            },
+            }
         );
     }
 }
@@ -326,8 +338,8 @@ sub pull_backend_notifications {
 
     # Get notifications from backend bus and broadcast them to all frontend buses
     #
-    # from:  msg/frontend-n                @backend
-    # to:    msg/{app}/{service}/{method}  @frontend
+    # from:  msg/frontend-n                         @backend
+    # to:    msg/frontend/{app}/{service}/{method}  @frontend
 
     unless (keys %{$self->{FRONTEND}} && $self->{wait_frontends_up}->ready) {
         # Wait until connected to all (working) frontends before pulling 
@@ -394,8 +406,8 @@ sub pull_backend_notifications {
                 $self->{_WORKER}->{notif_count}++;
             },
             on_suback => sub {
-                log_debug "Forwarding $src_queue \@$backend_id --> msg/{app}/{service}/{method} \@$frontend_id";
-            },
+                log_debug "Forwarding $src_queue \@$backend_id --> msg/frontend/{app}/{service}/{method} \@$frontend_id";
+            }
         );
     }
 }
@@ -463,7 +475,7 @@ sub bind {
 
     my $frontend_cluster = $self->{frontend_cluster};
 
-    unless (defined $session_id && $session_id =~ m/^\w{16,}$/) {
+    unless (defined $session_id && $session_id =~ m/^\w{16,23}$/) {
         # eg: 7nXDsxMDwgLUSedX
         die ( $session_id ? "Invalid session $session_id" : "Session not specified");
     }
@@ -502,8 +514,8 @@ sub unbind {
 
     my $frontend_cluster = $self->{frontend_cluster};
 
-    if (defined $session_id && $session_id !~ m/^[\w]{16,}$/) {
-        # eg: B9LY-y22H8K9RLADnEh0Ww
+    if (defined $session_id && $session_id !~ m/^\w{16,23}$/) {
+        # eg: 7nXDsxMDwgLUSedX
         die "Invalid session $session_id";
     }
 

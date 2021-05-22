@@ -362,6 +362,10 @@ sub accept_notifications {
                 }
 
                 $cb->($request->{params}, $request);
+            },
+            on_suback => sub {
+                my ($success, $prop) = @_;
+                croak "Could not subscribe to $topic" unless $success;
             }
         );
     }
@@ -414,7 +418,7 @@ sub stop_accepting_notifications {
                     $req_method =~ m/^([\.\w-]+)\.([\w-]+)$/;
                     not ($service eq $1 && ($method eq '*' || $method eq $2));
                 } @$job_queue;
-            }
+            },
         );
     }
 }
@@ -753,6 +757,10 @@ sub __create_response_topic {
                 $cb->($resp->{params}, $resp);
             }
         },
+        on_suback => sub {
+            my ($success, $prop) = @_;
+            croak "Could not subscribe to $response_topic" unless $success;
+        }
     );
 
     return $response_topic;

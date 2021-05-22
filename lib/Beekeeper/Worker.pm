@@ -419,6 +419,10 @@ sub accept_notifications {
                     $worker->{busy_since} = Time::HiRes::time;
                     AnyEvent::postpone { $self->__drain_task_queue };
                 }
+            },
+            on_suback => sub {
+                my ($success, $prop) = @_;
+                croak "Could not subscribe to $topic" unless $success;
             }
         );
     }
@@ -535,6 +539,10 @@ sub accept_jobs {
                     $worker->{busy_since} = Time::HiRes::time;
                     AnyEvent::postpone { $self->__drain_task_queue };
                 }
+            },
+            on_suback => sub {
+                my ($success, $prop) = @_;
+                croak "Could not subscribe to $queue" unless $success;
             }
         );
     }
