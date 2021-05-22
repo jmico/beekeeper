@@ -434,7 +434,7 @@ sub _connect {
         tls        => $tls ? 'connect' : undef,
         keepalive  => 1,
         no_delay   => 1,
-        on_connect => sub { 
+        on_connect => sub {
             my ($fh, $host, $port) = @_;
             # Send CONNECT packet
             $self->{server_prop}->{host} = $host;
@@ -597,7 +597,7 @@ sub _send_connect {
 
     unless ($client_id) {
         $client_id = '';
-        $client_id .= ('0'..'9','a'..'z','A'..'Z')[rand 62] for (1..16);
+        $client_id .= ('0'..'9','a'..'z','A'..'Z')[rand 62] for (1..22);
     }
 
     $self->{client_id} = $client_id;
@@ -1425,7 +1425,7 @@ Must be set to a true value to indicate a message retransmission.
 
 ...
 
-=item message_expiry => $int
+=item message_expiry_interval => $int
 
 Expiration period in seconds. The server will discard retained messages after this
 period has ellapsed.
