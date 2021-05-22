@@ -5,24 +5,28 @@ function Calculator () { return {
 
     connect: function() {
 
-        var This = this;
+        const This = this;
 
         this.bkpr = new BeekeeperClient;
 
         this.bkpr.connect({
+
             url:        CONFIG.url,       // "ws://localhost:8000/mqtt"
             username:   CONFIG.username,  // "frontend"
             password:   CONFIG.password,  // "abc123"
             debug:      CONFIG.debug,
-            on_connect: function() { This.init() }
+
+            on_connect: function() {
+                This.init();
+            }
         });
     },
 
     init: function() {
 
-        var This = this;
+        const This = this;
 
-        var cmdInput = document.getElementById('expr');
+        const cmdInput = document.getElementById('expr');
         cmdInput.addEventListener('input', function(e) {
             This.eval_expr();
         });
@@ -31,7 +35,7 @@ function Calculator () { return {
     },
 
     _display: function(msg,style) {
-        var div = document.getElementById('result');
+        const div = document.getElementById('result');
         div.innerHTML = msg;
         div.className = style;
     },
@@ -46,28 +50,28 @@ function Calculator () { return {
 
     eval_expr: function() {
 
-        var cmdInput = document.getElementById('expr');
-        var expr = cmdInput.value;
+        const cmdInput = document.getElementById('expr');
+        const expr = cmdInput.value;
 
         if (!expr.length) {
             this.display_success('');
             return;
         }
 
-        var This = this;
+        const This = this;
 
         this.bkpr.call_remote_method({
             method: 'myapp.calculator.eval_expr', 
             params: { "expr": expr },
             on_success: function(result) {
-                This.display_success( expr + " = " + result );
+                This.display_success(`${expr} = ${result}`);
             },
             on_error: function(error) {
-                This.display_error( expr + " : " + error.message );
+                This.display_error(`${expr} : ${error.message}`);
             }
         });
     }
 }};
 
-var Calc = new Calculator;
-Calc.connect();
+const calc = new Calculator;
+calc.connect();

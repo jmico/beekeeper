@@ -8,11 +8,11 @@
 #
 #  - bus-id   : unique identifier of the logical bus (required)
 #  - cluster  : identifier of the cluster of buses that this bus belongs to (if any)
-#  - host     : hostname or IP address of the broker (required)
-#  - port     : port of the broker (default is 61613)
+#  - host     : hostname or IP address of the broker (default is localhost)
+#  - port     : port of the broker (default is 1883)
 #  - tls      : if set to true enables the use of TLS on broker connection
-#  - username : username used to connect to the broker (required)
-#  - password : password used to connect to the broker (required)
+#  - username : username used to connect to the broker
+#  - password : password used to connect to the broker
 
 [
     {

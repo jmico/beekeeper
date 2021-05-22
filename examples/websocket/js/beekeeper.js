@@ -11,7 +11,7 @@
     This uses the MQTT.js library:
     - https://github.com/mqttjs/MQTT.js
 
-    var bkpr = new BeekeeperClient;
+    let bkpr = new BeekeeperClient;
 
     bkpr.connect({
         url:       "ws://localhost:8000/mqtt",
@@ -55,26 +55,15 @@ function BeekeeperClient () { return {
     subscr_cb: {},
     subscr_re: {},
 
-   _debug: function () {},
-    debug: function(enabled) {
-        if (enabled) {
-            this._debug = function (msg) { console.log("BeekeeperClient: " + msg) };
-        }
-        else {
-            this._debug = function () {};
-        }
-    },
-
     connect: function(args) {
 
-        var This = this;
+        const This = this;
+
+        if (!this.client_id) this._generate_client_id();
 
         if ('debug' in args) this.debug(args.debug);
 
-        this._debug("Connecting to MQTT broker at " + args.url);
-
-        var id = ''; for(;id.length < 16;) id += (Math.random() * 36 | 0).toString(36);
-        this.client_id = id;
+        this._debug(`Connecting to MQTT broker at ${args.url}`);
 
         // It is possible to iterate over a list of servers specifying:
         // url: [{ host: 'localhost', port: 1883 }, ... ]
@@ -125,32 +114,64 @@ function BeekeeperClient () { return {
 
         this.mqtt.on('message', function (topic, message, packet) {
 
-            var jsonrpc;
+            let jsonrpc;
             try { jsonrpc = JSON.parse( message.toString() ) }
-            catch (e) { throw "Received invalid JSON: " + e }
-            This._debug("Got  << " + message);
+            catch (e) { throw `Received invalid JSON: ${e}` }
+            This._debug(`Got  << ${message}`);
 
-            var subscr_id = packet.properties.subscriptionIdentifier;
-            var subscr_cb = This.subscr_cb[subscr_id];
+            const subscr_id = packet.properties.subscriptionIdentifier;
+            const subscr_cb = This.subscr_cb[subscr_id];
 
             subscr_cb(jsonrpc, packet.properties);
         });
     },
 
+    _generate_client_id: function() {
+        // Generate a random client id (128+ bits)
+        this.client_id = '';
+        const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+        const random = new Uint32Array(22);
+        window.crypto.getRandomValues(random);
+        for (let i = 0; i < random.length; i++) {
+            this.client_id += chars.charAt(random[i] % 62);
+        }
+    },
+
+   _debug: function () {},
+    debug: function(enabled) {
+        if (enabled) {
+            this._debug = function (msg) { console.log(`Beekeeper: ${msg}`) };
+        }
+        else {
+            this._debug = function () {};
+        }
+    },
+
+    on_error: null,
+   _on_error: function (error) {
+        if (!this.on_error) return;
+        try { this.on_error(error) }
+        catch(e) { This._debug(`Uncaught exception into on_error handler: ${e}`) }
+    },
+
     send_notification: function(args) {
+
+        // This is included for reference, but please note that frontend clients
+        // should *not* be allowed to publish to msg/frontend/*, as that would 
+        // allow a malicious actor to inject messages to other users
 
         if (!this.mqtt.connected) throw "Not connected to MQTT broker";
 
-        var json = JSON.stringify({
+        const json = JSON.stringify({
             jsonrpc: "2.0",
             method: args.method,
             params: args.params
         });
 
-        this._debug("Sent >> " + json);
+        this._debug(`Sent >> ${json}`);
 
         this.mqtt.publish(
-            'msg/' + args.method.replace(/\./g,'/'),
+            'msg/frontend/' + args.method.replace(/\./g,'/'),
             json,
             {}
         );
@@ -160,15 +181,15 @@ function BeekeeperClient () { return {
 
         if (!this.mqtt.connected) throw "Not connected to MQTT broker";
 
-        var subscr_id = this.subscr_seq++;
-        var on_receive = args.on_receive;
+        const subscr_id = this.subscr_seq++;
+        const on_receive = args.on_receive;
 
         this.subscr_cb[subscr_id] = function(jsonrpc, packet_prop) {
 
             // Incoming notification
 
             try { on_receive( jsonrpc.params, packet_prop ) }
-            catch(e) { This._debug("Uncaught exception into on_receive callback of " + jsonrpc.method + ": " + e) }
+            catch(e) { This._debug(`Uncaught exception into on_receive callback of ${jsonrpc.method}: ${e}`) }
         };
 
         this.subscr_re[subscr_id] = new RegExp('^' + args.method.replace(/\./g,'\\.').replace(/\*/g,'.+') + '$');
@@ -176,13 +197,13 @@ function BeekeeperClient () { return {
         // Private notifications are received on response_topic subscription
         if (args.private) return;
 
-        var topic = 'msg/backend/' + args.method.replace(/\./g,'/').replace(/\*/g,'#');
+        const topic = 'msg/frontend/' + args.method.replace(/\./g,'/').replace(/\*/g,'#');
 
         this.mqtt.subscribe(
             topic,
             { properties: { subscriptionIdentifier: subscr_id }},
             function (err, granted) {
-                if (err) throw "Failed to subscribe to " + topic + ": " + err;
+                if (err) throw `Failed to subscribe to ${topic}: ${err}`;
             }
         );
     },
@@ -191,18 +212,18 @@ function BeekeeperClient () { return {
 
         if (!this.mqtt.connected) throw "Not connected to MQTT broker";
 
-        var req_id = this.request_seq++;
+        const req_id = this.request_seq++;
 
-        var json = JSON.stringify({
+        const json = JSON.stringify({
             jsonrpc: "2.0",
             method: args.method,
             params: args.params,
             id:     req_id
         });
 
-        var QUEUE_LANES = 2;
-        var topic = 'req/backend-' + Math.floor( Math.random() * QUEUE_LANES + 1 );
-        var fwd_to = 'req/backend/' + args.method.replace(/\.[\w-]+$/,'').replace(/\./g,'/');
+        const QUEUE_LANES = 2;
+        const topic  = 'req/backend-' + Math.floor( Math.random() * QUEUE_LANES + 1 );
+        const fwd_to = 'req/backend/' + args.method.replace(/\.[\w-]+$/,'').replace(/\./g,'/');
 
         this.mqtt.publish(
             topic,
@@ -222,27 +243,29 @@ function BeekeeperClient () { return {
             timeout:    null
         };
 
-        var This = this;
+        const This = this;
 
         this.pending_req[req_id].timeout = setTimeout( function() {
             delete This.pending_req[req_id];
+            This._debug(`Call to ${args.method} timed out`);
+            const err_resp = { code: -32603, message: "Request timeout" };
             if (args.on_error) {
-                try { args.on_error({ code: -32603, message: "Remote method call timed out" }) }
-                catch(e) { This._debug("Uncaught exception into on_error callback of " + args.method + ": " + e) }
+                try { args.on_error(err_resp) }
+                catch(e) { This._debug(`Uncaught exception into on_error callback of ${args.method}: ${e}`) }
             }
             else {
-                This._debug("Call to " + args.method + " timed out");
+                This._on_error(err_resp);
             }
         }, (args.timeout || 30) * 1000);
     },
 
     _create_response_topic: function() {
 
-        var response_topic = 'priv/' + this.client_id;
+        const response_topic = 'priv/' + this.client_id;
         this.response_topic = response_topic;
 
-        var subscr_id = this.subscr_seq++;
-        var This = this;
+        const subscr_id = this.subscr_seq++;
+        const This = this;
 
         this.subscr_cb[subscr_id] = function(jsonrpc, packet_prop) {
 
@@ -250,8 +273,8 @@ function BeekeeperClient () { return {
 
                 // Incoming private notification
 
-                var on_receive;
-                for (var subscr_id in This.subscr_re) {
+                let on_receive;
+                for (let subscr_id in This.subscr_re) {
                     if (jsonrpc.method.match( This.subscr_re[subscr_id] )) {
                         on_receive = This.subscr_cb[subscr_id];
                         break;
@@ -260,10 +283,10 @@ function BeekeeperClient () { return {
 
                 if (on_receive) {
                     try { on_receive( jsonrpc.params, packet_prop ) }
-                    catch(e) { This._debug("Uncaught exception into on_receive callback of " + jsonrpc.method + ": " + e) }
+                    catch(e) { This._debug(`Uncaught exception into on_receive callback of ${jsonrpc.method}: ${e}`) }
                 }
                 else {
-                    This._debug("Received unhandled private notification " + jsonrpc.method);
+                    This._debug(`Received unhandled private notification ${jsonrpc.method}`);
                 }
 
                 return;
@@ -271,8 +294,8 @@ function BeekeeperClient () { return {
 
             // Incoming remote call response
 
-            var resp = jsonrpc;
-            var req = This.pending_req[resp.id];
+            const resp = jsonrpc;
+            const req = This.pending_req[resp.id];
             delete This.pending_req[resp.id];
             if (!req) return;
 
@@ -281,16 +304,17 @@ function BeekeeperClient () { return {
             if ('result' in resp) {
                 if (req.on_success) {
                     try { req.on_success( resp.result, packet_prop ) }
-                    catch(e) { This._debug("Uncaught exception into on_success callback of " + req.method + ": " + e) }
+                    catch(e) { This._debug(`Uncaught exception into on_success callback of ${req.method}: ${e}`) }
                 }
             }
             else {
+                This._debug(`Error response from ${req.method} call: ${resp.error.message}`);
                 if (req.on_error) {
                     try { req.on_error( resp.error, packet_prop ) }
-                    catch(e) { This._debug("Uncaught exception into on_error callback of " + req.method + ": " + e) }
+                    catch(e) { This._debug(`Uncaught exception into on_error callback of ${req.method}: ${e}`) }
                 }
                 else {
-                    This._debug("Error response from " + req.method + " call: " + resp.error.message);
+                    This._on_error(resp.error);
                 }
             }
         };
@@ -299,30 +323,32 @@ function BeekeeperClient () { return {
             response_topic,
             { properties: { subscriptionIdentifier: subscr_id }},
             function (err, granted) {
-                if (err) throw "Failed to subscribe to " + response_topic + ": " + err;
+                if (err) throw `Failed to subscribe to ${response_topic}: ${err}`;
             }
         );
     },
 
     accept_remote_calls: function(args) {
 
-        // This is included for reference, but note that frontend clients 
-        // should *not* be allowed to even connect to the backend broker
+        // This is included for reference, but please note that frontend clients
+        // should *not* be allowed to even connect to the backend broker, let alone
+        // consume from req/backend/*, as that would allow a malicious actor to 
+        // disrupt services or steal other users credentials
 
         if (!this.mqtt.connected) throw "Not connected to MQTT broker";
 
-        var subscr_id = this.subscr_seq++;
-        var on_receive = args.on_receive;
-        var This = this;
+        const subscr_id = this.subscr_seq++;
+        const on_receive = args.on_receive;
+        const This = this;
 
         this.subscr_cb[subscr_id] = function(jsonrpc, packet_prop) {
 
             // Incoming remote request
 
-            var json;
+            let json;
 
             try {
-                var result = on_receive( jsonrpc.params, packet_prop );
+                let result = on_receive( jsonrpc.params, packet_prop );
                 json = JSON.stringify({
                     jsonrpc: "2.0",
                     result: result,
@@ -343,16 +369,16 @@ function BeekeeperClient () { return {
                 {}
             );
 
-            This._debug("Sent >> " + json);
+            This._debug(`Sent >> ${json}`);
         };
 
-        var topic = '$share/BKPR/req/backend/' + args.method.replace(/\./g,'/');
+        const topic = '$share/BKPR/req/backend/' + args.method.replace(/\./g,'/');
 
         this.mqtt.subscribe(
             topic,
             { properties: { subscriptionIdentifier: subscr_id }},
             function (err, granted) {
-                if (err) throw "Failed to subscribe to " + topic + ": " + err;
+                if (err) throw `Failed to subscribe to ${topic}: ${err}`;
             }
         );
     },
