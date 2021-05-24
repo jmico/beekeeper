@@ -416,7 +416,6 @@ sub _connect {
         # Initialize the list of cluster hosts
         my $hosts = $config->{'host'} || 'localhost';
         my @hosts = (ref $hosts eq 'ARRAY') ? @$hosts : ( $hosts );
-        @hosts = map { $_=~ m/^([\w\-\.]+)$/s } @hosts; # untaint
         $self->{hosts} = [ shuffle @hosts ];
     }
 
@@ -428,6 +427,9 @@ sub _connect {
     my $host = shift @$try_hosts;
     my $tls  = $config->{'tls'}  || 0;
     my $port = $config->{'port'} || ( $tls ? 8883 : 1883 );
+
+    ($host) = ($host =~ m/^([a-zA-Z0-9\-\.]+)$/s); # untaint
+    ($port) = ($port =~ m/^([0-9]+)$/s);
 
     $self->{handle} = AnyEvent::Handle->new(
         connect    => [ $host, $port ],
