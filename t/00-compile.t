@@ -21,7 +21,7 @@ unless ($^O eq 'linux' || $^O eq 'freebsd') {
 use_ok $_ for qw(
     Beekeeper
     Beekeeper::JSONRPC
-    Beekeeper::Bus::STOMP
+    Beekeeper::MQTT
     Beekeeper::Config
     Beekeeper::Logger
     Beekeeper::Client
