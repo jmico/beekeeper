@@ -25,6 +25,12 @@ sub send_message {
 
     return unless (defined $msg && length $msg);
 
+    # Trim html tags
+    $msg =~ s/<.*?>//sg;
+
+    # Filter profanities
+    $msg =~ s/\b(ass|shit)\b/***/sg;
+
     # Broadcast to all frontend clients
     $self->send_notification(
         method  => 'myapp.chat.message',

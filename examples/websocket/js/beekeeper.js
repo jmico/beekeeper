@@ -8,7 +8,7 @@
     - https://mqtt.org/mqtt-specification
     - https://www.jsonrpc.org/specification
 
-    This uses the MQTT.js library:
+    This requires the MQTT.js library:
     - https://github.com/mqttjs/MQTT.js
 
     let bkpr = new BeekeeperClient;
@@ -151,7 +151,7 @@ function BeekeeperClient () { return {
    _on_error: function (error) {
         if (!this.on_error) return;
         try { this.on_error(error) }
-        catch(e) { This._debug(`Uncaught exception into on_error handler: ${e}`) }
+        catch(e) { this._debug(`Uncaught exception into on_error handler: ${e}`) }
     },
 
     send_notification: function(args) {
@@ -183,6 +183,7 @@ function BeekeeperClient () { return {
 
         const subscr_id = this.subscr_seq++;
         const on_receive = args.on_receive;
+        const This = this;
 
         this.subscr_cb[subscr_id] = function(jsonrpc, packet_prop) {
 
@@ -282,7 +283,7 @@ function BeekeeperClient () { return {
                 }
 
                 if (on_receive) {
-                    try { on_receive( jsonrpc.params, packet_prop ) }
+                    try { on_receive( jsonrpc, packet_prop ) }
                     catch(e) { This._debug(`Uncaught exception into on_receive callback of ${jsonrpc.method}: ${e}`) }
                 }
                 else {

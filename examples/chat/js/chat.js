@@ -20,20 +20,22 @@ function Chat () { return {
 
     init: function() {
 
-        //This.echo_info( 'Connected to ' + This.bkpr.server + ' at ' + This.bkpr.stomp.ws.url );
-        //This.echo_info( 'Debug enabled, STOMP traffic is being dumped to console' );
+        this.display_info(`Connected to ${this.bkpr.host}<br/>
+                           JSON-RPC traffic is being dumped to console`);
+
+        const names = ['Bob','Dave','Paul','Tom','Alice','Lisa','Lucy','Zoe'];
+        document.getElementById('username').value = names[Math.floor(Math.random()*8)];
+        document.getElementById('password').value = '12345';
+        this.login_user();
 
         const This = this;
-
-        This.login_user();
 
         this.bkpr.accept_notifications({
             method: "myapp.chat.message",
             on_receive: function(params) {
                 const msg = params.message;
                 const from = params.from;
-
-                This.bubble( from, msg, 'mine' );
+                This.display_message(msg, from);
             }
         });
 
@@ -42,13 +44,13 @@ function Chat () { return {
             on_receive: function(params) {
                 const msg = params.message;
                 const from = params.from;
-                This.echo_ucast( from ? from + ": " + msg : msg );
+                This.display_private_message(msg, from);
             }
         });
 
         this.bkpr.on_error = function(error) {
-            const errstr = error.constructor === Object ? error.message : error;
-            This.echo_error(errstr);
+            const msg = error.constructor === Object ? error.message : error;
+            This.display_error(msg);
         }
 
         const cmdInput = document.getElementById('cmd');
@@ -62,47 +64,44 @@ function Chat () { return {
         }
     },
 
-    echo: function(msg,style) {
-        const div = document.getElementById('chat');
-        div.innerHTML = div.innerHTML + '<div class="'+style+'">' + msg + '</div>';
-        div.scrollTop = div.scrollHeight;
-    },
-
-    bubble: function(from,msg,style) {
+    display_bubble: function(msg, from, style) {
         const div = document.getElementById('chat');
         div.innerHTML = div.innerHTML + `<div class="bubble ${style}"><div class="sender">${from}</div>${msg}</div>`;
         div.scrollTop = div.scrollHeight;
     },
 
-    echo_info: function(msg) {
-        //this.echo(msg,'info');
-        this.bubble( 'sys', msg, 'info nonmine' );
+    display_info: function(msg) {
+        this.display_bubble(msg, '', 'incoming info no_sender');
     },
 
-    echo_error: function(msg) {
-        //this.echo(msg,'error');
-        this.bubble( 'error', msg, 'error nonmine' );
+    display_error: function(msg) {
+        this.display_bubble(msg, '', 'incoming error no_sender');
     },
 
-    echo_mcast: function(msg) {
-        //this.echo(msg,'mcast');
-        this.bubble( 'sys', msg, 'mcast nonmine' );
+    display_message: function(msg, from) {
+        const style = (from == this.username) ? 'outgoing no_sender' : 'incoming public';
+        this.display_bubble(msg, from, style);
     },
 
-    echo_ucast: function(msg) {
-        //this.echo(msg,'ucast');
-        this.bubble( 'sys', msg, 'ucast nonmine' );
+    display_private_message: function(msg, from) {
+        const style = (from == null) ? 'incoming private no_sender' : 'incoming private';
+        this.display_bubble(msg, from, style);
     },
 
     login_user: function() {
         const This = this;
+        const user = document.getElementById('username').value;
+        const pass = document.getElementById('password').value;
         this.bkpr.call_remote_method({
             method: 'myapp.auth.login', 
             params: {
-                "username": document.getElementById('username').value,
-                "password": document.getElementById('password').value
+                "username": user,
+                "password": pass
+            },
+            on_success: function(params) {
+                This.username = user;
             }
-        });
+        })
     },
 
     exec_command: function() {
@@ -127,9 +126,12 @@ function Chat () { return {
             });
         }
         else if (params =  cmd.match(/^\/pm\s+(\w+)\s+(.*)/i)) {
+            const to_user = params[1];
+            const msg = params[2];
+            this.display_bubble(msg, `To ${to_user}`, 'outgoing');
             this.bkpr.call_remote_method({
                 method: 'myapp.chat.pmessage', 
-                params: { "to_user": params[1], "message": params[2] }
+                params: { "to_user": to_user, "message": msg }
             });
         }
         else if (params = cmd.match(/^\/ping\b/i)) {
@@ -139,7 +141,7 @@ function Chat () { return {
                 params: { },
                 on_success: function(result) {
                     const took = Math.round(performance.now() - t0);
-                    This.echo_info( `Ping: ${took} ms` );
+                    This.display_info( `Ping: ${took} ms` );
                 }
             });
         }

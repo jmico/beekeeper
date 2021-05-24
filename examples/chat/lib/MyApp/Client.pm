@@ -22,6 +22,8 @@ sub new {
     my $self = {};
 
     $self->{fh} = $args{'fh'} || \*STDIN;
+    binmode STDOUT, ":utf8";
+    binmode STDIN,  ":utf8";
 
     # Choose a random frontend
     my $frontend_configs = Beekeeper::Config->get_cluster_config( cluster => 'frontend' );

@@ -25,5 +25,3 @@ case "$1" in
         echo -e "Usage: $0 [start|stop|restart]"
         ;;
 esac
-
-
