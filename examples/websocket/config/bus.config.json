@@ -16,16 +16,17 @@
 
 [
     {
-        "bus-id"   : "frontend",
-        "host"     : "localhost",
-        "username" : "frontend",
-        "password" : "abc123",
-    },
-    {
         "bus-id"   : "backend",
         "host"     : "localhost",
         "username" : "backend",
         "password" : "def456",
         "default"  : 1,
+    },
+    {
+        "bus-id"   : "frontend",
+        "host"     : "localhost",
+        "port"     :  8001,
+        "username" : "router",
+        "password" : "ghi789",
     },
 ]

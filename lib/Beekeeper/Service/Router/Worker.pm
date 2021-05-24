@@ -78,10 +78,6 @@ sub on_startup {
     # Create a connection to every frontend
     foreach my $config (@$frontends_config) {
 
-        # Connect to frontend using backend user and pass 
-        $config->{'username'} = $self->{_BUS}->{config}->{username};
-        $config->{'password'} = $self->{_BUS}->{config}->{password};
-
         $self->init_frontend_connection( $config );
     }
 }
