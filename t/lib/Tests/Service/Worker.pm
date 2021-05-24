@@ -30,6 +30,7 @@ sub on_startup {
         'test.signal' => 'signal',
         'test.fail'   => 'fail',
         'test.sleep'  => '_sleep',
+        'test.triang' => 'triangular',
         'test.fib1'   => 'fibonacci_1',
         'test.fib2'   => 'fibonacci_2',
         'test.echo'   => 'echo',
@@ -72,6 +73,20 @@ sub _sleep {
     my ($self, $params) = @_;
 
     sleep $params;
+}
+
+sub triangular {
+    my ($self, $n) = @_;
+
+    return $n if ($n <= 1);
+
+    my $resp = $self->do_job(
+        method  => 'test.triang',
+        params  => $n - 1,
+        timeout => 3,
+    );
+
+    return $resp->result + $n;
 }
 
 sub fibonacci_1 {
