@@ -1,6 +1,6 @@
 ## WebSocket example
 
-This example shows how to use services from browsers using WebSockets.
+This example demonstrates the use of services from browsers using WebSockets.
 
 
 To run this example start the worker pool:
@@ -20,51 +20,95 @@ this example generates with `bkpr-log -f`. When done, stop the worker pool with:
 ```
 ---
 
-### HiveMQ setup
+### Mosquitto setup
 
-This example uses the internal ToyBroker to allow being run out of the box, but 
-to use actual WebSockets from `client.html` a real broker like HiveMQ is required 
+This example uses the internal ToyBroker to allow being run out of the box, but to use actual 
+WebSockets from `client.html` a real broker like ![Mosquitto](https://mosquitto.org/) is required
 (`client.pl` works fine with ToyBroker though).
 
-To run this example on a fresh install of HiveMQ just set `use_toybroker` to false in
-config file `pool.config.json`. Also ensure that `host` addresses in `bus.config.json` 
-and `config.js` match HiveMQ one. This is a sample `config.xml` for HiveMQ:
+To run this example on a fresh install of Mosquitto set `use_toybroker` to false in config file
+`pool.config.json`. Also ensure that `host` addresses in `bus.config.json` and `config.js` match 
+the one in Mosquitto configuration.
+
+Follow the instructions below to quickly setup a Mosquitto instance capable of running Beekeper
+applications with a minimal security. Please note that the entire idea is to have the backend and 
+frontend buses serviced by different broker instances, running on isolated servers. This setup uses 
+a single broker instance for simplicity, and works just because topics miraculously do not clash
+(see [Brokers.md](../../doc/Brokers.md) for a proper configuration).
+
+Create `/etc/mosquitto/conf.d/beekeeper.conf`
+```
+per_listener_settings true
+
+# Backend
+listener 1883 0.0.0.0
+protocol mqtt
+max_qos 1
+persistence false
+persistent_client_expiration 1m
+max_queued_messages 10000
+allow_anonymous false
+acl_file /etc/mosquitto/conf.d/beekeeper.backend.acl
+password_file /etc/mosquitto/conf.d/beekeeper.users
+
+# Frontend tcp
+listener 8001 0.0.0.0
+protocol mqtt
+max_qos 1
+persistence false
+persistent_client_expiration 1m
+max_queued_messages 100
+allow_anonymous false
+acl_file /etc/mosquitto/conf.d/beekeeper.frontend.acl
+password_file /etc/mosquitto/conf.d/beekeeper.users
+
+# Frontend WebSocket
+listener 8000 0.0.0.0
+protocol websockets
+max_qos 1
+persistence false
+persistent_client_expiration 1m
+max_queued_messages 100
+allow_anonymous false
+acl_file /etc/mosquitto/conf.d/beekeeper.frontend.acl
+password_file /etc/mosquitto/conf.d/beekeeper.users
 
 ```
-<?xml version="1.0"?>
-<hivemq>
+Create `/etc/mosquitto/conf.d/beekeeper.backend.acl`
+```
+user backend
 
-    <listeners>
-        <tcp-listener>
-            <port>1883</port>
-            <bind-address>0.0.0.0</bind-address>
-        </tcp-listener>
-        <websocket-listener>
-            <port>8000</port>
-            <bind-address>0.0.0.0</bind-address>
-            <path>/mqtt</path>
-            <subprotocols>
-                <subprotocol>mqttv3.1</subprotocol>
-                <subprotocol>mqtt</subprotocol>
-            </subprotocols>
-            <allow-extensions>true</allow-extensions>
-        </websocket-listener>
-    </listeners>
+topic   readwrite   msg/#
+topic   readwrite   req/#
+topic   readwrite   res/#
+topic   readwrite   priv/#
+```
+Create `/etc/mosquitto/conf.d/beekeeper.frontend.acl`
+```
+pattern  read   priv/%c
 
-    <mqtt>
-        <queued-messages>
-            <!-- Maximum number of messages per client that will be queued on the broker -->
-            <max-queue-size>10000</max-queue-size>
-        </queued-messages>
-        <receive-maximum>
-            <!-- Maximum number of unacknowledged messages that each client can send -->
-            <server-receive-maximum>10000</server-receive-maximum>
-        </receive-maximum>
-    </mqtt>
+user frontend
 
-</hivemq>
+topic   read    msg/#
+topic   write   req/#
+
+user router
+
+topic   write   msg/#
+topic   read    req/#
+topic   write   priv/#
+```
+And finally create users running the following commands:
+```
+mosquitto_passwd -c -b /etc/mosquitto/conf.d/beekeeper.users  frontend  abc123
+mosquitto_passwd    -b /etc/mosquitto/conf.d/beekeeper.users  backend   def456
+mosquitto_passwd    -b /etc/mosquitto/conf.d/beekeeper.users  router    ghi789
+```
+Then the Mosquitto broker instance can be started with:
+```
+mosquitto -c /etc/mosquitto/conf.d/beekeeper.conf
 ```
 ---
 
-This example uses the MQTT.js library Copyright 2015-2021 MQTT.js contributors 
+This example requires the MQTT.js library Copyright 2015-2021 MQTT.js contributors 
 under MIT License (<https://github.com/mqttjs/MQTT.js>).
