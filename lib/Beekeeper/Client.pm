@@ -119,8 +119,6 @@ sub new {
         forward_to     => $args{'forward_to'},
         response_topic => undef,
         in_progress    => undef,
-        transaction    => undef,
-        transaction_id => undef,
         curr_request   => undef,
         auth_tokens    => undef,
         session_id     => undef,
@@ -274,8 +272,8 @@ sub send_notification {
         $send_args{'x-session'}     = $self->{_CLIENT}->{session_id}   if defined $self->{_CLIENT}->{session_id};
     }
 
-    if ($self->{transaction}) {
-        $send_args{'buffer_id'} = $self->{transaction_id};
+    if (exists $args{'buffer_id'}) {
+        $send_args{'buffer_id'} = $args{'buffer_id'};
     }
 
     $self->{_BUS}->publish( payload => \$json, %send_args );
@@ -622,8 +620,8 @@ sub __do_rpc_request {
 
     my $json = encode_json($req);
 
-    if ($BACKGROUND && $self->{transaction}) {
-        $send_args{'buffer_id'} = $self->{transaction_id};
+    if (exists $args{'buffer_id'}) {
+        $send_args{'buffer_id'} = $args{'buffer_id'};
     }
 
     # Send request
@@ -771,7 +769,7 @@ sub wait_all_jobs {
 
     # Wait for all pending jobs
     my $cv = delete $self->{_CLIENT}->{async_cv};
-    return unless $cv;
+    return unless defined $cv;
 
     # Make AnyEvent to allow one level of recursive condvar blocking, as we may
     # block both in $worker->__work_forever and here
@@ -811,39 +809,6 @@ sub get_auth_tokens {
     my $self = shift;
 
     return split(/\|/, $self->{_CLIENT}->{auth_tokens});
-}
-
-
-# Transactions are currently unsupported as few brokers implements them
-
-sub ___begin_transaction {
-    my ($self, %args) = @_;
-
-    croak "Already in a transaction" if $self->{transaction};
-
-    $self->{transaction_id}++;
-
-    $self->{transaction} = 1;
-}
-
-sub ___commit_transaction {
-    my $self = shift;
-
-    croak "No transaction was previously started" unless $self->{transaction};
-
-    $self->{_BUS}->flush_buffer( buffer_id => $self->{transaction_id} );
-
-    $self->{transaction} = undef;
-}
-
-sub ___abort_transaction {
-    my $self = shift;
-
-    croak "No transaction was previously started" unless $self->{transaction};
-
-    $self->{_BUS}->discard_buffer( buffer_id => $self->{transaction_id} );
-
-    $self->{transaction} = undef;
 }
 
 1;
