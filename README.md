@@ -22,9 +22,9 @@ Requests and responses are shoveled between buses by a few router processes.
 
 **Key characteristics:**
 
-- Broker is a messaging server like Apache ActiveMQ or RabbitMQ.
+- Broker is a MQTT messaging server, like Mosquitto or HiveMQ.
 
-- Broker protocol is STOMP (see the [specification](https://stomp.github.io/stomp-specification-1.2.html)).
+- Broker protocol is MQTT 5 (see the [specification](https://docs.oasis-open.org/mqtt/mqtt/v5.0/mqtt-v5.0.html)).
 
 - RPC protocol is JSON-RPC 2.0 (see the [specification](https://www.jsonrpc.org/specification)).
 
@@ -36,22 +36,22 @@ Requests and responses are shoveled between buses by a few router processes.
 
 - Blends synchronous and asynchronous workers or clients.
 
-- Efficient multicast and unicast notifications.
+- Efficient multicast and unicast push notifications.
 
 - Inherent load balancing.
 
 
 **What does this framework provides:**
 
-- `Beekeeper::Worker`, a base class for writing service workers.
+- `Beekeeper::Worker`, to create service workers.
 
-- `Beekeeper::Client`, a class for writing service clients.
+- `Beekeeper::Client`, to create service clients.
 
 - `bkpr` command which spawns and controls worker processes.
 
-- Command line tools for monitoring and controlling remotely worker pools.
+- Command line tools for monitoring and controlling worker pools.
 
-- A simple internal broker handy for development or running tests. 
+- An internal broker suitable for development or running tests. 
 
 - Automatic message routing between frontend and backend buses.
 
@@ -62,7 +62,7 @@ Requests and responses are shoveled between buses by a few router processes.
 
 ## Getting Started
 
-### Writing workers
+### Creating workers
 
 Workers provide a service accepting certain RPC calls from clients. The base class `Beekeeper::Worker` provides all the glue needed to accept requests and communicate trough the message bus with clients or another workers.
 
@@ -88,9 +88,9 @@ sub uppercase {
 }
 ```
 
-### Writing clients
+### Creating clients
 
-Clients of the service need an interface to use it without knowledge of the underlying RPC mechanisms. The class `Beekeeper::Client` provides simple methods to connect to the broker and make RPC calls.
+Clients of the service need an interface to use it without knowledge of the underlying RPC mechanisms. The class `Beekeeper::Client` provides methods to connect to the broker and make RPC calls.
 
 This is the interface of the above service:
 
@@ -138,11 +138,10 @@ The file `bus.config.json` defines all logical buses used by the application, sp
 
 ```
 [{
-    "bus-id"  : "backend",
-    "host"    : "localhost",
-    "user"    : "backend",
-    "pass"    : "def456",
-    "vhost"   : "/back",
+    "bus-id"   : "backend",
+    "host"     : "localhost",
+    "username" : "backend",
+    "password" : "def456",
 }]
 ```
 Neither the worker code nor the client code have hardcoded references to the logical message bus or the broker connection parameters, they communicate to each other using the definitions in these two files.
@@ -168,7 +167,7 @@ The framework includes these command line tools to manage worker pools:
 ## Performance
 
 Beekeeper is pretty lightweight, so the performance depends mostly on *the broker* performance. These are 
-ballpark performance measurements of a local setup running ActiveMQ:
+ballpark performance measurements of a local setup running Mosquitto:
 
 - A `do_job` synchronous call to a remote method adds 1.5 ms of latency and involves 4 network round trips. This implies a maximum of 650 synchronous calls per second.
 
@@ -188,7 +187,7 @@ ballpark performance measurements of a local setup running ActiveMQ:
 
 **Hypothetical example:**
 
-Suppose it is needed to handle 1000 requests per second to a task that takes 25 ms to complete, uses 20 MB of memory and has 10% CPU load. Servers are in the same datacenter and the network roundtrip is 0.1 ms.
+Suppose it is needed to handle 1000 requests per second to a task that takes 25 ms to complete, uses 20 MB of memory and has 2% CPU load. Servers are in the same datacenter and the network roundtrip is 0.1 ms.
 
 Adding framework and network latency, a single worker can handle:
 ```
@@ -204,7 +203,7 @@ The memory needed is:
 ```
 The CPU needed is:
 ```
-26 * 10% + 1000 * 0,04% = 300% = 3 cores
+26 * 2% + 1000 * 0,04% = 92% = 1 core
 ```
 End user latency is:
 ```
@@ -231,22 +230,11 @@ This distribution includes some examples that can be run out of the box using an
 
 ## See also
 
-- Notes on [supported brokers](./doc/Brokers.md) configuration.
+- [Notes about supported MQTT brokers](./doc/Brokers.md) configuration.
 
-- Beekeeper [message routing](https://raw.githubusercontent.com/jmico/beekeeper/master/doc/images/routing.svg) diagram.
+- [Diagram of message routing](https://raw.githubusercontent.com/jmico/beekeeper/master/doc/images/routing.svg) between clients, workers and buses.
 
 - https://metacpan.org/release/Beekeeper
-
-
-## TODO
-
-Since this project was started (and even then) STOMP has been completely surpassed 
-as a fast and simple messaging protocol by MQTT. And since 2019, when MQTT
-version 5.0 was released, many brokers started to implement the routing features
-needed by Beekeeper to run.
-
-So the underlying broker protocol should be changed to MQTT, in order to take advantage
-of better supported modern brokers.
 
 
 ## Dependencies
@@ -264,7 +252,7 @@ apt install procps
 
 ## License
 
-Copyright 2015 José Micó.
+Copyright 2015-2021 José Micó.
 
 This is free software; you can redistribute it and/or modify it under the same
 terms as the Perl 5 programming language itself.
