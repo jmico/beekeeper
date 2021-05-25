@@ -5,24 +5,6 @@ use warnings;
 
 our $VERSION = '0.01';
 
-=head1 NAME
-
-Beekeeper::Service::Supervisor::Worker - Worker pool supervisor.
-
-=head1 VERSION
-
-Version 0.01
-
-=head1 DESCRIPTION
-
-A Supervisor worker is created automatically in every worker pool.
-
-It keeps a shared table of the status of every worker connected to a logical 
-bus in every broker, routinely checking local workers and keeping track of 
-workers periodic performance reports.
-
-=cut
-
 use Beekeeper::Worker ':log';
 use base 'Beekeeper::Worker';
 
@@ -87,32 +69,11 @@ sub log_handler {
     $self->SUPER::log_handler( foreground => 1 );
 }
 
-=head3 worker_status
-
-Handler for 'supervisor.worker_status' job.
-
-This job is sent by workers every few seconds and acts as a heart-beat.
-It contains statistical data about worker performance.
-
-Note that workers doing long jobs (like slow SQL queries) may not send 
-this request timely.
-
-=cut
-
 sub worker_status {
     my ($self, $params) = @_;
 
     $self->set_worker_status( %$params );
 }
-
-=head3 on_worker_exit
-
-Handler for 'supervisor.worker_exit' job.
-
-This job is sent by workers just before exiting gracefully. It is not sent 
-when worker is terminated abruptly (as process has no chance to do so).
-
-=cut
 
 sub worker_exit {
     my ($self, $params) = @_;
@@ -122,7 +83,6 @@ sub worker_exit {
     # Check for unserviced queues, just in case of worker being the last of its kind
     $self->check_queues;
 }
-
 
 sub set_worker_status {
     my ($self, %args) = @_;
@@ -184,19 +144,6 @@ sub _get_workers {
     return \@workers;
 }
 
-
-=head3 check_workers
-
-Check every worker process in this host (even workers in other pools) to
-ensure that they are running, and measure their memory usage.
-
-This is needed as workers with long blocking procedures may not report its 
-status timely, and abruptly terminated workers has no chance to report that 
-they had exited.
-
-It would be nice to measure CPU usage too.
-
-=cut
 
 sub check_workers {
     my $self = shift;
@@ -267,19 +214,6 @@ sub check_workers {
     }
 }
 
-=head3 check_queues
-
-In the case of all workers of a given service being down, all requests sent to
-the service will timeout as no one is serving them. This may cause a serious
-disruption in the application, as any other service depending of the broken
-one will halt too for the duration of the timeout.
-
-In order to mitigate this situation the Sinkhole service will be notified
-when unserviced queues are detected, making it to respond immediately to 
-all requests with an error response. Then callers will quickly receive an
-error response instead of timing out.
-
-=cut
 
 sub check_queues {
     my $self = shift;
@@ -314,13 +248,6 @@ sub check_queues {
     );
 }
 
-=head3 get_workers_status
-
-Handler for 'supervisor.get_workers_status' job.
-
-Used by bkpr-top command line tool.
-
-=cut
 
 sub get_workers_status {
     my ($self, $args) = @_;
@@ -334,13 +261,6 @@ sub get_workers_status {
     return $workers;
 }
 
-=head3 get_services_status
-
-Handler for 'supervisor.get_services_status' job.
-
-Used by bkpr-top command line tool.
-
-=cut
 
 sub get_services_status {
     my ($self, $args) = @_;
@@ -377,13 +297,6 @@ sub get_services_status {
     return \%services;
 }
 
-=head3 restart_workers
-
-Handler for 'supervisor.restart_workers' notification.
-
-This request is sent by bkpr-restart command line tool.
-
-=cut
 
 sub restart_workers {
     my ($self, $args) = @_;
@@ -432,13 +345,6 @@ sub restart_workers {
     }
 }
 
-=head3 restart_pool
-
-Handler for 'supervisor.restart_pool' notification.
-
-This request is sent by bkpr-restart command line tool.
-
-=cut
 
 sub restart_pool {
     my ($self, $args) = @_;
@@ -493,7 +399,89 @@ sub _get_pool_index {
 
 1;
 
+__END__
+
+=pod
+
 =encoding utf8
+
+=head1 NAME
+
+Beekeeper::Service::Supervisor::Worker - Worker pool supervisor.
+
+=head1 VERSION
+
+Version 0.01
+
+=head1 DESCRIPTION
+
+A Supervisor worker is created automatically in every worker pool.
+
+It keeps a shared table of the status of every worker connected to a logical 
+bus in every broker, routinely checking local workers and keeping track of 
+workers periodic performance reports.
+
+=head3 worker_status
+
+Handler for 'supervisor.worker_status' job.
+
+This job is sent by workers every few seconds and acts as a heart-beat.
+It contains statistical data about worker performance.
+
+Note that workers doing long jobs (like slow SQL queries) may not send 
+this request timely.
+
+=head3 on_worker_exit
+
+Handler for 'supervisor.worker_exit' job.
+
+This job is sent by workers just before exiting gracefully. It is not sent 
+when worker is terminated abruptly (as process has no chance to do so).
+
+=head3 check_workers
+
+Check every worker process in this host (even workers in other pools) to
+ensure that they are running, and measure their memory and CPU usage.
+
+This is needed as workers with long blocking procedures may not report its 
+status timely, and abruptly terminated workers has no chance to report that 
+they had exited.
+
+=head3 check_queues
+
+In the case of all workers of a given service being down, all requests sent to
+the service will timeout as no one is serving them. This may cause a serious
+disruption in the application, as any other service depending of the broken
+one will halt too for the duration of the timeout.
+
+In order to mitigate this situation the Sinkhole service will be notified
+when unserviced queues are detected, making it to respond immediately to 
+all requests with an error response. Then callers will quickly receive an
+error response instead of timing out.
+
+=head3 get_workers_status
+
+Handler for 'supervisor.get_workers_status' job.
+
+Used by bkpr-top command line tool.
+
+=head3 get_services_status
+
+Handler for 'supervisor.get_services_status' job.
+
+Used by bkpr-top command line tool.
+
+=head3 restart_workers
+
+Handler for 'supervisor.restart_workers' notification.
+
+This request is sent by bkpr-restart command line tool.
+
+=head3 restart_pool
+
+Handler for 'supervisor.restart_pool' notification.
+
+This request is sent by bkpr-restart command line tool.
 
 =head1 AUTHOR
 
@@ -501,7 +489,7 @@ José Micó, C<jose.mico@gmail.com>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2015 José Micó.
+Copyright 2015-2021 José Micó.
 
 This is free software; you can redistribute it and/or modify it under the same 
 terms as the Perl 5 programming language itself.

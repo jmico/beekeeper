@@ -5,34 +5,6 @@ use warnings;
 
 our $VERSION = '0.01';
 
-=head1 NAME
- 
-Beekeeper::Service::Sinkhole::Worker - Handle unserviced job queues
-
-=head1 VERSION
- 
-Version 0.01
-
-=head1 DESCRIPTION
-
-In the case of all workers of a given service being down, all requests sent to
-the service will timeout as no one is serving them. This may cause a serious
-disruption in the application, as any other service depending of the broken
-one will halt too for the duration of the timeout.
-
-In order to mitigate this situation all Sinkhole workers will be notified by
-the Supervisor when unserviced queues are detected, making these to respond 
-immediately to all requests with an error response. Then callers will quickly 
-receive an error response instead of timing out.
-
-As soon as a worker of the downed service becomes online again the Sinkhole
-workers will stop rejecting requests.
-
-A Sinkhole worker is created automatically in every worker pool, and it can 
-handle around 500 req/s. Extra workers can simply be declared into config file.
-
-=cut
-
 use Beekeeper::Worker ':log';
 use base 'Beekeeper::Worker';
 
@@ -81,7 +53,6 @@ sub log_handler {
     # Use pool's logfile
     $self->SUPER::log_handler( foreground => 1 );
 }
-
 
 sub on_unserviced_queues {
     my ($self, $params) = @_;
@@ -144,7 +115,37 @@ sub reject_job {
 
 1;
 
+__END__
+
+=pod
+
 =encoding utf8
+
+=head1 NAME
+ 
+Beekeeper::Service::Sinkhole::Worker - Handle unserviced job queues
+
+=head1 VERSION
+ 
+Version 0.01
+
+=head1 DESCRIPTION
+
+In the case of all workers of a given service being down, all requests sent to
+the service will timeout as no one is serving them. This may cause a serious
+disruption in the application, as any other service depending of the broken
+one will halt too for the duration of the timeout.
+
+In order to mitigate this situation all Sinkhole workers will be notified by
+the Supervisor when unserviced queues are detected, making these to respond 
+immediately to all requests with an error response. Then callers will quickly 
+receive an error response instead of timing out.
+
+As soon as a worker of the downed service becomes online again the Sinkhole
+workers will stop rejecting requests.
+
+A Sinkhole worker is created automatically in every worker pool, and it can 
+handle around 500 req/s. Extra workers can simply be declared into config file.
 
 =head1 AUTHOR
 
@@ -152,7 +153,7 @@ José Micó, C<jose.mico@gmail.com>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2015 José Micó.
+Copyright 2015-2021 José Micó.
 
 This is free software; you can redistribute it and/or modify it under the same 
 terms as the Perl 5 programming language itself.

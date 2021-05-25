@@ -3,6 +3,8 @@
 use strict;
 use warnings;
 
+our $VERSION = '0.01';
+
 $ENV{PATH} = '/bin'; # untaint
 
 BEGIN {
@@ -13,14 +15,16 @@ BEGIN {
     }
 }
 
-our $VERSION = '0.01';
-
 use Beekeeper::WorkerPool;
 
 Beekeeper::WorkerPool->new->run;
 
 
 __END__
+
+=pod
+
+=encoding utf8
 
 =head1 NAME
 
@@ -66,15 +70,13 @@ for in ENV C<BEEKEEPER_CONFIG_DIR>, C<~/.config/beekeeper>and then C</etc/beekee
  
 L<Beekeeper::WorkerPool>, L<Beekeeper::Config>.
 
-=encoding utf8
-
 =head1 AUTHOR
 
 José Micó, C<jose.mico@gmail.com>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2015 José Micó.
+Copyright 2015-2021 José Micó.
 
 This is free software; you can redistribute it and/or modify it under the same 
 terms as the Perl 5 programming language itself.

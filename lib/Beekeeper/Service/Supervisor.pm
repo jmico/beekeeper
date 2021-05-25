@@ -5,26 +5,6 @@ use warnings;
 
 our $VERSION = '0.01';
 
-=head1 NAME
-
-Beekeeper::Service::Supervisor - Worker pool supervisor.
-
-=head1 VERSION
-
-Version 0.01
-
-=head1 SYNOPSIS
-
-=head1 DESCRIPTION
-
-Supervisor service keeps a table of the status and performance metrics of every 
-worker connected to a logical bus in every broker.
-
-This status table can be queried to shovel worker status to an external monitoring
-application. The command line tool L<bkpr-top> display this status table.
-
-=cut
-
 use Beekeeper::Client;
 
 
@@ -99,7 +79,29 @@ sub get_services_status {
 
 1;
 
+__END__
+
+=pod
+
 =encoding utf8
+
+=head1 NAME
+
+Beekeeper::Service::Supervisor - Worker pool supervisor.
+
+=head1 VERSION
+
+Version 0.01
+
+=head1 SYNOPSIS
+
+=head1 DESCRIPTION
+
+Supervisor service keeps a table of the status and performance metrics of every 
+worker connected to a logical bus in every broker.
+
+This status table can be queried to shovel worker status to an external monitoring
+application. The command line tool L<bkpr-top> display this status table.
 
 =head1 SEE ALSO
  
@@ -111,7 +113,7 @@ José Micó, C<jose.mico@gmail.com>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2015 José Micó.
+Copyright 2015-2021 José Micó.
 
 This is free software; you can redistribute it and/or modify it under the same 
 terms as the Perl 5 programming language itself.

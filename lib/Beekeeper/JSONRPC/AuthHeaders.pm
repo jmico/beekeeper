@@ -4,17 +4,7 @@ use strict;
 use warnings;
 
 our $VERSION = '0.01';
-
-=head1 NAME
  
-Beekeeper::JSONRPC::AuthHeaders - Access to request auth headers
- 
-=head1 VERSION
- 
-Version 0.01
-
-=cut
-
 use Exporter 'import';
 
 our @EXPORT_OK = qw(
@@ -62,7 +52,19 @@ sub has_auth_tokens {
 
 1;
 
+__END__
+
+=pod
+
 =encoding utf8
+
+=head1 NAME
+ 
+Beekeeper::JSONRPC::AuthHeaders - Access to request auth headers
+ 
+=head1 VERSION
+ 
+Version 0.01
 
 =head1 AUTHOR
 
@@ -70,7 +72,7 @@ José Micó, C<jose.mico@gmail.com>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2015 José Micó.
+Copyright 2015-2021 José Micó.
 
 This is free software; you can redistribute it and/or modify it under the same 
 terms as the Perl 5 programming language itself.

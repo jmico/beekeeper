@@ -3,17 +3,18 @@ package Beekeeper::MQTT;
 use strict;
 use warnings;
 
+our $VERSION = '0.01';
+
 use AnyEvent::Impl::Perl; #TODO: Do not force implementation
 use AnyEvent::Handle;
 use List::Util 'shuffle';
 use Exporter 'import';
 use Carp;
 
-our $VERSION = '0.01';
-our $DEBUG = 0;
-
 our @EXPORT_OK;
 our %EXPORT_TAGS;
+
+our $DEBUG = 0;
 
 EXPORT: {
     my (@const, @encode);
@@ -25,102 +26,6 @@ EXPORT: {
     $EXPORT_TAGS{'const'} = \@const;
     $EXPORT_TAGS{'decode'} = \@encode;
 }
-
-=head1 NAME
- 
-Beekeeper::MQTT - A lightweight asynchronous MQTT 5.0 client.
- 
-=head1 VERSION
- 
-Version 0.01
-
-=head1 SYNOPSIS
-
-  my $mqtt = Beekeeper::MQTT->new(
-      host     => 'localhost',
-      username => 'guest',
-      password => 'guest',
-  );
-  
-  $mqtt->connect( 
-      blocking => 1,
-      on_connack => sub {
-          my ($success, $properties) = @_;
-          die $properties->{reason_string} unless $success;
-      },
-  );
-  
-  $mqtt->subscribe(
-      topic => 'foo/bar',
-      on_publish => sub {
-          my ($payload, $properties) = @_;
-          print "Got a message: $$payload";
-      },
-  );
-  
-  $mqtt->publish(
-      topic   => 'foo/bar',
-      payload => 'Hello',
-  );
-  
-  $mqtt->unsubscribe(
-      topic => 'foo/bar',
-  );
-  
-  $mqtt->disconnect;
-
-Most methods allows to send arbitrary properties along with commands.
-
-Except for trivial cases, error checking is delegated to the server.
-
-The MQTT specification can be found at L<https://mqtt.org/mqtt-specification>
-
-=head1 TODO
-
-- Keep Alive
-
-=head1 CONSTRUCTOR
-
-=head3 new ( %options )
-
-=over 4
-
-=item host
-
-Hostname or IP address of the MQTT server. It also accepts an array of adresses 
-which conforms a cluster, in which case the connection will be stablished against
-a randomly choosen node of the cluster.
-
-=item port
-
-Port of the MQTT server. If not specified use the MQTT default of 1818.
-
-=item tls
-
-Enable the use of TLS for MQTT connections.
-
-=item username
-
-Username used to authenticate against the server.
-
-=item password
-
-Password used to authenticate against the server.
-
-=item timeout
-
-Connection timeout in fractional seconds before giving up. Default is 30 seconds.
-If set to zero the connection to server it retried forever.
-
-=item on_error => $cb->( $errmsg )
-
-Optional callback which is executed when an error condition occurs. If not specified,
-the default is to die with C<$errmsg>. Usually the server has already closed the 
-connection when this is called.
-
-=back
-
-=cut
 
 # 2.1.2  Control Packet type
 
@@ -235,7 +140,6 @@ my %Disconnect_reason_code = (
     %Reason_code,
     0x00 => 'Normal disconnection',
 );
-
 
 sub _decode_byte {
     my ($packet, $offs) = @_;
@@ -356,27 +260,6 @@ sub _fatal {
     $self->{error_cb}->($errstr);
 }
 
-
-=head1 METHODS
-
-=head3 connect ( %options )
-
-Connect to the MQTT server and do handshake. On failure retries until timeout.
-
-=over 4
-
-=item blocking => $bool
-
-When set to true this method acts as a blocking call: it does not return until
-a connection has been established and handshake has been completed.
-
-=item on_connack => $cb->( $success, \%properties )
-
-Callback which is executed after the server accepted the connection.
-
-=back
-
-=cut
 
 sub connect {
     my ($self, %args) = @_;
@@ -850,24 +733,6 @@ sub _receive_connack {
 }
 
 
-=head3 disconnect ( %args )
-
-A client can disconnect from the server at anytime by closing the socket but 
-there is no guarantee that the previously sent packets have been received by
-the server. This method should be called to do a graceful shutdown, where the
-client is assured that all previous packets have been received by the server.
-
-=over 4
-
-=item $reason_code
-
-Disconnect Reason Code as stated in the chapter 3.14.2.1 of the specification.
-Default is zero, meaning normal disconnection.
-
-=back
-
-=cut
-
 sub disconnect {
     my ($self, %args) = @_;
 
@@ -1011,10 +876,6 @@ sub _receive_disconnect {
 }
 
 
-=head3 pingreq 
-
-=cut
-
 sub pingreq {
     my ($self) = @_;
 
@@ -1025,10 +886,6 @@ sub pingreq {
         )
     );
 }
-
-=head3 pingresp 
-
-=cut
 
 sub pingresp {
     my ($self) = @_;
@@ -1041,44 +898,6 @@ sub pingresp {
     );
 }
 
-=head3 subscribe ( %args )
-
-Create a subscription to a topic (or a list of topics). When a message is received,
-it will be passed to given on_publish callback:
-  
-  $mqtt->subscribe(
-      topic       => 'topic/foo',
-      maximum_qos => 1,
-      on_publish  => sub {
-          my ($payload, \%properties) = @_;
-          print "Got message from topic/foo : $$payload";
-      },
-  );
-
-=over 4
-
-=item topics => \@topics
-
-List of topics to which the client wants to subscribe.
-
-=item on_publish => $cb->( \$payload, \%properties )
-
-Required callback which is executed when a message matching any of the subscription
-topics is received.
-
-=item on_suback => $cb->( $success, \%properties, ... )
-
-Optional callback which is executed after subscription is acknowledged by the
-server with a SUBACK packet.
-
-=item User properties
-
-Any other argument other than C<maximum_qos>, C<no_local>, C<retain_as_published> or
-C<retain_handling> is sent as an "User Property" (a key-value pair of utf8 strings).
-
-=back
-
-=cut
 
 sub subscribe {
     my ($self, %args) = @_;
@@ -1234,29 +1053,6 @@ sub _receive_suback {
 }
 
 
-=head3 unsubscribe ( %params )
-
-Cancel an existing subscription, the client will no longer receive messages 
-from that topic. Example:
-
-  $mqtt->unsubscribe( 
-      topics => ['topic/foo','topic/bar']
-  );
-
-=over 4
-
-=item topics => \@topics
-
-The destination of an existing subscription.
-
-=item on_unsuback => $cb->()
-
-Optional user defined callback which is called after unsubscription is completed.
-
-=back
-
-=cut
-
 sub unsubscribe {
     my ($self, %args) = @_;
 
@@ -1389,66 +1185,6 @@ sub _receive_unsuback {
     $unsuback_cb->($success, @properties) if $unsuback_cb;
 }
 
-
-=head3 publish ( %args )
-
-Sends a message to a topic. Example:
-
-  $mqtt->publish(
-      topic     => 'foo/bar',
-      payload   => 'Hello!',
-      qos       => 1,
-      on_puback => sub {
-         my ($reason_code) = @_;
-         print "Message was sent";
-      }
-  );
-
-=over 4
-
-=item topic => $str
-
-Utf8 string containing the topic name.
-
-=item payload => \$data
-
-Scalar or scalar reference containing either an utf8 string or a binary blob which 
-conforms the payload of the message. It is allowed to publish messages without payload.
-
-=item qos => $bool
-
-Quality of service level (QoS). Only levels 0 and 1 are supported. Default is 0.
-
-=item duplicate => $bool
-
-Must be set to a true value to indicate a message retransmission.
-
-=item retain => $bool
-
-...
-
-=item message_expiry_interval => $int
-
-Expiration period in seconds. The server will discard retained messages after this
-period has ellapsed.
-
-=item response_topic => $str
-
-...
-
-=item on_puback => $cb->($reason_code)
-
-Optional callback which is executed after the server answers with a PUBACK packet,
-acknowledging that it has received it. Allowed only for messages published with QoS 1.
-
-=item User properties
-
-Any aditional argument will be sent as an "User Property", this is as a key-value pair
-of utf8 strings.
-
-=back
-
-=cut
 
 sub publish {
     my ($self, %args) = @_;
@@ -1704,23 +1440,6 @@ sub _receive_publish {
 }
 
 
-=head3 puback ( %args )
-
-Used to acknowledge the receipt of a message received from a subscription with QoS 1.
-The server should resend the message until it is acknowledged.
-
-=over 4
-
-=item packet_id => $int
-
-=item reason_code => $int
-
-If not specified it will default to zero, signaling success. 
-
-=back
-
-=cut
-
 sub puback {
     my ($self, %args) = @_;
 
@@ -1967,13 +1686,6 @@ sub _receive_auth {
 }
 
 
-=head3 flush_buffer
-
-Send several packets into a single socket write. This is more efficient
-than individual send() calls because Nagle's algorithm is disabled.
-
-=cut
-
 sub flush_buffer {
     my ($self, %args) = @_;
 
@@ -1994,12 +1706,6 @@ sub flush_buffer {
 
     1;
 }
-
-=head3 discard_buffer
-
-Discard buffered packets.
-
-=cut
 
 sub discard_buffer {
     my ($self, %args) = @_;
@@ -2027,7 +1733,280 @@ sub DESTROY {
 
 1;
 
+__END__
+
+=pod
+
 =encoding utf8
+
+=head1 NAME
+ 
+Beekeeper::MQTT - A lightweight asynchronous MQTT 5.0 client.
+ 
+=head1 VERSION
+ 
+Version 0.01
+
+=head1 SYNOPSIS
+
+  my $mqtt = Beekeeper::MQTT->new(
+      host     => 'localhost',
+      username => 'guest',
+      password => 'guest',
+  );
+  
+  $mqtt->connect( 
+      blocking => 1,
+      on_connack => sub {
+          my ($success, $properties) = @_;
+          die $properties->{reason_string} unless $success;
+      },
+  );
+  
+  $mqtt->subscribe(
+      topic => 'foo/bar',
+      on_publish => sub {
+          my ($payload, $properties) = @_;
+          print "Got a message: $$payload";
+      },
+  );
+  
+  $mqtt->publish(
+      topic   => 'foo/bar',
+      payload => 'Hello',
+  );
+  
+  $mqtt->unsubscribe(
+      topic => 'foo/bar',
+  );
+  
+  $mqtt->disconnect;
+
+Most methods allows to send arbitrary properties along with commands.
+
+Except for trivial cases, error checking is delegated to the server.
+
+The MQTT specification can be found at L<https://mqtt.org/mqtt-specification>
+
+=head1 TODO
+
+- Keep Alive
+
+=head1 CONSTRUCTOR
+
+=head3 new ( %options )
+
+=over 4
+
+=item host
+
+Hostname or IP address of the MQTT server. It also accepts an array of adresses 
+which conforms a cluster, in which case the connection will be stablished against
+a randomly choosen node of the cluster.
+
+=item port
+
+Port of the MQTT server. If not specified use the MQTT default of 1818.
+
+=item tls
+
+Enable the use of TLS for MQTT connections.
+
+=item username
+
+Username used to authenticate against the server.
+
+=item password
+
+Password used to authenticate against the server.
+
+=item timeout
+
+Connection timeout in fractional seconds before giving up. Default is 30 seconds.
+If set to zero the connection to server it retried forever.
+
+=item on_error => $cb->( $errmsg )
+
+Optional callback which is executed when an error condition occurs. If not specified,
+the default is to die with C<$errmsg>. Usually the server has already closed the 
+connection when this is called.
+
+=back
+
+=head1 METHODS
+
+=head3 connect ( %options )
+
+Connect to the MQTT server and do handshake. On failure retries until timeout.
+
+=over 4
+
+=item blocking => $bool
+
+When set to true this method acts as a blocking call: it does not return until
+a connection has been established and handshake has been completed.
+
+=item on_connack => $cb->( $success, \%properties )
+
+Callback which is executed after the server accepted the connection.
+
+=back
+
+=head3 disconnect ( %args )
+
+A client can disconnect from the server at anytime by closing the socket but 
+there is no guarantee that the previously sent packets have been received by
+the server. This method should be called to do a graceful shutdown, where the
+client is assured that all previous packets have been received by the server.
+
+=over 4
+
+=item $reason_code
+
+Disconnect Reason Code as stated in the chapter 3.14.2.1 of the specification.
+Default is zero, meaning normal disconnection.
+
+=back
+
+=head3 subscribe ( %args )
+
+Create a subscription to a topic (or a list of topics). When a message is received,
+it will be passed to given on_publish callback:
+  
+  $mqtt->subscribe(
+      topic       => 'topic/foo',
+      maximum_qos => 1,
+      on_publish  => sub {
+          my ($payload, \%properties) = @_;
+          print "Got message from topic/foo : $$payload";
+      },
+  );
+
+=over 4
+
+=item topics => \@topics
+
+List of topics to which the client wants to subscribe.
+
+=item on_publish => $cb->( \$payload, \%properties )
+
+Required callback which is executed when a message matching any of the subscription
+topics is received.
+
+=item on_suback => $cb->( $success, \%properties, ... )
+
+Optional callback which is executed after subscription is acknowledged by the
+server with a SUBACK packet.
+
+=item User properties
+
+Any other argument other than C<maximum_qos>, C<no_local>, C<retain_as_published> or
+C<retain_handling> is sent as an "User Property" (a key-value pair of utf8 strings).
+
+=back
+
+=head3 unsubscribe ( %params )
+
+Cancel an existing subscription, the client will no longer receive messages 
+from that topic. Example:
+
+  $mqtt->unsubscribe( 
+      topics => ['topic/foo','topic/bar']
+  );
+
+=over 4
+
+=item topics => \@topics
+
+The destination of an existing subscription.
+
+=item on_unsuback => $cb->()
+
+Optional user defined callback which is called after unsubscription is completed.
+
+=back
+
+=head3 publish ( %args )
+
+Sends a message to a topic. Example:
+
+  $mqtt->publish(
+      topic     => 'foo/bar',
+      payload   => 'Hello!',
+      qos       => 1,
+      on_puback => sub {
+         my ($reason_code) = @_;
+         print "Message was sent";
+      }
+  );
+
+=over 4
+
+=item topic => $str
+
+Utf8 string containing the topic name.
+
+=item payload => \$data
+
+Scalar or scalar reference containing either an utf8 string or a binary blob which 
+conforms the payload of the message. It is allowed to publish messages without payload.
+
+=item qos => $bool
+
+Quality of service level (QoS). Only levels 0 and 1 are supported. Default is 0.
+
+=item duplicate => $bool
+
+Must be set to a true value to indicate a message retransmission.
+
+=item retain => $bool
+
+...
+
+=item message_expiry_interval => $int
+
+Expiration period in seconds. The server will discard retained messages after this
+period has ellapsed.
+
+=item response_topic => $str
+
+...
+
+=item on_puback => $cb->($reason_code)
+
+Optional callback which is executed after the server answers with a PUBACK packet,
+acknowledging that it has received it. Allowed only for messages published with QoS 1.
+
+=item User properties
+
+Any aditional argument will be sent as an "User Property", this is as a key-value pair
+of utf8 strings.
+
+=back
+
+=head3 puback ( %args )
+
+Used to acknowledge the receipt of a message received from a subscription with QoS 1.
+The server should resend the message until it is acknowledged.
+
+=over 4
+
+=item packet_id => $int
+
+=item reason_code => $int
+
+If not specified it will default to zero, signaling success. 
+
+=back
+
+=head3 flush_buffer
+
+Send several packets into a single socket write. This is more efficient
+than individual send() calls because Nagle's algorithm is disabled.
+
+=head3 discard_buffer
+
+Discard buffered packets.
 
 =head1 AUTHOR
 

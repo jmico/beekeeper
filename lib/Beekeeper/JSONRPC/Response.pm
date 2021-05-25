@@ -5,6 +5,31 @@ use warnings;
 
 our $VERSION = '0.01';
 
+
+sub new {
+    my $class = shift;
+
+    bless {
+        jsonrpc => '2.0',
+        result  => undef,
+        id      => undef,
+        @_
+    }, $class;
+}
+
+sub result  { $_[0]->{result} }
+sub id      { $_[0]->{id}     }
+
+sub success { 1 }
+
+1;
+
+__END__
+
+=pod
+
+=encoding utf8
+
 =head1 NAME
  
 Beekeeper::JSONRPC::Response - Representation of a JSON-RPC response.
@@ -57,35 +82,13 @@ or not ($response->result cannot be trusted as it may be undefined on success).
 
 =back
 
-=cut
-
-sub new {
-    my $class = shift;
-
-    bless {
-        jsonrpc => '2.0',
-        result  => undef,
-        id      => undef,
-        @_
-    }, $class;
-}
-
-sub result  { $_[0]->{result} }
-sub id      { $_[0]->{id}     }
-
-sub success { 1 }
-
-1;
-
-=encoding utf8
-
 =head1 AUTHOR
 
 José Micó, C<jose.mico@gmail.com>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2015 José Micó.
+Copyright 2015-2021 José Micó.
 
 This is free software; you can redistribute it and/or modify it under the same 
 terms as the Perl 5 programming language itself.

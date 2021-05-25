@@ -5,47 +5,6 @@ use warnings;
 
 our $VERSION = '0.01';
 
-=head1 NAME
-
-Beekeeper::Worker::Util::SharedCache - Locally mirrored shared cache
-
-=head1 VERSION
-
-Version 0.01
-
-=head1 SYNOPSIS
-
-  use Beekeeper::Worker::Util 'shared_cache'
-  
-  my $c = $self->shared_cache(
-      id      => "mycache",
-      max_age => 300,
-      persist => 1,
-  );
-  
-  $c->set( $key => $value );
-  $c->get( $key );
-  $c->delete( $key );
-  $c->touch( $key );
-
-=head1 DESCRIPTION
-
-This module implements a locally mirrored shared cache: each worker keeps a
-copy of all cached data, and all copies are synced through message bus.
-
-Access operations are essentially free, as data is held locally. But changes 
-are expensive as they need to be propagated to every worker, and memory usage
-is high due to data cloning.
-
-Keep in mind that retrieved data may be stale due to latency in changes 
-propagation through the bus (which involves two network operations).
-
-Even if you are using this cache for small data sets that do not change very
-often, please consider if a distributed memory cache like Redis or such (or 
-even a plain DB) is a better alternative.
-
-=cut
-
 use Beekeeper::Worker ':log';
 use AnyEvent;
 use JSON::XS;
@@ -259,8 +218,6 @@ sub _accept_sync_requests {
     my $uid       = $self->{uid};
     my $bus_id    = $bus->{bus_id};
     my $local_bus = $bus->{cluster};
-
-    #TODO: MQTT: Not reached
 
     log_debug "Shared cache '$self->{id}': Accepting sync requests from $local_bus";
 
@@ -556,7 +513,50 @@ sub DESTROY {
 
 1;
 
+__END__
+
+=pod
+
 =encoding utf8
+
+=head1 NAME
+
+Beekeeper::Worker::Util::SharedCache - Locally mirrored shared cache
+
+=head1 VERSION
+
+Version 0.01
+
+=head1 SYNOPSIS
+
+  use Beekeeper::Worker::Util 'shared_cache'
+  
+  my $c = $self->shared_cache(
+      id      => "mycache",
+      max_age => 300,
+      persist => 1,
+  );
+  
+  $c->set( $key => $value );
+  $c->get( $key );
+  $c->delete( $key );
+  $c->touch( $key );
+
+=head1 DESCRIPTION
+
+This module implements a locally mirrored shared cache: each worker keeps a
+copy of all cached data, and all copies are synced through message bus.
+
+Access operations are essentially free, as data is held locally. But changes 
+are expensive as they need to be propagated to every worker, and memory usage
+is high due to data cloning.
+
+Keep in mind that retrieved data may be stale due to latency in changes 
+propagation through the bus (which involves two network operations).
+
+Even if you are using this cache for small data sets that do not change very
+often, please consider if a distributed memory cache like Redis or such (or 
+even a plain DB) is a better alternative.
 
 =head1 AUTHOR
 
@@ -564,7 +564,7 @@ José Micó, C<jose.mico@gmail.com>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2015 José Micó.
+Copyright 2015-2021 José Micó.
 
 This is free software; you can redistribute it and/or modify it under the same 
 terms as the Perl 5 programming language itself.

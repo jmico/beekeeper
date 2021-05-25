@@ -5,77 +5,6 @@ use warnings;
 
 our $VERSION = '0.01';
 
-=head1 NAME
- 
-Beekeeper::Client - Make RPC calls through message bus
-
-=head1 VERSION
- 
-Version 0.01
-
-=head1 SYNOPSIS
-
-  my $client = Beekeeper::Client->instance;
-  
-  $client->send_notification(
-      method => "my.service.foo",
-      params => { foo => $foo },
-  );
-  
-  my $resp = $client->do_job(
-      method => "my.service.bar",
-      params => { %args },
-  );
-  
-  die uneless $resp->success;
-  
-  print $resp->result;
-  
-  my $req = $client->do_async_job(
-      method     => "my.service.baz",
-      params     => { %args },
-      on_success => sub {
-          my $resp = shift;
-          print resp->result;
-      },
-      on_error => sub {
-          my $error = shift;
-          die error->message;
-      },
-  );
-  
-  $client->wait_all_jobs;
-
-=encoding utf8
-
-=head1 DESCRIPTION
-
-This module connects to the message broker and makes RPC calls through message bus.
-
-There are four different methods to do so:
-
-  ┌───────────────────┬──────────────┬────────┬────────┬────────┐
-  │ method            │ sent to      │ queued │ result │ blocks │
-  ├───────────────────┼──────────────┼────────┼────────┼────────┤
-  │ do_job            │ 1 worker     │ yes    │ yes    │ yes    │
-  │ do_async_job      │ 1 worker     │ yes    │ yes    │ no     │
-  │ do_background_job │ 1 worker     │ yes    │ no     │ no     │
-  │ send_notification │ many workers │ no     │ no     │ no     │
-  └───────────────────┴──────────────┴────────┴────────┴────────┘
-
-All methods in this module are exported by default to C<Beekeeper::Worker>.
-
-=head1 CONSTRUCTOR
-
-=head3 instance( %args )
-
-Connects to the message broker and returns a singleton instance.
-
-Unless explicit connection parameters to the broker are provided tries 
-to connect using the configuration from config file C<bus.config.json>.
-
-=cut
-
 use Beekeeper::MQTT;
 use Beekeeper::JSONRPC;
 use Beekeeper::Config;
@@ -196,35 +125,6 @@ sub instance {
 }
 
 
-=head1 METHODS
-
-=head3 send_notification ( %args )
-
-Broadcast a notification to the message bus.
-
-All clients and workers listening for C<method> will receive it. If no one is listening
-the notification is lost.
-
-=over 4
-
-=item method
-
-A string with the name of the notification being sent with format C<"{service_class}.{method}">.
-
-=item params
-
-An arbitrary value or data structure sent with the notification. It could be undefined, 
-but it should not contain blessed references that cannot be serialized as JSON.
-
-=item address
-
-A string with the name of the remote bus when sending notifications to another logical 
-bus. Notifications to another bus need a router shoveling them.
-
-=back
-
-=cut
-
 sub send_notification {
     my ($self, %args) = @_;
 
@@ -279,26 +179,6 @@ sub send_notification {
     $self->{_BUS}->publish( payload => \$json, %send_args );
 }
 
-=head3 accept_notifications ( $method => $callback, ... )
-
-Make this client start accepting specified notifications from message bus.
-
-C<$method> is a string with the format "{service_class}.{method}". A default
-or fallback handler can be specified using a wildcard as "{service_class}.*".
-
-C<$callback> is a coderef that will be called when a notification is received.
-When executed, the callback will receive a parameter C<$params> which contains
-the notification value or data structure sent.
-
-Note that callbacks will not be executed timely if AnyEvent loop is not running.
-
-=head3 stop_accepting_notifications ( $method, ... )
-
-Make this client stop accepting specified notifications from message bus.
-
-C<$method> must be one of the strings used previously in C<accept_notifications>.
-
-=cut
 
 sub accept_notifications {
     my ($self, %args) = @_;
@@ -369,13 +249,6 @@ sub accept_notifications {
     }
 }
 
-=head3 stop_accepting_notifications ( $method, ... )
-
-Make this client stop accepting specified notifications from message bus.
-
-C<$method> must be one of the strings used previously in C<accept_notifications>.
-
-=cut
 
 sub stop_accepting_notifications {
     my ($self, @methods) = @_;
@@ -421,86 +294,6 @@ sub stop_accepting_notifications {
     }
 }
 
-=head3 do_job ( %args )
-
-Makes a synchronous RPC call to a service worker through the message bus.
-
-It will wait (in the event loop) until a response is received, wich will be either
-an C<Beekeeper::JSONRPC::Response> object or a C<Beekeeper::JSONRPC::Error>.
-
-On error it will die unless C<raise_error> option is set to false.
-
-This method accepts the following parameters:
-
-=over 4
-
-=item method
-
-A string with the name of the method to be invoked with format C<"{service_class}.{method}">.
-
-=item params
-
-An arbitrary value or data structure to be passed as parameters to the defined method. 
-It could be undefined, but it should not contain blessed references that cannot be 
-serialized as JSON.
-
-=item address
-
-A string with the name of the remote bus when calling methods of workers connected
-to another logical bus. Requests to another bus need a router shoveling them.
-
-=item timeout
-
-Time in seconds before cancelling the request and returning an error response. If the
-request takes too long but otherwise was executed successfully the response will
-eventually arrive but it will be ignored.
-
-=item raise_error
- 
-If set to true (the default) dies with the received error message when a call returns
-an error response. If set to false returns a C<Beekeeper::JSONRPC::Error> instead.
-
-=back
-
-=head3 do_async_job ( %args )
-
-Makes an asynchronous RPC call to a service worker through the message bus.
-
-It returns immediately a C<Beekeeper::JSONRPC::Request> object which, once completed,
-will have a defined C<response>.
-
-This method  accepts parameters C<method>, C<params>, C<address> and C<timeout> 
-the same as C<do_job>. Additionally two callbacks can be specified:
-
-=over 4
-
-=item on_success
-
-Callback which will be executed after receiving a successful response with a
-C<Beekeeper::JSONRPC::Response> object as parameter. Must be a coderef.
-
-=item on_error
-
-Callback which will be executed after receiving an error response with a
-C<Beekeeper::JSONRPC::Error> object as parameter. Must be a coderef.
-
-=back
-
-=head3 do_background_job ( %args )
-
-Makes an asynchronous RPC call to a service worker through the message bus but
-does not expect to receive any response, it is a fire and forget call.
-
-It returns undef immediately.
-
-This method  accepts parameters C<method>, C<params>, C<address> and C<timeout> 
-the same as C<do_job>.
-
-=head3 wait_all_jobs
-
-Wait (in the event loop) until all calls made by C<do_async_job> are completed.
-
-=cut
 
 our $WAITING;
 
@@ -780,20 +573,6 @@ sub wait_all_jobs {
     $cv->recv;
 }
 
-=head3 set_auth_tokens ( @tokens )
-
-Add arbitrary auth tokens to subsequent jobs requests or notifications sent.
-
-Workers get the caller tokens already set when executing jobs or notifications 
-callbacks, and then these are piggybacked automatically.
-
-This framework doesn't give any special meaning to these tokens.
-
-=head3 get_auth_tokens
-
-Get the list of current auth tokens in use.
-
-=cut
 
 sub set_auth_tokens {
     my ($self, @tokens) = @_;
@@ -813,6 +592,223 @@ sub get_auth_tokens {
 
 1;
 
+__END__
+
+=pod
+
+=encoding utf8
+
+=head1 NAME
+ 
+Beekeeper::Client - Make RPC calls through message bus
+
+=head1 VERSION
+ 
+Version 0.01
+
+=head1 SYNOPSIS
+
+  my $client = Beekeeper::Client->instance;
+  
+  $client->send_notification(
+      method => "my.service.foo",
+      params => { foo => $foo },
+  );
+  
+  my $resp = $client->do_job(
+      method => "my.service.bar",
+      params => { %args },
+  );
+  
+  die uneless $resp->success;
+  
+  print $resp->result;
+  
+  my $req = $client->do_async_job(
+      method     => "my.service.baz",
+      params     => { %args },
+      on_success => sub {
+          my $resp = shift;
+          print resp->result;
+      },
+      on_error => sub {
+          my $error = shift;
+          die error->message;
+      },
+  );
+  
+  $client->wait_all_jobs;
+
+=head1 DESCRIPTION
+
+This module connects to the message broker and makes RPC calls through message bus.
+
+There are four different methods to do so:
+
+  ┌───────────────────┬──────────────┬────────┬────────┬────────┐
+  │ method            │ sent to      │ queued │ result │ blocks │
+  ├───────────────────┼──────────────┼────────┼────────┼────────┤
+  │ do_job            │ 1 worker     │ yes    │ yes    │ yes    │
+  │ do_async_job      │ 1 worker     │ yes    │ yes    │ no     │
+  │ do_background_job │ 1 worker     │ yes    │ no     │ no     │
+  │ send_notification │ many workers │ no     │ no     │ no     │
+  └───────────────────┴──────────────┴────────┴────────┴────────┘
+
+All methods in this module are exported by default to C<Beekeeper::Worker>.
+
+=head1 CONSTRUCTOR
+
+=head3 instance( %args )
+
+Connects to the message broker and returns a singleton instance.
+
+Unless explicit connection parameters to the broker are provided tries 
+to connect using the configuration from config file C<bus.config.json>.
+
+=head1 METHODS
+
+=head3 send_notification ( %args )
+
+Broadcast a notification to the message bus.
+
+All clients and workers listening for C<method> will receive it. If no one is listening
+the notification is lost.
+
+=over 4
+
+=item method
+
+A string with the name of the notification being sent with format C<"{service_class}.{method}">.
+
+=item params
+
+An arbitrary value or data structure sent with the notification. It could be undefined, 
+but it should not contain blessed references that cannot be serialized as JSON.
+
+=item address
+
+A string with the name of the remote bus when sending notifications to another logical 
+bus. Notifications to another bus need a router shoveling them.
+
+=back
+
+=head3 accept_notifications ( $method => $callback, ... )
+
+Make this client start accepting specified notifications from message bus.
+
+C<$method> is a string with the format "{service_class}.{method}". A default
+or fallback handler can be specified using a wildcard as "{service_class}.*".
+
+C<$callback> is a coderef that will be called when a notification is received.
+When executed, the callback will receive a parameter C<$params> which contains
+the notification value or data structure sent.
+
+Note that callbacks will not be executed timely if AnyEvent loop is not running.
+
+=head3 stop_accepting_notifications ( $method, ... )
+
+Make this client stop accepting specified notifications from message bus.
+
+C<$method> must be one of the strings used previously in C<accept_notifications>.
+
+=head3 stop_accepting_notifications ( $method, ... )
+
+Make this client stop accepting specified notifications from message bus.
+
+C<$method> must be one of the strings used previously in C<accept_notifications>.
+
+=head3 do_job ( %args )
+
+Makes a synchronous RPC call to a service worker through the message bus.
+
+It will wait (in the event loop) until a response is received, wich will be either
+an C<Beekeeper::JSONRPC::Response> object or a C<Beekeeper::JSONRPC::Error>.
+
+On error it will die unless C<raise_error> option is set to false.
+
+This method accepts the following parameters:
+
+=over 4
+
+=item method
+
+A string with the name of the method to be invoked with format C<"{service_class}.{method}">.
+
+=item params
+
+An arbitrary value or data structure to be passed as parameters to the defined method. 
+It could be undefined, but it should not contain blessed references that cannot be 
+serialized as JSON.
+
+=item address
+
+A string with the name of the remote bus when calling methods of workers connected
+to another logical bus. Requests to another bus need a router shoveling them.
+
+=item timeout
+
+Time in seconds before cancelling the request and returning an error response. If the
+request takes too long but otherwise was executed successfully the response will
+eventually arrive but it will be ignored.
+
+=item raise_error
+ 
+If set to true (the default) dies with the received error message when a call returns
+an error response. If set to false returns a C<Beekeeper::JSONRPC::Error> instead.
+
+=back
+
+=head3 do_async_job ( %args )
+
+Makes an asynchronous RPC call to a service worker through the message bus.
+
+It returns immediately a C<Beekeeper::JSONRPC::Request> object which, once completed,
+will have a defined C<response>.
+
+This method  accepts parameters C<method>, C<params>, C<address> and C<timeout> 
+the same as C<do_job>. Additionally two callbacks can be specified:
+
+=over 4
+
+=item on_success
+
+Callback which will be executed after receiving a successful response with a
+C<Beekeeper::JSONRPC::Response> object as parameter. Must be a coderef.
+
+=item on_error
+
+Callback which will be executed after receiving an error response with a
+C<Beekeeper::JSONRPC::Error> object as parameter. Must be a coderef.
+
+=back
+
+=head3 do_background_job ( %args )
+
+Makes an asynchronous RPC call to a service worker through the message bus but
+does not expect to receive any response, it is a fire and forget call.
+
+It returns undef immediately.
+
+This method  accepts parameters C<method>, C<params>, C<address> and C<timeout> 
+the same as C<do_job>.
+
+=head3 wait_all_jobs
+
+Wait (in the event loop) until all calls made by C<do_async_job> are completed.
+
+=head3 set_auth_tokens ( @tokens )
+
+Add arbitrary auth tokens to subsequent jobs requests or notifications sent.
+
+Workers get the caller tokens already set when executing jobs or notifications 
+callbacks, and then these are piggybacked automatically.
+
+This framework doesn't give any special meaning to these tokens.
+
+=head3 get_auth_tokens
+
+Get the list of current auth tokens in use.
+
 =head1 SEE ALSO
  
 L<Beekeeper::MQTT>, L<Beekeeper::Worker>.
@@ -823,7 +819,7 @@ José Micó, C<jose.mico@gmail.com>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2015 José Micó.
+Copyright 2015-2021 José Micó.
 
 This is free software; you can redistribute it and/or modify it under the same 
 terms as the Perl 5 programming language itself.

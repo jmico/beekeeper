@@ -5,23 +5,6 @@ use warnings;
 
 our $VERSION = '0.01';
 
-=head1 NAME
-
-Beekeeper::Service::ToyBroker::Worker - Basic MQTT 5 broker
-
-=head1 VERSION
-
-Version 0.01
-
-=head1 DESCRIPTION
-
-ToyBroker implements a small MQTT subset needed to run a Beekeeper worker pool.
-
-Being single threaded it does not scale at all, but it is handy for development
-or running tests.
-
-=cut
-
 use AnyEvent::Impl::Perl;
 use Beekeeper::Worker ':log';
 use base 'Beekeeper::Worker';
@@ -1483,3 +1466,41 @@ sub send_message {
 }
 
 1;
+
+__END__
+
+=pod
+
+=encoding utf8
+
+=head1 NAME
+
+Beekeeper::Service::ToyBroker::Worker - Basic MQTT 5 broker
+
+=head1 VERSION
+
+Version 0.01
+
+=head1 DESCRIPTION
+
+ToyBroker implements a small MQTT subset needed to run a Beekeeper worker pool.
+
+Being single threaded it does not scale at all, but it is handy for development
+or running tests.
+
+=head1 AUTHOR
+
+José Micó, C<jose.mico@gmail.com>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright 2021 José Micó.
+
+This is free software; you can redistribute it and/or modify it under the same 
+terms as the Perl 5 programming language itself.
+
+This software is distributed in the hope that it will be useful, but it is 
+provided “as is” and without any express or implied warranties. For details, 
+see the full text of the license in the file LICENSE.
+
+=cut

@@ -5,28 +5,6 @@ use warnings;
 
 our $VERSION = '0.01';
 
-=head1 NAME
- 
-Beekeeper::Service::Router::Worker - Route messages between backend and frontend
-
-=head1 VERSION
- 
-Version 0.01
-
-=head1 SYNOPSIS
-
-=head1 DESCRIPTION
-
-This worker pulls requests from any frontend brokers and forward them to the 
-single backend broker it is connected to. It also pull generated responses from
-the backend and forward them to the aproppiate frontend broker which the
-client is connected to.
-
-In order to push unicasted notifications it keeps a shared table of client
-connections and server side assigned arbitrary addresses.
-
-=cut
-
 use Beekeeper::Worker ':log';
 use base 'Beekeeper::Worker';
 
@@ -549,15 +527,39 @@ sub unbind {
 
 1;
 
+__END__
+
+=pod
+
 =encoding utf8
+
+=head1 NAME
  
+Beekeeper::Service::Router::Worker - Route messages between backend and frontend
+
+=head1 VERSION
+ 
+Version 0.01
+
+=head1 SYNOPSIS
+
+=head1 DESCRIPTION
+
+This worker pulls requests from any frontend brokers and forward them to the 
+single backend broker it is connected to. It also pull generated responses from
+the backend and forward them to the aproppiate frontend broker which the
+client is connected to.
+
+In order to push unicasted notifications it keeps a shared table of client
+connections and server side assigned arbitrary addresses.
+
 =head1 AUTHOR
 
 José Micó, C<jose.mico@gmail.com>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2015 José Micó.
+Copyright 2015-2021 José Micó.
 
 This is free software; you can redistribute it and/or modify it under the same 
 terms as the Perl 5 programming language itself.

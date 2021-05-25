@@ -5,6 +5,29 @@ use warnings;
 
 our $VERSION = '0.01';
 
+use Beekeeper::Worker::Util::SharedCache;
+
+use Exporter 'import';
+
+our @EXPORT = qw( shared_cache );
+
+
+sub shared_cache {
+    my ($self, %args) = @_;
+
+    my $shared = Beekeeper::Worker::Util::SharedCache->new( worker => $self, %args );
+
+    return $shared;
+}
+
+1;
+
+__END__
+
+=pod
+
+=encoding utf8
+
 =head1 NAME
  
 Beekeeper::Worker::Util
@@ -23,28 +46,9 @@ Version 0.01
   $c->get( $key );
   $c->delete( $key );
 
-=head1 DESCRIPTION
-
-=cut
-
-use Beekeeper::Worker::Util::SharedCache;
-
-use Exporter 'import';
-
-our @EXPORT = qw( shared_cache );
-
-
-sub shared_cache {
-    my ($self, %args) = @_;
-
-    my $shared = Beekeeper::Worker::Util::SharedCache->new( worker => $self, %args );
-
-    return $shared;
-}
-
-1;
-
-=encoding utf8
+=head1 SEE ALSO
+ 
+L<Beekeeper::Worker::Util::SharedCache>
 
 =head1 AUTHOR
 
@@ -52,7 +56,7 @@ José Micó, C<jose.mico@gmail.com>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2015 José Micó.
+Copyright 2015-2021 José Micó.
 
 This is free software; you can redistribute it and/or modify it under the same 
 terms as the Perl 5 programming language itself.

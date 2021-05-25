@@ -5,6 +5,31 @@ use warnings;
 
 our $VERSION = '0.01';
 
+
+use Beekeeper::Client;
+
+sub tail {
+    my ($class, %filters) = @_;
+
+    my $client = Beekeeper::Client->instance;
+
+    my $resp = $client->do_job(
+        method => '_bkpr.logtail.tail',
+        __auth => 'BKPR_ADMIN',
+        params => \%filters,
+    );
+
+    return $resp->result;
+}
+
+1;
+
+__END__
+
+=pod
+
+=encoding utf8
+
 =head1 NAME
 
 Beekeeper::Service::LogTail - Buffer log entries
@@ -59,32 +84,9 @@ C<message>: Regex that applies to error messages.
 
 C<after>: Return only entries generated after given timestamp.
 
-=cut
-
-
-use Beekeeper::Client;
-
-sub tail {
-    my ($class, %filters) = @_;
-
-    my $client = Beekeeper::Client->instance;
-
-    my $resp = $client->do_job(
-        method => '_bkpr.logtail.tail',
-        __auth => 'BKPR_ADMIN',
-        params => \%filters,
-    );
-
-    return $resp->result;
-}
-
-1;
-
 =head1 SEE ALSO
  
 L<bkpr-log>.
-
-=encoding utf8
 
 =head1 AUTHOR
 
@@ -92,7 +94,7 @@ José Micó, C<jose.mico@gmail.com>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2015 José Micó.
+Copyright 2015-2021 José Micó.
 
 This is free software; you can redistribute it and/or modify it under the same 
 terms as the Perl 5 programming language itself.

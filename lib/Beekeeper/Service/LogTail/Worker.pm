@@ -5,32 +5,6 @@ use warnings;
 
 our $VERSION = '0.01';
 
-=head1 NAME
-
-Beekeeper::Service::LogTail::Worker - Buffer log entries
-
-=head1 VERSION
-
-Version 0.01
-
-=head1 SYNOPSIS
-
-=head1 DESCRIPTION
-
-By default all workers use a C<Beekeeper::Logger> logger which logs errors and
-warnings both to files and to a topic C</topic/log> on the message bus.
-
-This worker keeps an in memory buffer of every log entry sent to that topic in
-every broker in a logical message bus.
-
-=head1 METHODS
-
-=head3 tail ( %filters )
-
-Returns all buffered entries that match the filter criteria.
-
-=cut
-
 use Beekeeper::Worker ':log';
 use base 'Beekeeper::Worker';
 
@@ -190,7 +164,35 @@ sub tail {
 
 1;
 
+__END__
+
+=pod
+
 =encoding utf8
+
+=head1 NAME
+
+Beekeeper::Service::LogTail::Worker - Buffer log entries
+
+=head1 VERSION
+
+Version 0.01
+
+=head1 SYNOPSIS
+
+=head1 DESCRIPTION
+
+By default all workers use a C<Beekeeper::Logger> logger which logs errors and
+warnings both to files and to a topic C</topic/log> on the message bus.
+
+This worker keeps an in memory buffer of every log entry sent to that topic in
+every broker in a logical message bus.
+
+=head1 METHODS
+
+=head3 tail ( %filters )
+
+Returns all buffered entries that match the filter criteria.
 
 =head1 AUTHOR
 
@@ -198,7 +200,7 @@ José Micó, C<jose.mico@gmail.com>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2015 José Micó.
+Copyright 2015-2021 José Micó.
 
 This is free software; you can redistribute it and/or modify it under the same 
 terms as the Perl 5 programming language itself.
