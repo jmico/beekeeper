@@ -3,7 +3,7 @@ package Beekeeper::JSONRPC::AuthHeaders;
 use strict;
 use warnings;
 
-our $VERSION = '0.01';
+our $VERSION = '0.03';
  
 use Exporter 'import';
 
@@ -64,7 +64,7 @@ Beekeeper::JSONRPC::AuthHeaders - Access to request auth headers
  
 =head1 VERSION
  
-Version 0.01
+Version 0.03
 
 =head1 AUTHOR
 

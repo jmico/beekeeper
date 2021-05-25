@@ -3,7 +3,7 @@ package Beekeeper::Worker::Util;
 use strict;
 use warnings;
 
-our $VERSION = '0.01';
+our $VERSION = '0.03';
 
 use Beekeeper::Worker::Util::SharedCache;
 
@@ -34,7 +34,7 @@ Beekeeper::Worker::Util
  
 =head1 VERSION
  
-Version 0.01
+Version 0.03
 
 =head1 SYNOPSIS
 
