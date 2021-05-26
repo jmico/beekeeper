@@ -18,7 +18,8 @@ use Carp;
 #TODO: our @CARP_NOT = ('AnyEvent', 'Beekeeper::MQTT');
 
 use constant COMPILE_ERROR_EXIT_CODE => 99;
-use constant REPORT_STATUS_PERIOD    => 10;
+use constant REPORT_STATUS_PERIOD    => 5;
+use constant UNSUBSCRIBE_LINGER      => 2;
 use constant REQUEST_AUTHORIZED      => int(rand(90000000)+10000000);
 
 use Exporter 'import';
@@ -543,7 +544,13 @@ sub __drain_task_queue {
             }
         }
 
-        redo DRAIN if (@{$worker->{job_queue_high}} || @{$worker->{job_queue_low}})
+        redo DRAIN if (@{$worker->{job_queue_high}} || @{$worker->{job_queue_low}});
+
+        # Execute tasks postponed until job queue is empty
+        if (exists $worker->{postponed}) {
+            $_->() foreach @{$worker->{postponed}};
+            delete $worker->{postponed};
+        }
     }
 
     $_TASK_QUEUE_DEPTH--;
@@ -568,7 +575,9 @@ sub stop_accepting_notifications {
 
         my ($service, $method) = ($1, $2);
 
-        unless (defined $self->{_WORKER}->{callbacks}->{"msg.$fq_meth"}) {
+        my $worker = $self->{_WORKER};
+
+        unless (defined $worker->{callbacks}->{"msg.$fq_meth"}) {
             carp "Not previously accepting notifications $fq_meth";
             next;
         }
@@ -578,23 +587,31 @@ sub stop_accepting_notifications {
         my $topic = "msg/$local_bus/$service/$method";
         $topic =~ tr|.*|/#|;
 
+        # Cannot remove callbacks right now, as new notifications could be in flight or be 
+        # already queued. We must wait for unsubscription completion, and then until the 
+        # notification queue is empty to ensure that all received ones were processed. And 
+        # even then wait a bit more, as some brokers may send messages *after* unsubscription.
+        my $postpone = sub {
+
+            $worker->{_timers}->{"unsub-$topic"} = AnyEvent->timer( 
+                after => UNSUBSCRIBE_LINGER, cb => sub {
+
+                    delete $worker->{callbacks}->{"msg.$fq_meth"};
+                    delete $worker->{_timers}->{"unsub-$topic"};
+                }
+            );
+        };
+
         $self->{_BUS}->unsubscribe(
             topic       => $topic,
             on_unsuback => sub {
+                my ($success, $prop) = @_;
 
-                delete $self->{_WORKER}->{callbacks}->{"msg.$fq_meth"};
+                #TODO: Report caller of stop_accepting_notifications method
+                warn "Could not unsubscribe from $topic" unless $success; 
 
-                # Discard unprocessed notifications already queued
-                my $job_queue = $self->{_WORKER}->{job_queue_high};
-
-                @$job_queue = grep {
-                    my $task = $_;
-                    my ($body_ref, $msg_headers) = @$task;
-                    my $request = decode_json($$body_ref);
-                    my $req_method = $request->{method};
-                    $req_method =~ m/^([\.\w-]+)\.([\w-]+)$/;
-                    not ($service eq $1 && ($method eq '*' || $method eq $2));
-                } @$job_queue;
+                my $postponed = $worker->{postponed} ||= [];
+                push @$postponed, $postpone;
             }
         );
     }
@@ -614,11 +631,15 @@ sub stop_accepting_jobs {
         my ($service, $method) = ($1, $2);
 
         unless ($method eq '*') {
-            #TODO: Known limitation
+            # Known limitation. As all calls for an entire service class are received
+            # through a single MQTT subscription (in order to load balance them), it is 
+            # not possible to reject a single method. A workaround is to use a different
+            # class for each method that need to be individually rejected.
             croak "Cannot cancel individual job subscription to $fq_meth";
         }
 
-        my $callbacks = $self->{_WORKER}->{callbacks};
+        my $worker    = $self->{_WORKER};
+        my $callbacks = $worker->{callbacks};
 
         my @cb_keys = grep { $_ =~ m/^req.\Q$service\E\b/ } keys %$callbacks;
 
@@ -633,24 +654,35 @@ sub stop_accepting_jobs {
         my $topic = "\$share/BKPR/req/$local_bus/$service";
         $topic =~ tr|.*|/#|;
 
-        if ($self->{_CLIENT}->{curr_request}) {
-            #TODO: MQTT: Unsubscribing from within a job method callback will cause the
-            # current request to be resent to another worker, and thus being executed 
-            # twice. Unsubscription should be postponed until after the response was sent
-        }
+        # Cannot remove callbacks right now, as new jobs could be in flight or be already 
+        # queued. We must wait for unsubscription completion, and then until the job queue 
+        # is empty to ensure that all received jobs were processed. And even then wait a
+        # bit more, as some brokers may send jobs *after* unsubscription.
+        my $postpone = sub {
+
+            $worker->{_timers}->{"unsub-$topic"} = AnyEvent->timer( 
+                after => UNSUBSCRIBE_LINGER, cb => sub {
+
+                    delete $worker->{callbacks}->{$_} foreach @cb_keys;
+                    delete $worker->{subscriptions}->{$service};
+                    delete $worker->{_timers}->{"unsub-$topic"};
+
+                    # When shutting down tell _work_forever to stop
+                    $worker->{stop_cv}->end if $worker->{shutting_down};
+                }
+            );
+        };
 
         $self->{_BUS}->unsubscribe(
             topic        => $topic,
             on_unsuback  => sub {
+                my ($success, $prop) = @_;
 
-                delete $callbacks->{$_} foreach @cb_keys;
+                #TODO: Report caller of stop_accepting_jobs method
+                warn "Could not unsubscribe from $topic" unless $success; 
 
-                my $job_queue = $self->{_WORKER}->{job_queue_low};
-
-                # Discard any unprocessed job already queued. As unsubscription 
-                # was completed, the broker should have already resent any 
-                # unacked request to another worker
-                @$job_queue = ();
+                my $postponed = $worker->{postponed} ||= [];
+                push @$postponed, $postpone;
             }
         );
     }
@@ -688,14 +720,38 @@ sub __work_forever {
 
 
 sub stop_working {
-    my $self = shift;
+    my ($self, %args) = @_;
 
-    unless ($self->{_WORKER}->{stop_cv}) {
-        # Worker was not fully initialized
+    my $worker = $self->{_WORKER};
+
+    # This is the default handler for TERM signal
+
+    unless (exists $worker->{stop_cv}) {
+        # Worker did not completed initialization yet
         CORE::exit(0);
     }
 
-    $self->{_WORKER}->{stop_cv}->send;
+    my %services;
+    foreach my $fq_meth (keys %{$worker->{callbacks}}) {
+        next unless $fq_meth =~ m/^req\.(?!_sync)(.*)\./;
+        $services{$1} = 1;
+    }
+
+    unless (keys %services) {
+        $worker->{stop_cv}->send;
+        return;
+    }
+
+    $worker->{shutting_down} = 1;
+
+    # Cannot exit right now, as some jobs could be in flight or already queued.
+    # So tell the broker to stop sending jobs, and exit after the job queue is empty
+    foreach my $service (keys %services) {
+
+        $worker->{stop_cv}->begin;
+
+        $self->stop_accepting_jobs( $service . '.*' );
+    }
 }
 
 

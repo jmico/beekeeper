@@ -1130,7 +1130,7 @@ sub get_client {
 sub remove_client {
     my ($self, $fh) = @_;
 
-    my $client = delete $self->{clients}->{"$fh"};
+    my $client = $self->{clients}->{"$fh"};
 
     return unless $client;  # called on eof after DISCONNECT 
 
@@ -1140,12 +1140,16 @@ sub remove_client {
     }
 
     $client->resend_unacked_messages;
+
+    delete $self->{clients}->{"$fh"};
 }
 
 sub incoming_message {
     my ($self, $fh, $message) = @_;
 
-    foreach my $topic (values %{$self->{topics}}) {
+    my @topics = values %{$self->{topics}};
+
+    foreach my $topic (@topics) {
 
         next unless $message->{'topic'} =~ $topic->{topic_regex};
 
@@ -1212,7 +1216,7 @@ sub subscribe_client {
 sub unsubscribe_client {
     my ($self, $fh, $prop) = @_;
 
-    my ($topic_filter, $shared_group) = _validate_filter( $prop->{'topic_filter'} );
+    my ($topic_filter, $shared_group) = $self->_validate_filter( $prop->{'topic_filter'} );
 
     return 0x8F unless defined $topic_filter;  # "Topic Filter invalid"
 
@@ -1297,7 +1301,7 @@ sub resend_unacked_messages {
         my ($message, $sender) = @$unacked;
 
         next unless $sender->has_subscriptions;
-warn "Message: " . ${$message->{payload}} ;
+
         $message->{'duplicate'} = 1;
 
         $sender->send_message( $message );
