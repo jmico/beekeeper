@@ -5,6 +5,7 @@ use warnings;
 
 our $VERSION = '0.03';
 
+use AnyEvent::Impl::Perl;
 use Beekeeper::Worker ':log';
 use base 'Beekeeper::Worker';
 

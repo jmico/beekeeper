@@ -12,7 +12,6 @@ use base 'Beekeeper::Worker';
 use Beekeeper::MQTT qw(:const :decode);
 use Beekeeper::Config;
 
-use AnyEvent;
 use AnyEvent::Handle;
 use AnyEvent::Socket;
 use Scalar::Util 'weaken';

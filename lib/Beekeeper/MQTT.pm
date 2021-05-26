@@ -5,7 +5,7 @@ use warnings;
 
 our $VERSION = '0.03';
 
-use AnyEvent::Impl::Perl; #TODO: Do not force implementation
+use AnyEvent;
 use AnyEvent::Handle;
 use List::Util 'shuffle';
 use Scalar::Util 'weaken';
