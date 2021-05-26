@@ -97,6 +97,7 @@ user backend
 topic   readwrite   msg/#
 topic   readwrite   req/#
 topic   readwrite   res/#
+topic   readwrite   log/#
 topic   readwrite   priv/#
 ```
 Create `/etc/mosquitto/conf.d/beekeeper.frontend.acl`

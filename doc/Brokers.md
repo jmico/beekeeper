@@ -82,6 +82,7 @@ user backend
 topic   readwrite   req/#
 topic   readwrite   msg/#
 topic   readwrite   res/#
+topic   readwrite   log/#
 topic   readwrite   priv/#
 ```
 And finally create a user running the following command:
