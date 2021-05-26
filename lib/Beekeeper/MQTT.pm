@@ -8,6 +8,7 @@ our $VERSION = '0.03';
 use AnyEvent::Impl::Perl; #TODO: Do not force implementation
 use AnyEvent::Handle;
 use List::Util 'shuffle';
+use Scalar::Util 'weaken';
 use Exporter 'import';
 use Carp;
 
@@ -277,6 +278,7 @@ sub connect {
 
 sub _connect {
     my ($self) = @_;
+    weaken($self);
 
     my $config = $self->{config};
 
@@ -1032,10 +1034,12 @@ sub _receive_suback {
             $self->{subscriptions}->{$topic} = $subscr_id;
         }
         else {
-            #TODO: do not warn, let caller handle it
-            warn "Subscription to topic '$topic' failed: $reason\n";
-            $granted_qos = undef;
+            # Failure
             $success = 0;
+            $granted_qos = undef;
+            unless ($suback_cb) {
+                $self->_fatal("Subscription to topic '$topic' failed: $reason");
+            }
         }
 
         $DEBUG && warn "Subscribed to: $topic\n";
@@ -1111,6 +1115,7 @@ sub unsubscribe {
 
 sub _receive_unsuback {
     my ($self, $packet) = @_;
+    weaken($self);
 
     # 3.11.2  Packet id  (short int)
     my $offs = 0;
@@ -1163,15 +1168,23 @@ sub _receive_unsuback {
             my $subs = $self->{subscriptions};
             my $subscr_id = delete $subs->{$topic};
             if ($subscr_id) {
-                # Free subscription on_publish callback closure
+                # Free on_publish callback if not used by another subscription
                 my @still_used = grep { $subs->{$_} == $subscr_id } keys %$subs;
-                delete $self->{subscr_cb}->{$subscr_id} unless @still_used;
+                unless (@still_used) {
+                    # But not right now, as broker may send some messages *after* unsubscription
+                    $self->{_timers}->{"unsub-$subscr_id"} = AnyEvent->timer( after => 60, cb => sub {
+                        delete $self->{_timers}->{"unsub-$subscr_id"};
+                        delete $self->{subscr_cb}->{$subscr_id};
+                    });
+                }
             }
         }
         else {
-            #TODO: let caller handle it
-            warn "Unsubscription to topic '$topic' failed: $reason\n";
+            # Failure
             $success = 0;
+            unless ($unsuback_cb) {
+                $self->_fatal("Unsubscription to topic '$topic' failed: $reason");
+            }
         }
 
         push @properties, {
@@ -1435,6 +1448,7 @@ sub _receive_publish {
 
     foreach (@subscr_ids) {
         # Execute subscriptions callbacks
+
         $self->{subscr_cb}->{$_}->($packet, \%prop);
     }
 }
