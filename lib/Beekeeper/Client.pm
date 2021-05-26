@@ -295,7 +295,7 @@ sub stop_accepting_notifications {
 }
 
 
-our $WAITING;
+our $AE_WAITING;
 
 sub do_job {
     my $self = shift;
@@ -304,8 +304,8 @@ sub do_job {
 
     # Make AnyEvent allow one level of recursive condvar blocking, as we may
     # block both in $worker->__work_forever and in $client->__do_rpc_request
-    $WAITING && croak "Recursive condvar blocking wait attempted";
-    local $WAITING = 1;
+    $AE_WAITING && croak "Recursive condvar blocking wait attempted";
+    local $AE_WAITING = 1;
     local $AnyEvent::CondVar::Base::WAITING = 0;
 
     # Block until a response is received or request timed out
@@ -566,8 +566,8 @@ sub wait_all_jobs {
 
     # Make AnyEvent to allow one level of recursive condvar blocking, as we may
     # block both in $worker->__work_forever and here
-    $WAITING && croak "Recursive condvar blocking wait attempted";
-    local $WAITING = 1;
+    $AE_WAITING && croak "Recursive condvar blocking wait attempted";
+    local $AE_WAITING = 1;
     local $AnyEvent::CondVar::Base::WAITING = 0;
 
     $cv->recv;

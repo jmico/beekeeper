@@ -1198,6 +1198,7 @@ sub _receive_unsuback {
     $unsuback_cb->($success, @properties) if $unsuback_cb;
 }
 
+our $AE_WAITING;
 
 sub publish {
     my ($self, %args) = @_;
@@ -1339,6 +1340,12 @@ sub publish {
         # based on available memory, and is 4MB in known production servers.
         # This will happen after sending more that 4MB of data very quickly.
         # As client may be syncronous, wait until entire message is sent.
+
+        # Make AnyEvent allow one level of recursive condvar blocking
+        $AE_WAITING && croak "Recursive condvar blocking wait attempted";
+        local $AE_WAITING = 1;
+        local $AnyEvent::CondVar::Base::WAITING = 0;
+
         my $flushed = AnyEvent->condvar;
         $self->{handle}->on_drain( $flushed );
         $flushed->recv;
@@ -1711,7 +1718,14 @@ sub flush_buffer {
     $self->{handle}->push_write( $buffer->{raw_mqtt} );
 
     if (defined $self->{handle}->{wbuf} && length $self->{handle}->{wbuf} > 0) {
+
         # Kernel write buffer is full, see publish() above
+
+        # Make AnyEvent allow one level of recursive condvar blocking
+        $AE_WAITING && croak "Recursive condvar blocking wait attempted";
+        local $AE_WAITING = 1;
+        local $AnyEvent::CondVar::Base::WAITING = 0;
+
         my $flushed = AnyEvent->condvar;
         $self->{handle}->on_drain( $flushed );
         $flushed->recv;
