@@ -612,6 +612,8 @@ sub stop_accepting_notifications {
 
                 my $postponed = $worker->{postponed} ||= [];
                 push @$postponed, $postpone;
+
+                AnyEvent::postpone { $self->__drain_task_queue };
             }
         );
     }
@@ -683,6 +685,8 @@ sub stop_accepting_jobs {
 
                 my $postponed = $worker->{postponed} ||= [];
                 push @$postponed, $postpone;
+
+                AnyEvent::postpone { $self->__drain_task_queue };
             }
         );
     }
