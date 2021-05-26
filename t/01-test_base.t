@@ -10,6 +10,6 @@ BEGIN {
     unshift @INC, "$dir/lib", "$dir/../lib";
 }
 
-use Tests::LoadBalancing;
+use Tests::TestBase;
 
-Tests::LoadBalancing->runtests;
+Tests::TestBase->runtests;

@@ -8,11 +8,13 @@ use base 'Tests::Service::Base';
 use Test::More;
 use Time::HiRes 'sleep';
 
-use constant TOUT => 10;
+our $TIMEOUT = 2;
 
 
 sub start_test_workers : Test(startup => 1) {
     my $self = shift;
+
+    $TIMEOUT *= 10 if $self->automated_testing;
 
     my $running = $self->start_workers('Tests::Service::Worker', workers_count => 11);
     is( $running, 11, "Spawned 11 workers");
@@ -31,7 +33,7 @@ sub test_01_recursion : Test(11) {
     $resp = $cli->do_job(
         method  => 'test.triang',
         params  => 1,
-        timeout => TOUT,
+        timeout => $TIMEOUT,
     );
 
     is( $resp->result, 1, "triangular(1)");
@@ -41,7 +43,7 @@ sub test_01_recursion : Test(11) {
     $resp = $cli->do_job(
         method  => 'test.triang',
         params  => 2,
-        timeout => TOUT,
+        timeout => $TIMEOUT,
     );
 
     is( $resp->result, 3, "triangular(2)");
@@ -51,13 +53,13 @@ sub test_01_recursion : Test(11) {
         $resp = $cli->do_job(
             method  => 'test.triang',
             params  => $i,
-            timeout => TOUT,
+            timeout => $TIMEOUT,
         );
 
         is( $resp->result, $triangular[$i], "triangular($i)");
     }
 
-    # TODO: fail with 11
+    # TODO: triangular(12) will timeout
 }
 
 sub test_02_recursion : Test(4) {
@@ -71,7 +73,7 @@ sub test_02_recursion : Test(4) {
     $resp = $cli->do_job(
         method  => 'test.fib1',
         params  => 1,
-        timeout => TOUT,
+        timeout => $TIMEOUT,
     );
 
     is( $resp->result, 1, "fib(1)");
@@ -79,7 +81,7 @@ sub test_02_recursion : Test(4) {
     $resp = $cli->do_job(
         method  => 'test.fib2',
         params  => 1,
-        timeout => TOUT,
+        timeout => $TIMEOUT,
     );
 
     is( $resp->result, 1, "fib(1)");
@@ -89,7 +91,7 @@ sub test_02_recursion : Test(4) {
     $resp = $cli->do_job(
         method  => 'test.fib1',
         params  => 2,
-        timeout => TOUT,
+        timeout => $TIMEOUT,
     );
 
     is( $resp->result, 1, "fib(2)");
@@ -97,7 +99,7 @@ sub test_02_recursion : Test(4) {
     $resp = $cli->do_job(
         method  => 'test.fib2',
         params  => 2,
-        timeout => TOUT,
+        timeout => $TIMEOUT,
     );
 
     is( $resp->result, 1, "fib(2)");
@@ -115,7 +117,7 @@ sub test_03_recursion : Test(4) {
         my $resp = $cli->do_job(
             method  => 'test.fib1',
             params  => $i,
-            timeout => TOUT,
+            timeout => $TIMEOUT,
         );
 
         is( $resp->result, $fib[$i], "fib($i)");
@@ -126,7 +128,7 @@ sub test_03_recursion : Test(4) {
         my $resp = $cli->do_job(
             method  => 'test.fib2',
             params  => $i,
-            timeout => TOUT,
+            timeout => $TIMEOUT,
         );
 
         is( $resp->result, $fib[$i], "fib($i)");

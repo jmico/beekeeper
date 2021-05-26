@@ -143,10 +143,11 @@ sub test_03_background_jobs : Test(1) {
 
     $SIG{'USR1'} = sub { $var++ };
 
-    for (1..3) {
+    foreach my $n (1..3) {
+
         $cli->do_background_job(
             method => "test.signal",
-            params => { signal => 'USR1', pid => $$ },
+            params => { signal => 'USR1', pid => $$, after => $n/2 },
         );
     }
 
@@ -216,12 +217,12 @@ sub test_05_client_api : Test(8) {
     my $svc = 'Tests::Service::Client';
     my $var = 52;
 
-    $SIG{'USR1'} = sub { $var = $var + 1 };
+    $SIG{'USR1'} = sub { $var++ };
 
     $svc->signal( 'USR1' => $$ );
 
     my $expected = 54;
-    my $max_wait = 100; while ($max_wait--) { last if $var == $expected; sleep 0.01; }
+    my $max_wait = 10; while ($max_wait--) { sleep 0.5; last if $var == $expected; }
     is( $var, $expected, "Notifications received by 2 workers");
 
 
@@ -232,7 +233,7 @@ sub test_05_client_api : Test(8) {
     is( $resp->result, 'foo');
 
 
-    $resp = $svc->fibonacci_1( 1 ); #TODO: 2 or 3
+    $resp = $svc->fibonacci_1( 1 );
 
     isa_ok($resp, 'Beekeeper::JSONRPC::Response');
     is( $resp->success, 1 );

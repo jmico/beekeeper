@@ -54,7 +54,9 @@ sub signal {
     my ($signal) = $params->{signal} =~ m/(\w+)/;  # untaint
     my ($pid)    = $params->{pid}    =~ m/(\d+)/;
 
-    sleep(rand() / 10); # helps to avoid signal races
+    my $sleep = exists $params->{after} ? $params->{after} : rand() * 2;
+
+    sleep $sleep;
 
     kill( $signal, $pid );
 }
@@ -67,6 +69,12 @@ sub fail {
     die $params->{die} if $params->{die};
 
     die Beekeeper::JSONRPC::Error->server_error( message => $params->{error}) if $params->{error};
+}
+
+sub echo {
+    my ($self, $params) = @_;
+
+    return $params;
 }
 
 sub _sleep {
@@ -129,12 +137,6 @@ sub fibonacci_2 {
     $self->wait_all_jobs;
 
     return $req1->result + $req2->result; 
-}
-
-sub echo {
-    my ($self, $params) = @_;
-
-    return $params;
 }
 
 1;

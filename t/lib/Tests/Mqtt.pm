@@ -23,6 +23,13 @@ sub read_bus_config : Test(startup => 1) {
     ok( $bus_config->{host}, "Read bus config, connecting to " . $bus_config->{host});
 }
 
+sub async_wait {
+    my ($self, $time) = @_;
+    $time *= 10 if $self->automated_testing;
+    my $cv = AnyEvent->condvar; 
+    my $tmr = AnyEvent->timer( after => 1, cb => $cv ); 
+    $cv->recv;
+}
 
 sub test_01_topic : Test(3) {
     my $self = shift;
@@ -37,7 +44,7 @@ sub test_01_topic : Test(3) {
     my @received;
 
     $bus1->subscribe(
-        topic => 'foo/bar',
+        topic => 'msg/bar',
         on_publish => sub {
             my ($payload, $properties) = @_;
             push @received, {
@@ -49,7 +56,7 @@ sub test_01_topic : Test(3) {
     );
 
     $bus2->subscribe(
-        topic => 'foo/bar',
+        topic => 'msg/bar',
         on_publish => sub {
             my ($payload, $properties) = @_;
             push @received, {
@@ -60,17 +67,16 @@ sub test_01_topic : Test(3) {
         },
     );
 
-    $cv = AnyEvent->condvar; $tmr = AnyEvent->timer( after => 1, cb => $cv); $cv->recv;
-
+    $self->async_wait( 0.2 );
 
     $bus1->publish(
-        topic   => 'foo/bar',
+        topic   => 'msg/bar',
         payload => 'Hello 1',
     );
 
-    $cv = AnyEvent->condvar; $tmr = AnyEvent->timer( after => 1, cb => $cv); $cv->recv;
+    $self->async_wait( 0.2 );
 
-    is( scalar(@received), 2, "received 2 messages from topic");
+    is( scalar(@received), 2, "Received 2 messages from topic");
     is( $received[0]->{payload}, 'Hello 1', "got message");
     is( $received[1]->{payload}, 'Hello 1', "got message");
 
@@ -93,7 +99,7 @@ sub test_02_topic_wildcard : Test(7) {
     my @received;
 
     $bus1->subscribe(
-        topic => 'foo/+',
+        topic => 'msg/+',
         on_publish => sub {
             my ($payload, $properties) = @_;
             push @received, {
@@ -105,7 +111,7 @@ sub test_02_topic_wildcard : Test(7) {
     );
 
     $bus2->subscribe(
-        topic => 'foo/#',
+        topic => 'msg/#',
         on_publish => sub {
             my ($payload, $properties) = @_;
             push @received, {
@@ -116,17 +122,16 @@ sub test_02_topic_wildcard : Test(7) {
         },
     );
 
-    $cv = AnyEvent->condvar; $tmr = AnyEvent->timer( after => 1, cb => $cv); $cv->recv;
-
+    $self->async_wait( 0.2 );
 
     $bus1->publish(
-        topic   => 'foo/bar',
+        topic   => 'msg/bar',
         payload => 'Hello 2',
     );
 
-    $cv = AnyEvent->condvar; $tmr = AnyEvent->timer( after => 1, cb => $cv); $cv->recv;
+    $self->async_wait( 0.2 );
 
-    is( scalar(@received), 2, "received 2 messages from topic");
+    is( scalar(@received), 2, "Received 2 messages from topic");
     is( $received[0]->{payload}, 'Hello 2', "got message");
     is( $received[1]->{payload}, 'Hello 2', "got message");
 
@@ -140,9 +145,9 @@ sub test_02_topic_wildcard : Test(7) {
         payload => 'Hello 3',
     );
 
-    $cv = AnyEvent->condvar; $tmr = AnyEvent->timer( after => 1, cb => $cv); $cv->recv;
+    $self->async_wait( 0.2 );
 
-    is( scalar(@received), 0, "received no messages from topic");
+    is( scalar(@received), 0, "Received no messages from topic");
 
     # $DEBUG && diag Dumper \@received;
 
@@ -150,15 +155,15 @@ sub test_02_topic_wildcard : Test(7) {
 
 
     $bus1->publish(
-        topic   => 'foo/bar/baz',
+        topic   => 'msg/bar/baz',
         payload => 'Hello 4',
     );
 
-    $cv = AnyEvent->condvar; $tmr = AnyEvent->timer( after => 1, cb => $cv); $cv->recv;
+    $self->async_wait( 0.2 );
 
-    is( scalar(@received), 1, "received 1 message from topic");
+    is( scalar(@received), 1, "Received 1 message from topic");
     is( $received[0]->{payload}, 'Hello 4', "got message");
-    is( $received[0]->{bus}, 2, "got message");
+    is( $received[0]->{bus}, 2, "Got message");
 
     # $DEBUG && diag Dumper \@received;
 
@@ -179,7 +184,7 @@ sub test_03_shared_topic : Test(4) {
     my @received;
 
     $bus1->subscribe(
-        topic => '$share/GROUPID/req/foo/bar',
+        topic => '$share/GROUPID/req/msg/bar',
         on_publish => sub {
             my ($payload, $properties) = @_;
             push @received, {
@@ -191,7 +196,7 @@ sub test_03_shared_topic : Test(4) {
     );
 
     $bus2->subscribe(
-        topic => '$share/GROUPID/req/foo/bar',
+        topic => '$share/GROUPID/req/msg/bar',
         on_publish => sub {
             my ($payload, $properties) = @_;
             push @received, {
@@ -202,17 +207,16 @@ sub test_03_shared_topic : Test(4) {
         },
     );
 
-    $cv = AnyEvent->condvar; $tmr = AnyEvent->timer( after => 1, cb => $cv); $cv->recv;
-
+    $self->async_wait( 0.2 );
 
     $bus1->publish(
-        topic   => 'req/foo/bar',
+        topic   => 'req/msg/bar',
         payload => 'Hello 5',
     );
 
-    $cv = AnyEvent->condvar; $tmr = AnyEvent->timer( after => 1, cb => $cv); $cv->recv;
+    $self->async_wait( 0.2 );
 
-    is( scalar(@received), 1, "received 1 message from shared topic");
+    is( scalar(@received), 1, "Received 1 message from shared topic");
     is( $received[0]->{payload}, 'Hello 5', "got message");
 
     # $DEBUG && diag Dumper \@received;
@@ -221,13 +225,13 @@ sub test_03_shared_topic : Test(4) {
 
 
     $bus1->publish(
-        topic   => 'req/foo/bar',
+        topic   => 'req/msg/bar',
         payload => 'Hello 6',
     );
 
-    $cv = AnyEvent->condvar; $tmr = AnyEvent->timer( after => 1, cb => $cv); $cv->recv;
+    $self->async_wait( 0.2 );
 
-    is( scalar(@received), 1, "received 1 message from shared topic");
+    is( scalar(@received), 1, "Received 1 message from shared topic");
     is( $received[0]->{payload}, 'Hello 6', "got message");
 
     # $DEBUG && diag Dumper \@received;
@@ -236,7 +240,7 @@ sub test_03_shared_topic : Test(4) {
     $bus2->disconnect;
 }
 
-sub test_04_exclusive_topic : Test(11) {
+sub test_04_private_topic : Test(6) {
     my $self = shift;
 
     my $bus1 = Beekeeper::MQTT->new( %$bus_config );
@@ -250,8 +254,10 @@ sub test_04_exclusive_topic : Test(11) {
     my ($cv, $tmr);
     my (@received_1, @received_2, @received_3);
 
+    my $bus1_private = "priv/" . $bus1->{client_id};
+
     $bus1->subscribe(
-        topic => 'temp-12345',
+        topic => $bus1_private,
         on_publish => sub {
             my ($payload, $properties) = @_;
             push @received_1, {
@@ -263,7 +269,7 @@ sub test_04_exclusive_topic : Test(11) {
     );
 
     $bus2->subscribe(
-        topic => '$share/GROUPID/foo/bar',
+        topic => '$share/GROUPID/msg/bar',
         on_publish => sub {
             my ($payload, $properties) = @_;
             push @received_2, {
@@ -274,42 +280,39 @@ sub test_04_exclusive_topic : Test(11) {
         },
     );
 
-    $cv = AnyEvent->condvar; $tmr = AnyEvent->timer( after => 1, cb => $cv); $cv->recv;
-
+    $self->async_wait( 0.2 );
 
     $bus1->publish(
-        topic          => 'foo/bar',
-        response_topic => 'temp-12345',
+        topic          => 'msg/bar',
+        response_topic => $bus1_private,
         payload        => 'Hello 7',
     );
 
-    $cv = AnyEvent->condvar; $tmr = AnyEvent->timer( after => 1, cb => $cv); $cv->recv;
+    $self->async_wait( 0.2 );
 
-    is( scalar(@received_2), 1, "received 1 message from exclusive topic");
+    is( scalar(@received_2), 1, "Received 1 message from private topic");
     is( $received_2[0]->{payload}, 'Hello 7', "got message");
 
     my $reply_to = $received_2[0]->{properties}->{'response_topic'};
-    ok( $reply_to, "got response_topic header");
+    ok( $reply_to, "Got response_topic header");
 
     # $DEBUG && diag Dumper \@received_2;
-
 
     $bus2->publish(
         topic   => $reply_to,
         payload => 'Hello 8',
     );
 
-    $cv = AnyEvent->condvar; $tmr = AnyEvent->timer( after => 1, cb => $cv); $cv->recv;
+    $self->async_wait( 0.2 );
 
-    is( scalar(@received_1), 1, "received 1 message from exclusive topic");
+    is( scalar(@received_1), 1, "Received 1 message from private topic");
     is( $received_1[0]->{payload}, 'Hello 8', "got message");
 
     # $DEBUG && diag Dumper \@received_1;
 
-return;
 
     eval {
-        # Try to subscribe to another connection temp-queue
+        # Try to subscribe to another connection private topic
         $bus3->subscribe(
             topic => $reply_to,
             on_publish => sub {
@@ -322,70 +325,27 @@ return;
             },
         );
 
-        $cv = AnyEvent->condvar; $tmr = AnyEvent->timer( after => 1, cb => $cv); $cv->recv;
+        $self->async_wait( 0.2 );
     };
 
     if ($@) {
         # Either subscribe fail...
-        ok(1, "can't subscribe to another connection temp topic");
-        ok(1);
-        ok(1);
+        ok(1, "Can't subscribe to another connection private topic");
     }
     else {
         # Or can't receive messages
         $bus2->publish(
-            topic   => 'temp-12345',
+            topic   => $bus1_private,
             payload => 'Hello 9',
         );
 
-        $cv = AnyEvent->condvar; $tmr = AnyEvent->timer( after => 1, cb => $cv); $cv->recv;
+        $self->async_wait( 0.2 );
 
-        is( scalar(@received_1), 1, "did not received message from another exclusive topic with same topic");
-        is( $received_1[-1]->{payload}, 'Hello 8', "did not received another message");
-
-        is( scalar(@received_3), 0, "no message received from another connection exclusive topic");
+        TODO: {
+            local $TODO = "ToyBroker does not restrict topics priv/{client_id}";
+            is( scalar(@received_3), 0, "No message received from private topic of another connection");
+        }
     }
-
-    eval {
-        # Try to subscribe to another connection reply-to
-        $bus3->connect( blocking => 1 ) unless $bus3->{is_connected};
-
-        $bus3->subscribe(
-            topic => $reply_to,
-            on_publish => sub {
-                my ($payload, $properties) = @_;
-                push @received_3, {
-                    bus        => 2,
-                    properties => { %$properties },
-                    payload    => $$payload,
-                };
-            },
-        );
-
-        $cv = AnyEvent->condvar; $tmr = AnyEvent->timer( after => 1, cb => $cv); $cv->recv;
-    };
-
-    if ($@) {
-        # Either subscribe fail...
-        ok(1, "can't subscribe to another connection reply-to");
-        ok(1);
-        ok(1);
-    }
-    else {
-        # Or can't receive messages
-        $bus2->publish(
-            topic   => $reply_to,
-            payload => 'Hello 10',
-        );
-
-        $cv = AnyEvent->condvar; $tmr = AnyEvent->timer( after => 1, cb => $cv); $cv->recv;
-
-        is( scalar(@received_1), 2, "sent another message to exclusive topic");
-        is( $received_1[1]->{payload}, 'Hello 10', "sent message");
-
-        is( scalar(@received_3), 0, "no message received from another connection reply-to");
-    }
-
 
     $bus1->disconnect;
     $bus2->disconnect;
@@ -395,8 +355,8 @@ return;
 sub test_05_shared_topic_queuing : Test(6) {
     my $self = shift;
 
-    my $bus1 = Beekeeper::MQTT->new( %$bus_config );
-    my $bus2 = Beekeeper::MQTT->new( %$bus_config );
+    my $bus1 = Beekeeper::MQTT->new( %$bus_config, 'receive_maximum' => 1 );
+    my $bus2 = Beekeeper::MQTT->new( %$bus_config, 'receive_maximum' => 1 );
 
     $bus1->connect( blocking => 1 );
     $bus2->connect( blocking => 1 );
@@ -405,10 +365,9 @@ sub test_05_shared_topic_queuing : Test(6) {
     my @received;
 
     $bus1->subscribe(
-        topic       => '$share/GROUP_ID/req/foo/bar',
+        topic       => '$share/GROUP_ID/req/msg/bar',
         maximum_qos => 1,
-      # 'prefetch-count' => '1', #TODO
-        on_publish => sub {
+        on_publish  => sub {
             my ($payload, $properties) = @_;
             push @received, {
                 bus        => 1,
@@ -419,10 +378,9 @@ sub test_05_shared_topic_queuing : Test(6) {
     );
 
     $bus2->subscribe(
-        topic       => '$share/GROUP_ID/req/foo/bar',
+        topic       => '$share/GROUP_ID/req/msg/bar',
         maximum_qos => 1,
-      # 'prefetch-count' => '1',
-        on_publish => sub {
+        on_publish  => sub {
             my ($payload, $properties) = @_;
             push @received, {
                 bus        => 2,
@@ -432,32 +390,32 @@ sub test_05_shared_topic_queuing : Test(6) {
         },
     );
 
-    $cv = AnyEvent->condvar; $tmr = AnyEvent->timer( after => 1, cb => $cv); $cv->recv;
+    $self->async_wait( 0.2 );
 
 
     $bus1->publish(
-        topic   => 'req/foo/bar',
+        topic   => 'req/msg/bar',
         payload => 'Hello 11',
         qos     =>  1,
     );
 
-    $cv = AnyEvent->condvar; $tmr = AnyEvent->timer( after => 1, cb => $cv); $cv->recv;
+    $self->async_wait( 0.2 );
 
-    is( scalar(@received), 1, "received 1 message from shared topic");
+    is( scalar(@received), 1, "Received 1 message from shared topic");
     is( $received[0]->{payload}, 'Hello 11', "got message");
 
     # $DEBUG && diag Dumper \@received;
 
 
     $bus1->publish(
-        topic   => 'req/foo/bar',
+        topic   => 'req/msg/bar',
         payload => 'Hello 12',
         qos     =>  1,
     );
 
-    $cv = AnyEvent->condvar; $tmr = AnyEvent->timer( after => 1, cb => $cv); $cv->recv;
+    $self->async_wait( 0.2 );
 
-    is( scalar(@received), 2, "received 1 more message from shared topic");
+    is( scalar(@received), 2, "Received 1 more message from shared topic");
     is( $received[1]->{payload}, 'Hello 12', "got message");
 
     # $DEBUG && diag Dumper \@received;
@@ -465,16 +423,16 @@ sub test_05_shared_topic_queuing : Test(6) {
 
     # This one must be queued
     $bus1->publish(
-        topic   => 'req/foo/bar',
+        topic   => 'req/msg/bar',
         payload => 'Hello 13',
         qos     =>  1,
     );
 
-    $cv = AnyEvent->condvar; $tmr = AnyEvent->timer( after => 1, cb => $cv); $cv->recv;
+    $self->async_wait( 0.2 );
 
     TODO: {
-        local $TODO = "MQTT does not queue messages";
-        is( scalar(@received), 2, "received no more messages until PUBACK");
+        local $TODO = "Broker MQTT does not honor 'receive_maximum' CONNECT property";
+        is( scalar(@received), 2, "Received no more messages until PUBACK");
     }
 
     for my $n (0..1) {
@@ -489,11 +447,11 @@ sub test_05_shared_topic_queuing : Test(6) {
         }
     }
 
-    $cv = AnyEvent->condvar; $tmr = AnyEvent->timer( after => 1, cb => $cv); $cv->recv;
+    $self->async_wait( 0.2 );
 
     TODO: {
-        local $TODO = "MQTT does not queue messages";
-        is( scalar(@received), 3, "received another message");
+        local $TODO = "Broker MQTT does not honor 'receive_maximum' CONNECT property";
+        is( scalar(@received), 3, "Received the queued message");
     }
 
     # $DEBUG && diag Dumper \@received;
@@ -512,57 +470,6 @@ sub test_05_shared_topic_queuing : Test(6) {
 
     $bus1->disconnect;
     $bus2->disconnect;
-}
-
-sub test_06_topic_timeout : Test(2) {
-    my $self = shift;
-
-    return "ToyBroker does not honor expiration yet" if $self->using_toybroker;
-
-    my $bus1 = Beekeeper::MQTT->new( %$bus_config );
-
-    $bus1->connect( blocking => 1 );
-
-    my ($cv, $tmr);
-    my @received;
-
-    $bus1->publish(
-        topic          => 'req/foo/bar',
-        payload        => 'Message A',
-        message_expiry => 1,
-        retain         => 1,
-    );
-
-    $bus1->publish(
-        topic          => 'req/foo/bar',
-        payload        => 'Message B',
-        message_expiry => 10,
-        retain         => 1,
-    );
-
-    $cv = AnyEvent->condvar; $tmr = AnyEvent->timer( after => 1.5, cb => $cv); $cv->recv;
-
-
-    $bus1->subscribe(
-        topic => '$share/GROUP_ID/req/foo/bar',
-        on_publish => sub {
-            my ($payload, $properties) = @_;
-            push @received, {
-                bus        => 1,
-                properties => $properties,
-                payload    => $$payload,
-            };
-        },
-    );
-
-    $cv = AnyEvent->condvar; $tmr = AnyEvent->timer( after => 1, cb => $cv); $cv->recv;
-
-    TODO: {
-        local $TODO = "MQTT does not queue messages";
-        # Message A should have expired
-        is( scalar(@received), 1, "received only 1 message from topic");
-        is( $received[0]->{payload}, 'Message B', "got non expired message");
-    }
 }
 
 1;

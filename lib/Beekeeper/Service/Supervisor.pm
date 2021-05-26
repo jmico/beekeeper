@@ -47,9 +47,10 @@ sub get_workers_status {
     my $client = Beekeeper::Client->instance;
 
     my $resp = $client->do_job(
-        method => '_bkpr.supervisor.get_workers_status',
-        __auth => 'BKPR_ADMIN',
-        params => {
+        method  => '_bkpr.supervisor.get_workers_status',
+        __auth  => 'BKPR_ADMIN',
+        timeout => $args{'timeout'},
+        params  => {
             host  => $args{'host'},
             pool  => $args{'pool'},
             class => $args{'class'},
@@ -65,9 +66,10 @@ sub get_services_status {
     my $client = Beekeeper::Client->instance;
 
     my $resp = $client->do_job(
-        method => '_bkpr.supervisor.get_services_status',
-        __auth => 'BKPR_ADMIN',
-        params => {
+        method  => '_bkpr.supervisor.get_services_status',
+        __auth  => 'BKPR_ADMIN',
+        timeout => $args{'timeout'},
+        params  => {
             host  => $args{'host'},
             pool  => $args{'pool'},
             class => $args{'class'},

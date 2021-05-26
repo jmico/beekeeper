@@ -10,6 +10,6 @@ BEGIN {
     unshift @INC, "$dir/lib", "$dir/../lib";
 }
 
-use Tests::Resend;
+use Tests::IntSignal;
 
-Tests::Resend->runtests;
+Tests::IntSignal->runtests;
