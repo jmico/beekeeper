@@ -14,12 +14,17 @@ use constant DEBUG => 0;
 sub test_01_int_signal : Test(21) {
     my $self = shift;
 
+    ## Test that broker resend jobs when workers are killed with INT
+
+    if ($self->automated_testing) {
+        # It is hard to make this test run reliably on smoke testers platforms
+        return "This test may fail when not enough system resources are available";
+    }
+
     my $cli = Beekeeper::Client->instance;
     my @req;
 
     my @worker_pids = $self->start_workers('Tests::Service::Worker', workers_count => 4);
-
-    ## Test that broker resend jobs when workers are killed with INT
 
     for (1..20) {
 

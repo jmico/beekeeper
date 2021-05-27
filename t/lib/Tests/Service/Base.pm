@@ -98,7 +98,8 @@ sub check_02_broker_connection : Test(startup => 1) {
     my $is_running = kill(0, $Toybroker_pid);
 
     unless ($is_running) {
-        $class->FAIL_ALL("Could not start ToyBroker, no MQTT broker available to run tests");
+        # Probably address already in use by another broker or a ToyBroker zombie
+        $class->BAIL_OUT("Could not start ToyBroker, no MQTT broker available to run tests");
     }
 
     ok( 1, "Running tests on ToyBroker");
@@ -151,6 +152,7 @@ sub start_workers {
         $class->FAIL_ALL("Could not start workers: $worker_class does not compile");
     };
 
+    my $already_running = grep { $_ eq $worker_class } values %Worker_pids;
     my @started_pids;
 
     # Spawn workers
@@ -177,7 +179,7 @@ sub start_workers {
                 timeout => 1,
             );
             my $running = $status->{$worker_class}->{count} || 0;
-            last if $running == $workers_count;
+            last if $running == $workers_count + $already_running;
         }
 
         unless ($max_wait > 0) {
@@ -191,9 +193,9 @@ sub start_workers {
 sub stop_all_workers {
     my $class = shift;
 
-    $class->stop_workers('INT', keys %Worker_pids);
-    $class->stop_workers('INT', $Supervisor_pid) if $Supervisor_pid;
-    $class->stop_workers('INT', $Toybroker_pid)  if $Toybroker_pid;
+    $class->stop_workers('KILL', keys %Worker_pids);
+    $class->stop_workers('KILL', $Supervisor_pid) if $Supervisor_pid;
+    $class->stop_workers('KILL', $Toybroker_pid)  if $Toybroker_pid;
 }
 
 sub stop_workers {

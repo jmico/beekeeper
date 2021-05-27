@@ -30,7 +30,7 @@ sub on_startup {
         'test.signal' => 'signal',
         'test.fail'   => 'fail',
         'test.sleep'  => '_sleep',
-        'test.triang' => 'triangular',
+        'test.fact'   => 'factorial',
         'test.fib1'   => 'fibonacci_1',
         'test.fib2'   => 'fibonacci_2',
         'test.echo'   => 'echo',
@@ -83,18 +83,18 @@ sub _sleep {
     sleep $params;
 }
 
-sub triangular {
+sub factorial {
     my ($self, $n) = @_;
 
-    return $n if ($n <= 1);
+    return $n if ($n <= 2);
 
     my $resp = $self->do_job(
-        method  => 'test.triang',
+        method  => 'test.fact',
         params  => $n - 1,
-        timeout => 3,
+        timeout => 10,
     );
 
-    return $resp->result + $n;
+    return $resp->result * $n;
 }
 
 sub fibonacci_1 {
@@ -105,13 +105,13 @@ sub fibonacci_1 {
     my $resp1 = $self->do_job(
         method  => 'test.fib1',
         params  => $n - 1,
-        timeout => 3,
+        timeout => 10,
     );
 
     my $resp2 = $self->do_job(
         method  => 'test.fib1',
         params  => $n - 2,
-        timeout => 3,
+        timeout => 10,
     );
 
     return $resp1->result + $resp2->result; 
@@ -125,13 +125,13 @@ sub fibonacci_2 {
     my $req1 = $self->do_async_job(
         method  => 'test.fib2',
         params  => $n - 1,
-        timeout => 3,
+        timeout => 10,
     );
 
     my $req2 = $self->do_async_job(
         method  => 'test.fib2',
         params  => $n - 2,
-        timeout => 3,
+        timeout => 10,
     );
 
     $self->wait_all_jobs;
