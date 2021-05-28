@@ -352,7 +352,7 @@ sub test_04_private_topic : Test(6) {
     $bus3->disconnect if $bus3->{is_connected};
 }
 
-sub test_05_shared_topic_queuing : Test(6) {
+sub test_05_shared_topic_queuing : Test(7) {
     my $self = shift;
 
     my $bus1 = Beekeeper::MQTT->new( %$bus_config, 'receive_maximum' => 1 );
@@ -395,28 +395,28 @@ sub test_05_shared_topic_queuing : Test(6) {
 
     $bus1->publish(
         topic   => 'req/msg/bar',
-        payload => 'Hello 11',
+        payload => 'Hello 21',
         qos     =>  1,
     );
 
     $self->async_wait( 0.2 );
 
     is( scalar(@received), 1, "Received 1 message from shared topic");
-    is( $received[0]->{payload}, 'Hello 11', "got message");
+    is( $received[0]->{payload}, 'Hello 21', "got message");
 
     # $DEBUG && diag Dumper \@received;
 
 
     $bus1->publish(
         topic   => 'req/msg/bar',
-        payload => 'Hello 12',
+        payload => 'Hello 22',
         qos     =>  1,
     );
 
     $self->async_wait( 0.2 );
 
     is( scalar(@received), 2, "Received 1 more message from shared topic");
-    is( $received[1]->{payload}, 'Hello 12', "got message");
+    is( $received[1]->{payload}, 'Hello 22', "got message");
 
     # $DEBUG && diag Dumper \@received;
 
@@ -424,7 +424,7 @@ sub test_05_shared_topic_queuing : Test(6) {
     # This one must be queued
     $bus1->publish(
         topic   => 'req/msg/bar',
-        payload => 'Hello 13',
+        payload => 'Hello 23',
         qos     =>  1,
     );
 
@@ -449,10 +449,8 @@ sub test_05_shared_topic_queuing : Test(6) {
 
     $self->async_wait( 0.2 );
 
-    TODO: {
-        local $TODO = "Broker MQTT does not honor 'receive_maximum' CONNECT property";
-        is( scalar(@received), 3, "Received the queued message");
-    }
+    is( scalar(@received), 3, "Received the queued message after PUBACK");
+    is( $received[2]->{payload}, 'Hello 23', "got message");
 
     # $DEBUG && diag Dumper \@received;
 
