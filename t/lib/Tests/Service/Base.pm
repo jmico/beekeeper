@@ -99,6 +99,7 @@ sub check_02_broker_connection : Test(startup => 1) {
 
     unless ($is_running) {
         # Probably address already in use by another broker or a ToyBroker zombie
+        $class->stop_all_workers;
         $class->BAIL_OUT("Could not start ToyBroker, no MQTT broker available to run tests");
     }
 
@@ -126,6 +127,7 @@ sub start_workers {
 
         $SIG{'USR2'} = sub {
             # Send by child when supervisor does not compile
+            $class->stop_all_workers;
             $class->FAIL_ALL("Could not start supervisor: $supervisor_class does not compile");
         };
 
@@ -143,12 +145,14 @@ sub start_workers {
             );
         };
         unless ($status && $status->{$supervisor_class}->{count}) {
-            $class->FAIL_ALL("Could not start supervisor");
+            $class->stop_all_workers;
+            $class->BAIL_OUT("Could not start supervisor");
         }
     }
 
     $SIG{'USR2'} = sub {
         # Send by childs when workers do not compile
+        $class->stop_all_workers;
         $class->FAIL_ALL("Could not start workers: $worker_class does not compile");
     };
 
@@ -183,7 +187,8 @@ sub start_workers {
         }
 
         unless ($max_wait > 0) {
-            $class->FAIL_ALL("Failed to start $workers_count workers $worker_class");
+            $class->stop_all_workers;
+            $class->BAIL_OUT("Failed to start $workers_count workers $worker_class");
         }
     }
 
@@ -193,10 +198,12 @@ sub start_workers {
 sub stop_all_workers {
     my $class = shift;
 
-    $class->stop_workers('KILL', keys %Worker_pids);
-    $class->stop_workers('KILL', $Supervisor_pid) if $Supervisor_pid;
-    $class->stop_workers('KILL', $Toybroker_pid)  if $Toybroker_pid;
+    $class->stop_workers('INT', keys %Worker_pids) if keys %Worker_pids;
+    $class->stop_workers('INT', $Supervisor_pid)   if $Supervisor_pid;
+    $class->stop_workers('INT', $Toybroker_pid)    if $Toybroker_pid;
 }
+
+my $leaving;
 
 sub stop_workers {
     my ($class, $signal, @pids) = @_;
@@ -208,20 +215,23 @@ sub stop_workers {
 
     # Wait until test workers are gone
     diag "Waiting for workers to quit" if $DEBUG;
-    my $max_wait = 50;
+    my $max_wait = 20;
     my @lingering = @pids;
     while (@lingering && $max_wait--) {
         @lingering = grep { kill(0, $_) } @lingering;
         $class->_sleep( 0.1 );
     }
 
-    if (@lingering) {
-        my @worker_classes = grep { $Worker_pids{$_} } @pids;
-        $class->FAIL_ALL("Failed to stop workers " . join(', ', @worker_classes));
+    foreach my $worker_pid (@pids) {
+        next if grep { $_ eq $worker_pid } @lingering;
+        delete $Worker_pids{$worker_pid};
     }
 
-    foreach my $worker_pid (@pids) {
-        delete $Worker_pids{$worker_pid};
+    if (@lingering) {
+        $leaving && return;
+        $leaving = 1;
+        $class->stop_all_workers;
+        $class->SKIP_ALL("Failed to stop workers " . join(', ', values %Worker_pids));
     }
 }
 
