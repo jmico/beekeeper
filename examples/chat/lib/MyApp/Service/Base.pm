@@ -20,7 +20,7 @@ sub authorize_request {
     # Create a per request stash 
     $self->{stash} = { uuid => $uuid };
 
-    return REQUEST_AUTHORIZED;
+    return BKPR_REQUEST_AUTHORIZED;
 }
 
 sub setup_myapp_stuff {

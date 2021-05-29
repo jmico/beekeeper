@@ -14,7 +14,7 @@ sub authorize_request {
     my ($self, $req) = @_;
 
     # Make an exception over the MyApp::Service::Base rule of requiring a logged user
-    return REQUEST_AUTHORIZED if $req->{method} eq 'myapp.auth.login';
+    return BKPR_REQUEST_AUTHORIZED if $req->{method} eq 'myapp.auth.login';
 
     return $self->SUPER::authorize_request($req);
 }

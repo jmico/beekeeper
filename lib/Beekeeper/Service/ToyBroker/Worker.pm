@@ -72,7 +72,7 @@ sub on_shutdown {
 sub authorize_request {
     my ($self, $req) = @_;
 
-    return REQUEST_AUTHORIZED;
+    return BKPR_REQUEST_AUTHORIZED;
 }
 
 sub start_broker {

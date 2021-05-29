@@ -21,11 +21,11 @@ use Carp;
 use constant COMPILE_ERROR_EXIT_CODE => 99;
 use constant REPORT_STATUS_PERIOD    => 5;
 use constant UNSUBSCRIBE_LINGER      => 2;
-use constant REQUEST_AUTHORIZED      => int(rand(90000000)+10000000);
+use constant BKPR_REQUEST_AUTHORIZED => int(rand(90000000)+10000000);
 
 use Exporter 'import';
 
-our @EXPORT = qw( REQUEST_AUTHORIZED );
+our @EXPORT = qw( BKPR_REQUEST_AUTHORIZED );
 
 our @EXPORT_OK = qw(
     log_fatal
@@ -423,7 +423,7 @@ sub __drain_task_queue {
                 local $client->{caller_addr} = $msg_headers->{'fwd_reply'};
                 local $client->{auth_data}   = $msg_headers->{'auth'};
 
-                unless (($self->authorize_request($request) || "") eq REQUEST_AUTHORIZED) {
+                unless (($self->authorize_request($request) || "") eq BKPR_REQUEST_AUTHORIZED) {
                     log_warn "Notification $method was not authorized";
                     return;
                 }
@@ -478,7 +478,7 @@ sub __drain_task_queue {
                 local $client->{caller_addr} = $msg_headers->{'fwd_reply'};
                 local $client->{auth_data}   = $msg_headers->{'auth'};
 
-                unless (($self->authorize_request($request) || "") eq REQUEST_AUTHORIZED) {
+                unless (($self->authorize_request($request) || "") eq BKPR_REQUEST_AUTHORIZED) {
                     log_warn "Request $method was not authorized";
                     die Beekeeper::JSONRPC::Error->request_not_authorized;
                 }
@@ -898,7 +898,7 @@ Version 0.03
   sub authorize_request {
       my ($self, $req) = @_;
   
-      return REQUEST_AUTHORIZED;
+      return BKPR_REQUEST_AUTHORIZED;
   }
   
   sub got_message {
@@ -948,7 +948,7 @@ This method MUST be overrided in your worker classes, as the default behavior is
 to deny the execution of any request.
 
 When a request is received this method is called before executing the corresponding
-callback, and it must return the exported constant C<REQUEST_AUTHORIZED> in order to
+callback, and it must return the exported constant C<BKPR_REQUEST_AUTHORIZED> in order to
 authorize it. Returning any other value will result in the request being ignored. 
 
 This is the place to handle application authentication and authorization.

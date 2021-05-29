@@ -22,7 +22,7 @@ sub authorize_request {
     }
 
     # All requests will be rejected by reject_job 
-    return REQUEST_AUTHORIZED;
+    return BKPR_REQUEST_AUTHORIZED;
 }
 
 sub on_startup {

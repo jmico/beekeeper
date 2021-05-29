@@ -25,7 +25,7 @@ sub authorize_request {
 
     return unless $self->__has_authorization_token('BKPR_ROUTER');
 
-    return REQUEST_AUTHORIZED;
+    return BKPR_REQUEST_AUTHORIZED;
 }
 
 sub on_startup {
