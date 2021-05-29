@@ -13,9 +13,10 @@ sub tail {
 
     my $client = Beekeeper::Client->instance;
 
+    my $guard = $client->__use_authorization_token('BKPR_ADMIN');
+
     my $resp = $client->do_job(
         method => '_bkpr.logtail.tail',
-        __auth => 'BKPR_ADMIN',
         params => \%filters,
     );
 

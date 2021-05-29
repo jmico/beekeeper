@@ -5,8 +5,6 @@ use warnings;
 
 our $VERSION = '0.03';
 
-use Beekeeper::JSONRPC::AuthHeaders ':all';
-
 
 sub new {
     my $class = shift;
@@ -22,6 +20,10 @@ sub new {
 sub method { $_[0]->{method} }
 sub params { $_[0]->{params} }
 sub id     { undef           }
+
+sub mqtt_properties {
+    $_[0]->{_mqtt_prop};
+}
 
 1;
 

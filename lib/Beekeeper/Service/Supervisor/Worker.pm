@@ -16,17 +16,16 @@ use constant CHECK_PERIOD => Beekeeper::Worker::REPORT_STATUS_PERIOD;
 
 sub authorize_request {
     my ($self, $req) = @_;
-    my $required;
 
     if ($req->{method} eq '_bkpr.supervisor.worker_status' ||
         $req->{method} eq '_bkpr.supervisor.worker_exit' ) {
-        $required = 'BKPR_SYSTEM';
+
+        return unless $self->__has_authorization_token('BKPR_SYSTEM');
     }
     else {
-        $required = 'BKPR_ADMIN';
-    }
 
-    return unless $req->has_auth_tokens( $required );
+        return unless $self->__has_authorization_token('BKPR_ADMIN');
+    }
 
     return REQUEST_AUTHORIZED;
 }
@@ -242,9 +241,10 @@ sub check_queues {
     # Tell Sinkhole to respond immediately to all requests sent to 
     # unserviced queues with a "Method not available" error response
 
+    my $guard = $self->__use_authorization_token('BKPR_SYSTEM');
+
     $self->send_notification(
         method => '_bkpr.sinkhole.unserviced_queues',
-        __auth => 'BKPR_SYSTEM',
         params => { queues => \@unserviced },
     );
 }

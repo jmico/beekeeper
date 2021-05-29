@@ -17,12 +17,12 @@ sub authorize_request {
     my ($self, $req) = @_;
 
     if ($req->{method} eq '_bkpr.sinkhole.unserviced_queues') {
-        return REQUEST_AUTHORIZED if $req->has_auth_tokens('BKPR_SYSTEM');
+
+        return unless $self->__has_authorization_token('BKPR_SYSTEM');
     }
-    else {
-        # All requests will be rejected actually
-        return REQUEST_AUTHORIZED;
-    }
+
+    # All requests will be rejected by reject_job 
+    return REQUEST_AUTHORIZED;
 }
 
 sub on_startup {

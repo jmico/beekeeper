@@ -13,9 +13,10 @@ sub restart_pool {
 
     my $client = Beekeeper::Client->instance;
 
+    my $guard = $client->__use_authorization_token('BKPR_ADMIN');
+
     $client->send_notification(
         method => '_bkpr.supervisor.restart_pool',
-        __auth => 'BKPR_ADMIN',
         params => {
             host  => $args{'host'},
             pool  => $args{'pool'},
@@ -29,9 +30,10 @@ sub restart_workers {
 
     my $client = Beekeeper::Client->instance;
 
+    my $guard = $client->__use_authorization_token('BKPR_ADMIN');
+
     $client->send_notification(
         method => '_bkpr.supervisor.restart_workers',
-        __auth => 'BKPR_ADMIN',
         params => {
             host  => $args{'host'},
             pool  => $args{'pool'},
@@ -46,9 +48,10 @@ sub get_workers_status {
 
     my $client = Beekeeper::Client->instance;
 
+    my $guard = $client->__use_authorization_token('BKPR_ADMIN');
+
     my $resp = $client->do_job(
         method  => '_bkpr.supervisor.get_workers_status',
-        __auth  => 'BKPR_ADMIN',
         timeout => $args{'timeout'},
         params  => {
             host  => $args{'host'},
@@ -65,9 +68,10 @@ sub get_services_status {
 
     my $client = Beekeeper::Client->instance;
 
+    my $guard = $client->__use_authorization_token('BKPR_ADMIN');
+
     my $resp = $client->do_job(
         method  => '_bkpr.supervisor.get_services_status',
-        __auth  => 'BKPR_ADMIN',
         timeout => $args{'timeout'},
         params  => {
             host  => $args{'host'},

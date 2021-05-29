@@ -8,52 +8,53 @@ our $VERSION = '0.03';
 use Exporter 'import';
 
 our @EXPORT_OK = qw(
-    bind_connection
-    unbind_connection
-    unbind_address
+    assign_remote_address
+    remove_remote_address
+    remove_caller_address
 );
 
 our %EXPORT_TAGS = ('all' => \@EXPORT_OK );
 
 
-sub bind_connection {
+sub assign_remote_address {
     my ($self, $address) = @_;
 
-    my $req = $self->{_CLIENT}->{curr_request} or die "No connection to bind";
+    my $params = {
+        address     => $address,
+        caller_id   => $self->{_CLIENT}->{caller_id},
+        caller_addr => $self->{_CLIENT}->{caller_addr},
+        auth_data   => $self->{_CLIENT}->{auth_data},
+    };
+
+    my $guard = $self->__use_authorization_token('BKPR_ROUTER');
 
     $self->do_job(
-        method => '_bkpr.router.bind',
-        __auth => 'BKPR_ROUTER',
-        params => {
-            address     => $address, 
-            reply_queue => $req->{_headers}->{'fwd_reply'},
-            session_id  => $self->{_CLIENT}->{session_id},
-            auth_tokens => $self->{_CLIENT}->{auth_tokens},
-        },
+        method => '_bkpr.router.assign_addr',
+        params => $params,
     );
 }
 
-sub unbind_connection {
+sub remove_remote_address {
+    my ($self, $address) = @_;
+
+    my $guard = $self->__use_authorization_token('BKPR_ROUTER');
+
+    $self->do_job(
+        method => '_bkpr.router.remove_addr',
+        params => { address => $address },
+    );
+}
+
+sub remove_caller_address {
     my $self = shift;
 
-    $self->do_job(
-        method => '_bkpr.router.unbind',
-        __auth => 'BKPR_ROUTER',
-        params => {
-            session_id => $self->{_CLIENT}->{session_id},
-        },
-    );
-}
+    my $params = { caller_id => $self->{_CLIENT}->{caller_id} };
 
-sub unbind_address {
-    my ($self, $address) = @_;
+    my $guard = $self->__use_authorization_token('BKPR_ROUTER');
 
     $self->do_job(
-        method => '_bkpr.router.unbind',
-        __auth => 'BKPR_ROUTER',
-        params => {
-            address => $address, 
-        },
+        method => '_bkpr.router.remove_addr',
+        params => $params,
     );
 }
 
@@ -75,16 +76,15 @@ Version 0.03
 
 =head1 SYNOPSIS
 
-  $self->bind_connection( "frontend.user-123" );
+  $self->assign_remote_address( "frontend-user-123" );
   
   $self->send_notification(
-      method => 'myapp.info@frontend.user-123',
-      params => 'hello',
+      method  => 'myapp.info',
+      address => 'frontend-user-123',
+      params  => 'hello',
   );
   
-  $self->unbind_connection( "frontend.user-123" );
-  
-  $self->unbind_address( "frontend.user-123" );
+  $self->remove_remote_address( "frontend-user-123" );
 
 =head1 DESCRIPTION
 
@@ -95,21 +95,24 @@ connections and server side assigned arbitrary addresses.
 
 =head1 METHODS
 
-=head3 bind_connection ( $address )
+=head3 assign_remote_address ( $address )
 
-Assign an arbitrary address to a current client connection.
+Assign an arbitrary address to remote caller.
 
 This address can be used later to push notifications to the client.
 
-The same address can be assigned to several connections at the same time.
+The same address can be assigned to multiple remote clients, all of them will
+receive the notifications sent to it.
 
-=head3 unbind_connection
+=head3 remove_remote_address ( $address )
 
-Cancel current client connection bind to an address.
+Cancel an address assignment. Clients will no longer receive notifications
+sent to this address anymore.
 
-=head3 unbind_address ( $address )
+=head3 remove_caller_address
 
-Cancel every connection bind to a given address.
+Cancel an address assignment just for remote caller. Other remote clients
+may still receive notifications from this address.
 
 =head1 AUTHOR
 

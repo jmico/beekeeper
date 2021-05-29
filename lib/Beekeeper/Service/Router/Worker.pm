@@ -23,7 +23,7 @@ $Beekeeper::Worker::LogLevel = 9 if DEBUG;
 sub authorize_request {
     my ($self, $req) = @_;
 
-    return unless $req->has_auth_tokens('BKPR_ROUTER');
+    return unless $self->__has_authorization_token('BKPR_ROUTER');
 
     return REQUEST_AUTHORIZED;
 }
@@ -186,7 +186,7 @@ sub on_shutdown {
     }
 
     # Disconnect from backend cluster
-    $self->{Sessions}->disconnect;
+    $self->{MqttSessions}->disconnect;
 }
 
 sub pull_frontend_requests {
@@ -210,7 +210,7 @@ sub pull_frontend_requests {
         my $src_queue = "\$share/BKPR/req/$backend_cluster-$lane";
 
         my ($payload_ref, $msg_prop);
-        my ($dest_queue, $reply_to, $session_id, $session);
+        my ($dest_queue, $reply_to, $caller_id, $mqtt_session);
         my %pub_args;
 
         $frontend_bus->subscribe(
@@ -228,24 +228,24 @@ sub pull_frontend_requests {
                 # eg: priv/7nXDsxMDwgLUSedX
                 $reply_to = $msg_prop->{'response_topic'} || '';
                 return unless $reply_to =~ m|^priv/(\w{16,23})$|;
-                $session_id = $1;
+                $caller_id = $1;
 
                 #TODO: Extra sanity checks could be done here before forwarding to backend
 
                 %pub_args = (
                     topic          => $dest_queue,
-                   'x-session'     => $session_id,
+                    clid           => $caller_id,
                     response_topic => "res/$frontend_id-$lane",
-                    fwd_reply      => "$reply_to\@$frontend_id",
+                    fwd_reply      => "$reply_to\@$frontend_id", #addr
                     payload        => $payload_ref,
                     qos            => 1, # because workers consume using QoS 1
                 );
 
-                $session = $self->{Sessions}->get( $session_id );
+                $mqtt_session = $self->{MqttSessions}->get( $caller_id );
 
-                if (defined $session) {
-                    $self->{Sessions}->touch( $session_id );
-                    $pub_args{'x-auth-tokens'} = $session->[2];
+                if (defined $mqtt_session) {
+                    $self->{MqttSessions}->touch( $caller_id );
+                    $pub_args{'auth'} = $mqtt_session->[2];
                 }
 
                 if (exists $msg_prop->{'message_expiry_interval'}) {
@@ -348,7 +348,7 @@ sub pull_backend_notifications {
                 if (defined $address) {
 
                     # Unicast
-                    my $dest_queues = $self->{Addr_to_queues}->{$address} || return;
+                    my $dest_queues = $self->{Addr_to_topics}->{$address} || return;
 
                     foreach my $queue (@$dest_queues) {
 
@@ -393,105 +393,101 @@ sub _init_routing_table {
     my $worker_config = $self->{_WORKER}->{config};
     my $sess_timeout = $worker_config->{'session_timeout'} ||  SESSION_TIMEOUT;
 
-    $self->{Addr_to_queues} = {};
-    $self->{Addr_to_session} = {};
+    $self->{Addr_to_topics}   = {};
+    $self->{Addr_to_sessions} = {};
 
-    $self->{Sessions} = $self->shared_cache( 
+    $self->{MqttSessions} = $self->shared_cache( 
         id => "router",
         persist => 1,
         max_age => $sess_timeout,
         on_update => sub {
-            my ($session, $value, $old_value) = @_;
+            my ($caller_id, $value, $old_value) = @_;
 
-            # Keep indexes:  address -> relpy queues
-            #                address -> sessions
+            # Keep indexes:  address -> [ caller_addr, ... ]
+            #                address -> [ caller_id,   ... ]
 
             if (defined $value) {
                 # Bind
                 my $addr  = $value->[0];
-                my $queue = $value->[1];
+                my $topic = $value->[1];
 
-                my $dest_queues = $self->{Addr_to_queues}->{$addr} ||= [];
-                return if grep { $_ eq $queue } @$dest_queues;
-                push @$dest_queues, $queue;
+                my $relpy_topics = $self->{Addr_to_topics}->{$addr} ||= [];
+                return if grep { $_ eq $topic } @$relpy_topics;
+                push @$relpy_topics, $topic;
 
-                my $dest_session = $self->{Addr_to_session}->{$addr} ||= [];
-                push @$dest_session, $session;
+                my $caller_sessions = $self->{Addr_to_sessions}->{$addr} ||= [];
+                push @$caller_sessions, $caller_id;
             }
             elsif (defined $old_value) {
                 # Unbind
                 my $addr  = $old_value->[0];
-                my $queue = $old_value->[1];
+                my $topic = $old_value->[1];
 
-                my $dest_queues = $self->{Addr_to_queues}->{$addr} || return;
-                @$dest_queues = grep { $_ ne $queue } @$dest_queues;
-                delete $self->{Addr_to_queues}->{$addr} unless @$dest_queues;
+                my $relpy_topics = $self->{Addr_to_topics}->{$addr} || return;
+                @$relpy_topics = grep { $_ ne $topic } @$relpy_topics;
+                delete $self->{Addr_to_topics}->{$addr} unless @$relpy_topics;
 
-                my $dest_session = $self->{Addr_to_session}->{$addr};
-                @$dest_session = grep { $_ ne $session } @$dest_session;
-                delete $self->{Addr_to_session}->{$addr} unless @$dest_session;
+                my $caller_sessions = $self->{Addr_to_sessions}->{$addr};
+                @$caller_sessions = grep { $_ ne $caller_id } @$caller_sessions;
+                delete $self->{Addr_to_sessions}->{$addr} unless @$caller_sessions;
             }
         },
     );
 
     $self->accept_jobs(
-        '_bkpr.router.bind'   => 'bind',
-        '_bkpr.router.unbind' => 'unbind',
+        '_bkpr.router.assign_addr' => 'assign_address',
+        '_bkpr.router.remove_addr' => 'remove_address',
     );
 }
 
-sub bind {
+sub assign_address {
     my ($self, $params) = @_;
 
-    my $session_id  = $params->{session_id};
     my $address     = $params->{address};
-    my $reply_queue = $params->{reply_queue};
-    my $auth_tokens = $params->{auth_tokens};
+    my $caller_id   = $params->{caller_id};
+    my $caller_addr = $params->{caller_addr};
+    my $auth_data   = $params->{auth_data};
 
     my $frontend_cluster = $self->{frontend_cluster};
 
-    unless (defined $session_id && $session_id =~ m/^\w{16,23}$/) {
+    unless (defined $address && $address =~ m/^[\w-]+\.[\w-]+$/) {
+        # eg: frontend.user-1234
+        die ( $address ? "Invalid address $address" : "address not specified");
+    }
+
+    unless (defined $caller_id && $caller_id =~ m/^\w{16,}$/) {
         # eg: 7nXDsxMDwgLUSedX
-        die ( $session_id ? "Invalid session $session_id" : "Session not specified");
+        die ( $caller_id ? "Invalid caller_id $caller_id" : "caller_id not specified");
     }
 
-    if (defined $address && $address !~ m/^$frontend_cluster\.[\w-]+$/) {
-        # eg: @frontend.user-1234
-        die "Invalid address $address";
-    }
-
-    if (defined $reply_queue && $reply_queue !~ m!^priv/\w+\@[\w-]+$!) {
+    unless (defined $caller_addr && $caller_addr =~ m!^priv/\w+\@[\w-]+$!) {
         # eg: priv/7nXDsxMDwgLUSedX@frontend-1
-        die "Invalid reply queue $reply_queue";
+        die ( $caller_id ? "Invalid caller_addr $caller_addr" : "caller_addr not specified");
     }
 
-    if ($address xor $reply_queue) {
-        die "Both address and reply queue must be specified";
-    }
-
-    if (defined $auth_tokens && $auth_tokens =~ m/[\x00\n]/) {
-        # eg: TOKEN1|TOKEN2|{"foo":"bar"}
-        die "Invalid auth tokens $auth_tokens";
+    unless ( $address =~ m/^$frontend_cluster\./) {
+        # eg: frontend.user-1234
+        die ( "Invalid address $address: router can handle only $frontend_cluster.* namespace" );
     }
 
     $address =~ s/^$frontend_cluster\.//;
 
-    $self->{Sessions}->set( $session_id => [ $address, $reply_queue, $auth_tokens ] );
+    $self->{MqttSessions}->set( $caller_id => [ $address, $caller_addr, $auth_data ] );
 
     return 1;
 }
 
-sub unbind {
+sub remove_address {
     my ($self, $params) = @_;
 
-    my $session_id = $params->{session_id};
-    my $address    = $params->{address};
+    my $caller_id = $params->{caller_id};
+    my $address   = $params->{address};
 
     my $frontend_cluster = $self->{frontend_cluster};
 
-    if (defined $session_id && $session_id !~ m/^\w{16,23}$/) {
+    if (defined $caller_id && $caller_id !~ m/^\w{16,}$/) {
         # eg: 7nXDsxMDwgLUSedX
-        die "Invalid session $session_id";
+        die "Invalid caller_id $caller_id";
     }
 
     if (defined $address && $address !~ m/^$frontend_cluster\.[\w-]+$/) {
@@ -499,27 +495,27 @@ sub unbind {
         die "Invalid address $address";
     }
 
-    unless ($session_id || $address) {
-        die "No session nor address were specified";
+    unless ($caller_id || $address) {
+        die "No caller_id nor address were specified";
     }
 
-    if ($session_id) {
+    if ($caller_id) {
         # Remove single session
-        $self->{Sessions}->delete( $session_id );
+        $self->{MqttSessions}->delete( $caller_id );
     }
 
     if ($address) {
 
         $address =~ s/^$frontend_cluster\.//;
 
-        my $sessions = $self->{Addr_to_session}->{$address};
+        my $sessions = $self->{Addr_to_sessions}->{$address};
 
         # Make a copy because @$sessions shortens on each delete
         my @sessions = $sessions ? @$sessions : ();
 
         # Remove all sessions binded to address
-        foreach my $session_id (@sessions) {
-            $self->{Sessions}->delete( $session_id );
+        foreach my $caller_id (@sessions) {
+            $self->{MqttSessions}->delete( $caller_id );
         }
     }
 

@@ -5,8 +5,6 @@ use warnings;
 
 our $VERSION = '0.03';
 
-use Beekeeper::JSONRPC::AuthHeaders ':all';
-
 
 sub new {
     my $class = shift;
@@ -35,6 +33,10 @@ sub result {
 sub success {
     # Shortcut for $job->response->success
     return ($_[0]->{_response}) ? $_[0]->{_response}->success : undef;
+}
+
+sub mqtt_properties {
+    $_[0]->{_mqtt_prop};
 }
 
 1;

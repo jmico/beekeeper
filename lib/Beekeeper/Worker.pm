@@ -12,6 +12,7 @@ use Beekeeper::JSONRPC;
 use JSON::XS;
 use Time::HiRes;
 use Sys::Hostname;
+use Digest::SHA 'sha256_hex';
 use Scalar::Util 'blessed';
 use Carp;
 
@@ -55,7 +56,8 @@ sub log_info     (@) { $LogLevel >= LOG_INFO   && $Logger->( LOG_INFO,   @_ ) }
 sub log_debug    (@) { $LogLevel >= LOG_DEBUG  && $Logger->( LOG_DEBUG,  @_ ) }
 sub log_trace    (@) { $LogLevel >= LOG_TRACE  && $Logger->( LOG_TRACE,  @_ ) }
 
-our $JSON;
+my %AUTH_TOKENS;
+my $JSON;
 
 
 sub new {
@@ -120,6 +122,8 @@ sub new {
         # Pass broker connection to logger
         $self->{_LOGGER}->{_BUS} = $self->{_BUS} if (exists $self->{_LOGGER}->{_BUS});
 
+        $self->__init_auth_tokens;
+
         $self->__init_worker;
     };
 
@@ -130,6 +134,28 @@ sub new {
     }
 
     return $self;
+}
+
+sub __init_auth_tokens {
+    my ($self) = @_;
+
+    my $secret = 'salt'; #TODO: read from config file
+
+    $AUTH_TOKENS{'BKPR_SYSTEM'} = sha256_hex('BKPR_SYSTEM'. $secret);
+    $AUTH_TOKENS{'BKPR_ADMIN'}  = sha256_hex('BKPR_ADMIN' . $secret);
+    $AUTH_TOKENS{'BKPR_ROUTER'} = sha256_hex('BKPR_ROUTER'. $secret);
+}
+
+sub __has_authorization_token {
+    my ($self, $auth_level) = @_;
+
+    my $auth_data = $self->{_CLIENT}->{auth_data};
+
+    return 0 unless $auth_data && $auth_level;
+    return 0 unless exists $AUTH_TOKENS{$auth_level};
+    return 0 unless $AUTH_TOKENS{$auth_level} eq $auth_data;
+
+    return 1;
 }
 
 sub __init_logger {
@@ -381,7 +407,7 @@ sub __drain_task_queue {
                 }
 
                 bless $request, 'Beekeeper::JSONRPC::Notification';
-                $request->{_headers} = $msg_headers;
+                $request->{_mqtt_prop} = $msg_headers;
 
                 my $method = $request->{method};
 
@@ -393,6 +419,10 @@ sub __drain_task_queue {
                 my $cb = $worker->{callbacks}->{"msg.$1.$2"} || 
                          $worker->{callbacks}->{"msg.$1.*"};
 
+                local $client->{caller_id}   = $msg_headers->{'clid'};
+                local $client->{caller_addr} = $msg_headers->{'fwd_reply'};
+                local $client->{auth_data}   = $msg_headers->{'auth'};
+
                 unless (($self->authorize_request($request) || "") eq REQUEST_AUTHORIZED) {
                     log_warn "Notification $method was not authorized";
                     return;
@@ -402,10 +432,6 @@ sub __drain_task_queue {
                     log_warn "No callback found for received notification $method";
                     return;
                 }
-
-                local $client->{curr_request} = $request;
-                local $client->{auth_tokens}  = $msg_headers->{'x-auth-tokens'};
-                local $client->{session_id}   = $msg_headers->{'x-session'};
 
                 $cb->($self, $request->{params}, $request);
             };
@@ -438,7 +464,7 @@ sub __drain_task_queue {
                 my $method  = $request->{method};
 
                 bless $request, 'Beekeeper::JSONRPC::Request';
-                $request->{_headers} = $msg_headers;
+                $request->{_mqtt_prop} = $msg_headers;
 
                 unless (defined $method && $method =~ m/^([\.\w-]+)\.([\w-]+)$/) {
                     log_warn "Received request with invalid method $method";
@@ -447,6 +473,10 @@ sub __drain_task_queue {
 
                 my $cb = $worker->{callbacks}->{"req.$1.$2"} || 
                          $worker->{callbacks}->{"req.$1.*"};
+
+                local $client->{caller_id}   = $msg_headers->{'clid'};
+                local $client->{caller_addr} = $msg_headers->{'fwd_reply'};
+                local $client->{auth_data}   = $msg_headers->{'auth'};
 
                 unless (($self->authorize_request($request) || "") eq REQUEST_AUTHORIZED) {
                     log_warn "Request $method was not authorized";
@@ -457,10 +487,6 @@ sub __drain_task_queue {
                     log_warn "No callback found for received request $method";
                     die Beekeeper::JSONRPC::Error->method_not_found;
                 }
-
-                local $client->{curr_request} = $request;
-                local $client->{auth_tokens}  = $msg_headers->{'x-auth-tokens'};
-                local $client->{session_id}   = $msg_headers->{'x-session'};
 
                 # Execute job
                 $cb->($self, $request->{params}, $request);
@@ -763,6 +789,7 @@ sub __report_status {
     my $self = shift;
 
     my $worker = $self->{_WORKER};
+    my $client = $self->{_CLIENT};
 
     my $now = Time::HiRes::time;
     my $period = $now - ($worker->{last_report} || ($now - 1));
@@ -790,10 +817,12 @@ sub __report_status {
         $queues{$1} = 1;
     }
 
+    local $client->{auth_data} = $AUTH_TOKENS{'BKPR_SYSTEM'};
+    local $client->{caller_id};
+
     # Tell any supervisor our stats
     $self->do_background_job(
         method => '_bkpr.supervisor.worker_status',
-        __auth => 'BKPR_SYSTEM',
         params => {
             class => ref($self),
             host  => $worker->{hostname},
@@ -813,10 +842,13 @@ sub __report_exit {
     return unless $self->{_BUS}->{is_connected};
 
     my $worker = $self->{_WORKER};
+    my $client = $self->{_CLIENT};
+
+    local $client->{auth_data} = $AUTH_TOKENS{'BKPR_SYSTEM'};
+    local $client->{caller_id};
 
     $self->do_background_job(
         method => '_bkpr.supervisor.worker_exit',
-        __auth => 'BKPR_SYSTEM',
         params => {
             class => ref($self),
             host  => $worker->{hostname},

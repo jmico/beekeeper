@@ -12,6 +12,7 @@ use Beekeeper::Config;
 use JSON::XS;
 use Sys::Hostname;
 use Time::HiRes;
+use Digest::SHA 'sha256_hex';
 use Carp;
 
 use constant QUEUE_LANES => 2;
@@ -25,10 +26,12 @@ our @EXPORT_OK = qw(
     do_async_job
     do_background_job
     wait_all_jobs
-    set_auth_tokens
-    get_auth_tokens
+    get_authentication_data
+    set_authentication_data
+
     __do_rpc_request
     __create_response_topic
+    __use_authorization_token
 );
 
 our %EXPORT_TAGS = ('worker' => \@EXPORT_OK );
@@ -49,8 +52,9 @@ sub new {
         response_topic => undef,
         in_progress    => undef,
         curr_request   => undef,
-        auth_tokens    => undef,
-        session_id     => undef,
+        caller_id      => undef,
+        caller_addr    => undef,
+        auth_data      => undef,
         async_cv       => undef,
         correlation_id => 1,
         callbacks      => {},
@@ -164,13 +168,8 @@ sub send_notification {
         $send_args{'topic'} =~ tr|.|/|;
     }
 
-    if (exists $args{'__auth'}) {
-        $send_args{'x-auth-tokens'} = $args{'__auth'};
-    }
-    else {
-        $send_args{'x-auth-tokens'} = $self->{_CLIENT}->{auth_tokens}  if defined $self->{_CLIENT}->{auth_tokens};
-        $send_args{'x-session'}     = $self->{_CLIENT}->{session_id}   if defined $self->{_CLIENT}->{session_id};
-    }
+    $send_args{'auth'} = $self->{_CLIENT}->{auth_data} if defined $self->{_CLIENT}->{auth_data};
+    $send_args{'clid'} = $self->{_CLIENT}->{caller_id} if defined $self->{_CLIENT}->{caller_id};
 
     if (exists $args{'buffer_id'}) {
         $send_args{'buffer_id'} = $args{'buffer_id'};
@@ -377,13 +376,8 @@ sub __do_rpc_request {
         $send_args{'topic'} =~ tr|.|/|;
     }
 
-    if (exists $args{'__auth'}) {
-        $send_args{'x-auth-tokens'} = $args{'__auth'};
-    }
-    else {
-        $send_args{'x-auth-tokens'} = $client->{auth_tokens}  if defined $client->{auth_tokens};
-        $send_args{'x-session'}     = $client->{session_id}   if defined $client->{session_id};
-    }
+    $send_args{'auth'} = $client->{auth_data} if defined $client->{auth_data};
+    $send_args{'clid'} = $client->{caller_id} if defined $client->{caller_id};
 
     my $timeout = $args{'timeout'} || REQ_TIMEOUT;
     $send_args{'message_expiry'} = $timeout;
@@ -574,20 +568,45 @@ sub wait_all_jobs {
 }
 
 
-sub set_auth_tokens {
-    my ($self, @tokens) = @_;
+sub get_authentication_data {
+    my ($self) = @_;
 
-    foreach my $token (@tokens) {
-        croak "Invalid token $token" unless (defined $token && length $token && $token !~ m/[\x00\n\|]/);
-    }
-
-    $self->{_CLIENT}->{auth_tokens} = join('|', @tokens);
+    $self->{_CLIENT}->{auth_data};
 }
 
-sub get_auth_tokens {
-    my $self = shift;
+sub set_authentication_data {
+    my ($self, $data) = @_;
 
-    return split(/\|/, $self->{_CLIENT}->{auth_tokens});
+    $self->{_CLIENT}->{auth_data} = $data;
+}
+
+sub __use_authorization_token {
+    my ($self, $token) = @_;
+
+    my $secret = 'salt'; #TODO: read from config file
+
+    my $adata_ref = \$self->{_CLIENT}->{auth_data};
+
+    my $guard = Beekeeper::Client::Guard->new( $adata_ref );
+
+    $$adata_ref = sha256_hex($token . $secret);
+
+    return $guard;
+}
+
+1;
+
+package Beekeeper::Client::Guard;
+
+sub new {
+    my ($class, $ref) = @_;
+
+    bless [$ref, $$ref], $class;
+}
+
+sub DESTROY {
+
+    ${$_[0]->[0]} = $_[0]->[1];
 }
 
 1;
@@ -796,18 +815,17 @@ the same as C<do_job>.
 
 Wait (in the event loop) until all calls made by C<do_async_job> are completed.
 
-=head3 set_auth_tokens ( @tokens )
+=head3 set_authentication_data ( $data )
 
-Add arbitrary auth tokens to subsequent jobs requests or notifications sent.
+Add an arbitrary authentication data blob to subsequent jobs requests or 
+notifications sent.
 
-Workers get the caller tokens already set when executing jobs or notifications 
-callbacks, and then these are piggybacked automatically.
+The meaning of this data is application specific, this framework doesn't give 
+any special one to it.
 
-This framework doesn't give any special meaning to these tokens.
+=head3 get_authentication_data
 
-=head3 get_auth_tokens
-
-Get the list of current auth tokens in use.
+Gets the current authentication data blob.
 
 =head1 SEE ALSO
  
