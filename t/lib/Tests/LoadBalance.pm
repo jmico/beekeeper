@@ -83,7 +83,7 @@ sub test_02_load_balance_background : Test(6) {
         );
     }
 
-    sleep 1.5;
+    $self->_sleep( 1 );
 
     $resp = $cli->do_job(
         method  => 'cache.run',
