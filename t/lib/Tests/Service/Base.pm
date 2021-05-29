@@ -261,7 +261,7 @@ sub _spawn_worker {
 
     srand();
 
-    # Destroy inherithed STOMP connection
+    # Destroy inherithed MQTT connection
     if ($Beekeeper::Client::singleton) {
         $Beekeeper::Client::singleton->{_BUS}->{handle}->destroy;
         undef $Beekeeper::Client::singleton;

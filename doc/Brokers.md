@@ -1,19 +1,23 @@
 ## Supported brokers
 
 Beekeeper will run on any compliant MQTT 5 broker (version 5 is needed because of the use of 
-shared topics). But being shared topics a relatively recent feature, brokers stoll have bugs
+shared topics). But being shared topics a relatively recent feature, brokers still have bugs
 or shortcomings in its implementation.
 
-- **Mosquitto** (as of 2.0.10) is a mature product and works fine for the most part.
+- **ToyBroker** is a simple pure Perl MQTT 5 broker included with this distribution. It is 
+  very handy for development and running tests, but it does not scale, does not provide any kind 
+  of security, and does not provides a WebSocket frontend. So it cannot be used on production.
 
-- **ToyBroker** works perfectly but does not scale and does not provides a WebSocket frontend.
-  But it is very handy for development or running tests.
+- **![Eclipse Mosquitto](https://mosquitto.org/)** (as of 2.0.10) works fine. It does not resend
+  unacknowledged messages after abrupt client disconnection, leading to a potential loss of
+  requests on crashes or power loss (`int_signal.t` fails).
 
-- **HiveMQ CE** (as of 2021.1) works perfectly, but (as at this writing) has a bug which causes
-   messages on shared topics to be lost sometimes.
+- **![HiveMQ Community Edition](https://www.hivemq.com/developers/community/)** (as of 2021.1)
+  works fine. It handles correctly abrupt client disconnections, but it does a poor job at load
+  balancing requests (`recursion.t` fails).
 
-- **VerneMQ** (as of 1.12.2) works perfectly, but fails to resend unacknowledged messages on 
-  client disconnection.
+- **![VerneMQ](https://vernemq.com/)** (as of 1.12.2) works fine. As Mosquitto, it fails to resend
+  unacknowledged messages after abrupt client disconnection (`int_signal.t` fails).
 
 Beekeeper, being broker agnostic and following the MQTT specification as much as possible,
 allows to switch brokers at any time or mix them in different roles.
@@ -33,15 +37,15 @@ See a full list of MQTT brokers at https://en.wikipedia.org/wiki/Comparison_of_M
 
 - Untrusted users should not be able to write on resources which other users read. A topic open to the 
   internet should be read-only, otherwise a malicious actor can inject malformed or false data to another 
-  users. Frontend topics `msg.frontend.*` must be read-only for end users.
+  users. Frontend topics `msg/*` must be read-only for end users.
 
 - Untrusted users should not be able to read on resources which other users write. A topic open to the 
   internet should be write-only, otherwise a malicious actor can disrupt a service consuming from the topic,
   as data sent to it will never reach its intended destination. It also allow to easily obtain data submitted
-  by other users, which could be a security problem. Frontend queues `req.backend-n` must be write-only for 
+  by other users, which could be a security problem. Frontend topics `req/*` must be write-only for 
   end users.
 
-- Broker must be configured to discard unconsumed messages. Otherwise it may eventually run out of memory.
+- Broker must be configured to discard persistent messages if possible, as Beekeeper does not rely on them.
 
 - Being allowed to connect to the frontend broker does not automatically allows a client unrestricted 
   access to the application, it must additionally be authorized by the application itself. This is done
@@ -49,7 +53,11 @@ See a full list of MQTT brokers at https://en.wikipedia.org/wiki/Comparison_of_M
   users to do a checkout for example). But if this is not needed, access to the frontend broker itself 
   can be restricted at discretion.
 
-- Remote users should never ever be allowed to connect to the backend broker.
+- The authorization system implemented in workers is advisory only. It makes hard to execute a task
+  with wrong permissions by mistake, but if a worker has write access to the backend bus it can easily 
+  override these restrictions and make any arbitrary request.
+
+- Thus, remote users should never ever be allowed to connect directly to the backend broker.
 
 
 ### Mosquitto setup
@@ -68,7 +76,8 @@ listener 1883 0.0.0.0
 protocol mqtt
 max_qos 1
 persistence false
-persistent_client_expiration 1m
+retain_available false
+persistent_client_expiration 1h
 max_queued_messages 10000
 allow_anonymous false
 acl_file /etc/mosquitto/conf.d/beekeeper.backend.acl
@@ -77,15 +86,17 @@ password_file /etc/mosquitto/conf.d/beekeeper.backend.users
 ```
 Create `/etc/mosquitto/conf.d/beekeeper.backend.acl`
 ```
+pattern   read   priv/%c
+
 user backend
 
 topic   readwrite   req/#
 topic   readwrite   msg/#
 topic   readwrite   res/#
 topic   readwrite   log/#
-topic   readwrite   priv/#
+topic   write       priv/#
 ```
-And finally create a user running the following command:
+Create a 'backend' broker user running the following command:
 ```
 mosquitto_passwd -c -b /etc/mosquitto/conf.d/beekeeper.backend.users  backend   def456
 ```
@@ -108,7 +119,8 @@ listener 8001 0.0.0.0
 protocol mqtt
 max_qos 1
 persistence false
-persistent_client_expiration 1m
+retain_available false
+persistent_client_expiration 1h
 max_queued_messages 100
 allow_anonymous false
 acl_file /etc/mosquitto/conf.d/beekeeper.frontend.acl
@@ -119,7 +131,8 @@ listener 8000 0.0.0.0
 protocol websockets
 max_qos 1
 persistence false
-persistent_client_expiration 1m
+retain_available false
+persistent_client_expiration 1h
 max_queued_messages 100
 allow_anonymous false
 acl_file /etc/mosquitto/conf.d/beekeeper.frontend.acl
@@ -141,7 +154,7 @@ topic   write   msg/#
 topic   read    req/#
 topic   write   priv/#
 ```
-And finally create users running the following commands:
+Create broker users running the following commands:
 ```
 mosquitto_passwd -c -b /etc/mosquitto/conf.d/beekeeper.frontend.users  frontend  abc123
 mosquitto_passwd    -b /etc/mosquitto/conf.d/beekeeper.frontend.users  backend   def456
@@ -152,7 +165,6 @@ The broker instance can be started with:
 mosquitto -c /etc/mosquitto/conf.d/beekeeper.frontend.conf
 ```
 ---
-
 
 ### HiveMQ setup
 
