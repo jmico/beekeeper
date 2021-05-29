@@ -28,7 +28,7 @@ Usage: flood [OPTIONS]
 Create a lot of clients who flood with messages each other.
 
   -c, --clients N  number of client connections to use
-  -r, --rate    N  sustain a rate of N requests per second
+  -r, --rate    N  sustain a rate of N requests per second among all clients
   -s, --size    N  size in KB of requests, default is 0
   -h, --help       display this help and exit
 

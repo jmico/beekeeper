@@ -3,6 +3,7 @@ package MyApp::Bot;
 use strict;
 use warnings;
 
+use AnyEvent::Impl::Perl;
 use MyApp::Service::Chat;
 use MyApp::Service::Auth;
 
@@ -16,17 +17,19 @@ sub new {
         username => $args{'username'},
     };
 
-    # Choose a random frontend
-    my $frontend_configs = Beekeeper::Config->get_cluster_config( cluster => 'frontend' );
-    my $frontend = $frontend_configs->[rand @$frontend_configs];
-    my $bus_id = $frontend->{'bus-id'};
+    #TODO: Read frontend connection parameters from config file
 
     # Force a new connection
     local $Beekeeper::Client::singleton;
 
+    # Connect to bus 'frontend', wich will forward requests to 'backend'
     $self->{client} = Beekeeper::Client->instance( 
-        bus_id     => $bus_id,   # 'frontend-A' 
-        forward_to => 'backend',
+        bus_id     => "frontend",
+        forward_to => "backend",
+        host       => "localhost",
+        port       =>  8001,
+        username   => "frontend",
+        password   => "abc123",
     );
 
     $self->{chat} = MyApp::Service::Chat->new;

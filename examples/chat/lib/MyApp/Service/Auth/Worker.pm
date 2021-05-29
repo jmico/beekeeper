@@ -7,10 +7,22 @@ use base 'MyApp::Service::Base';
 
 use Beekeeper::Service::Router ':all';
 use MyApp::Service::Chat;
+use Beekeeper::Worker;
 
+
+sub authorize_request {
+    my ($self, $req) = @_;
+
+    # Make an exception over the MyApp::Service::Base rule of requiring a logged user
+    return REQUEST_AUTHORIZED if $req->{method} eq 'myapp.auth.login';
+
+    return $self->SUPER::authorize_request($req);
+}
 
 sub on_startup {
     my $self = shift;
+
+    $self->setup_myapp_stuff;
 
     $self->accept_jobs(
         'myapp.auth.login'  => 'login',
@@ -29,10 +41,11 @@ sub login {
     # mapping, and username and password are not verified at all
     my $uuid = $username;
 
-    $self->set_current_user_uuid( $uuid );
+    # The authentication data will be present on all subsequent requests
+    $self->set_authentication_data( $uuid );
 
-    # Assign an address to the user connection in order to push messages to him
-    $self->bind_connection( "frontend.user-$uuid" );
+    # Assign an arbitrary address to the user logging in
+    $self->assign_remote_address( "frontend.user-$uuid" );
 
     MyApp::Service::Chat->send_notice(
         to_uuid => $uuid,
@@ -45,14 +58,14 @@ sub login {
 sub logout {
     my ($self, $params) = @_;
 
-    my $uuid = $self->get_current_user_uuid;
+    my $uuid = $self->get_authentication_data;
 
     MyApp::Service::Chat->send_notice(
         to_uuid => $uuid,
         message => "Bye!",
     );
 
-    $self->unbind_connection;
+    $self->remove_caller_address;
 
     return 1;
 }
@@ -65,10 +78,10 @@ sub kick {
 
     MyApp::Service::Chat->send_notice(
         to_uuid => $kick_uuid,
-        message => "You were kicked",
+        message => "Sorry, you were kicked",
     );
 
-    $self->unbind_address( "frontend.user-$kick_uuid" );
+    $self->remove_remote_address( "frontend.user-$kick_uuid" );
 
     return 1;
 }

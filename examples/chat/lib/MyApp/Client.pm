@@ -3,6 +3,7 @@ package MyApp::Client;
 use strict;
 use warnings;
 
+use AnyEvent::Impl::Perl;
 use MyApp::Service::Chat;
 use MyApp::Service::Auth;
 
@@ -25,15 +26,16 @@ sub new {
     binmode STDOUT, ":utf8";
     binmode STDIN,  ":utf8";
 
-    # Choose a random frontend
-    my $frontend_configs = Beekeeper::Config->get_cluster_config( cluster => 'frontend' );
-    my $frontend = $frontend_configs->[rand @$frontend_configs];
-    my $bus_id = $frontend->{'bus-id'};
+    #TODO: Read frontend connection parameters from config file
 
-    # Connect to bus 'frontend-A', wich will forward requests to 'backend'
-    $self->{client} = Beekeeper::Client->instance( 
-        bus_id     => $bus_id,   # 'frontend-A' 
-        forward_to => 'backend',
+    # Connect to bus 'frontend', wich will forward requests to 'backend'
+    $self->{client} = Beekeeper::Client->instance(
+        bus_id     => "frontend",
+        forward_to => "backend",
+        host       => "localhost",
+        port       =>  8001,
+        username   => "frontend",
+        password   => "abc123",
     );
 
     $self->{chat} = MyApp::Service::Chat->new;
@@ -69,7 +71,9 @@ sub read_line {
 
     $self->{hdl}->push_read( line => sub {
         my ($hdl, $line) = @_;
-        $self->process_cmd($line);
+        print "\033[1A\033[K";  # move one line up and clear it
+        eval { $self->process_cmd($line) };
+        if ($@) { print "Error: $@" }
         $self->read_line;
     });
 }
