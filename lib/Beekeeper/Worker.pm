@@ -420,7 +420,7 @@ sub __drain_task_queue {
                          $worker->{callbacks}->{"msg.$1.*"};
 
                 local $client->{caller_id}   = $msg_headers->{'clid'};
-                local $client->{caller_addr} = $msg_headers->{'fwd_reply'};
+                local $client->{caller_addr} = $msg_headers->{'addr'};
                 local $client->{auth_data}   = $msg_headers->{'auth'};
 
                 unless (($self->authorize_request($request) || "") eq BKPR_REQUEST_AUTHORIZED) {
@@ -475,7 +475,7 @@ sub __drain_task_queue {
                          $worker->{callbacks}->{"req.$1.*"};
 
                 local $client->{caller_id}   = $msg_headers->{'clid'};
-                local $client->{caller_addr} = $msg_headers->{'fwd_reply'};
+                local $client->{caller_addr} = $msg_headers->{'addr'};
                 local $client->{auth_data}   = $msg_headers->{'auth'};
 
                 unless (($self->authorize_request($request) || "") eq BKPR_REQUEST_AUTHORIZED) {
@@ -541,7 +541,7 @@ sub __drain_task_queue {
 
                 $self->{_BUS}->publish(
                     topic     => $msg_headers->{'response_topic'},
-                    fwd_reply => $msg_headers->{'fwd_reply'},
+                    addr      => $msg_headers->{'addr'},
                     payload   => \$json,
                     buffer_id => 'response',
                 );

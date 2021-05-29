@@ -236,7 +236,7 @@ sub pull_frontend_requests {
                     topic          => $dest_queue,
                     clid           => $caller_id,
                     response_topic => "res/$frontend_id-$lane",
-                    fwd_reply      => "$reply_to\@$frontend_id", #addr
+                    addr           => "$reply_to\@$frontend_id",
                     payload        => $payload_ref,
                     qos            => 1, # because workers consume using QoS 1
                 );
@@ -291,7 +291,7 @@ sub pull_backend_responses {
             on_publish  => sub {
                 ($payload_ref, $msg_prop) = @_;
 
-                ($dest_queue) = split('@', $msg_prop->{'fwd_reply'}, 2);
+                ($dest_queue) = split('@', $msg_prop->{'addr'}, 2);
 
                 $frontend_bus->publish(
                     topic   => $dest_queue,
