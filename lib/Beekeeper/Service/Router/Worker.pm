@@ -248,10 +248,6 @@ sub pull_frontend_requests {
                     $pub_args{'auth'} = $mqtt_session->[2];
                 }
 
-                if (exists $msg_prop->{'message_expiry_interval'}) {
-                    $pub_args{'message_expiry_interval'} = $msg_prop->{'message_expiry_interval'};
-                }
-
                 $backend_bus->publish( %pub_args );
 
                 DEBUG && log_trace "Forwarded request:  $src_queue \@$frontend_id --> $dest_queue \@$backend_id";

@@ -379,10 +379,6 @@ sub __do_rpc_request {
     $send_args{'auth'} = $client->{auth_data} if defined $client->{auth_data};
     $send_args{'clid'} = $client->{caller_id} if defined $client->{caller_id};
 
-    my $timeout = $args{'timeout'} || REQ_TIMEOUT;
-    $send_args{'message_expiry'} = $timeout;
-
-
     my $BACKGROUND  = $args{req_type} eq 'BACKGROUND';
     my $SYNCHRONOUS = $args{req_type} eq 'SYNCHRONOUS';
     my $raise_error = $args{'raise_error'};
@@ -457,6 +453,7 @@ sub __do_rpc_request {
     if ($__now != time) { $__now = time; AnyEvent->now_update }
 
     # Request timeout timer
+    my $timeout = $args{'timeout'} || REQ_TIMEOUT;
     $req->{_timeout} = AnyEvent->timer( after => $timeout, cb => sub {
         my $req = delete $client->{in_progress}->{$req_id};
         $req->{_response} = Beekeeper::JSONRPC::Error->request_timeout;

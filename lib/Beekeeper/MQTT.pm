@@ -1253,11 +1253,6 @@ sub publish {
         utf8::encode( $$payload_ref );
     }
 
-    if (exists $args{'message_expiry'}) {
-        # 3.3.2.3.3  Message Expiry Interval  (long int)
-        $raw_prop .= pack("C N", MQTT_MESSAGE_EXPIRY_INTERVAL, delete $args{'message_expiry'});
-    }
-
     if (exists $args{'message_expiry_interval'}) {
         # 3.3.2.3.3  Message Expiry Interval  (long int)
         $raw_prop .= pack("C N", MQTT_MESSAGE_EXPIRY_INTERVAL, delete $args{'message_expiry_interval'});
