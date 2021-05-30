@@ -14,9 +14,9 @@
 #
 # To start a the worker pools use the "bkpr" command:
 #
-# $ ./bkpr --pool-id "broker" start
-# $ ./bkpr --pool-id "myapp-A" start
-# $ ./bkpr --pool-id "myapp-B" start
+# $ ./bkpr --pool "broker" start
+# $ ./bkpr --pool "myapp-A" start
+# $ ./bkpr --pool "myapp-B" start
 
 [
     {

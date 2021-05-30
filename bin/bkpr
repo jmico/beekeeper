@@ -36,16 +36,16 @@ Version 0.03
 
 =head1 SYNOPSIS
 
-  $ bkpr --pool-id MyPool start
+  $ bkpr --pool MyPool start
   Starting pool of MyApp workers: beekeeper-MyPool.
   
-  $ bkpr --pool-id MyPool stop
+  $ bkpr --pool MyPool stop
   Stopping pool of MyApp workers: beekeeper-MyPool.
   
   $ bkpr --help
   Usage: bkpr [options] {start|stop|restart|reload|check}
    --foreground      Run in foreground (do not daemonize)
-   --pool-id    str  Worker pool name (mandatory)
+   --pool       str  Worker pool name (mandatory)
    --user       str  Run as specified user
    --group      str  Run as specified group
    --config-dir str  Path to directory containing config files

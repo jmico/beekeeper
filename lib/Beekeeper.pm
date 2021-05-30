@@ -252,7 +252,7 @@ in these two files.
 To start or stop a pool of workers you use the C<bkpr> command. Given the above example config, 
 this will start 4 processes running C<MyApp::Worker> code:
 
-  bkpr --pool-id "myapp" start
+  bkpr --pool "myapp" start
 
 When started it daemonizes itself and forks all worker processes, then continues monitoring 
 those forked processes and immediately respawns defunct ones.

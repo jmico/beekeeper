@@ -12,7 +12,7 @@
 #
 # To start the worker pool use the "bkpr" command:
 #
-# $ bkpr --pool-id "test" start
+# $ bkpr --pool "test" start
 
 [
     {

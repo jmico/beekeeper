@@ -19,17 +19,17 @@ sub new {
     my $self = $class->SUPER::new(
         daemon_name  => "beekeeper",
         description  => "worker pool",
-        get_options  => [ "pool-id=s", "config-dir=s", "debug" ],
+        get_options  => [ "pool=s", "config-dir=s", "debug" ],
         %args,
     );
 
     $self->parse_options;
 
-    my $pool_id = $self->{options}->{'pool-id'} || '';
+    my $pool_id = $self->{options}->{'pool'} || '';
     ($pool_id) = ($pool_id =~ m/^([\w-]+)$/); # untaint
 
     unless ($pool_id) {
-        print "Mandatory parameter --pool-id was not specified.\n\n";
+        print "Mandatory parameter --pool was not specified.\n\n";
         #ENHACEMENT: list available pools
         $self->cmd_help;
         CORE::exit(1);
@@ -53,7 +53,7 @@ sub cmd_help {
 
     print "Usage: $progname [options] {start|stop|restart|reload|check}\n";
     print " --foreground      Run in foreground (do not daemonize)\n";
-    print " --pool-id    str  Worker pool name (mandatory)\n";
+    print " --pool       str  Worker pool name (mandatory)\n";
     print " --user       str  Run as specified user\n";
     print " --group      str  Run as specified group\n";
     print " --config-dir str  Path to directory containing config files\n";
@@ -365,16 +365,16 @@ Version 0.03
 
 =head1 SYNOPSIS
 
-  $ bkpr --pool-id MyPool start
+  $ bkpr --pool MyPool start
   Starting pool of MyApp workers: beekeeper-MyPool.
   
-  $ bkpr --pool-id MyPool stop
+  $ bkpr --pool MyPool stop
   Stopping pool of MyApp workers: beekeeper-MyPool.
   
   $ bkpr --help
   Usage: bkpr [options] {start|stop|restart|reload|check}
    --foreground      Run in foreground (do not daemonize)
-   --pool-id    str  Worker pool name (mandatory)
+   --pool       str  Worker pool name (mandatory)
    --user       str  Run as specified user
    --group      str  Run as specified group
    --config-dir str  Path to directory containing config files
