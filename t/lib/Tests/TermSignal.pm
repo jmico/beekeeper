@@ -30,7 +30,7 @@ sub test_01_term_signal : Test(21) {
 
         for (1..8) {
             # Give them more work than they can do, to ensure that the job queue is full
-            push @req, $cli->do_async_job(
+            push @req, $cli->call_remote_async(
                 method  => 'test.sleep',
                 params  => .5,
                 timeout => 30,

@@ -161,7 +161,7 @@ sub test_04_async_jobs : Test(18) {
 
     my $cli = Beekeeper::Client->instance;
 
-    my $req = $cli->do_async_job(
+    my $req = $cli->call_remote_async(
         method => 'test.echo',
         params => "baz",
     );
@@ -182,7 +182,7 @@ sub test_04_async_jobs : Test(18) {
     my $var = 239;
 
     foreach my $n (1..$count) {
-        my $req = $cli->do_async_job(
+        my $req = $cli->call_remote_async(
             method => 'test.echo',
             params => $var + $n,
         );

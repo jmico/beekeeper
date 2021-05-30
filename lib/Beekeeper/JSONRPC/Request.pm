@@ -59,7 +59,7 @@ Version 0.03
 
   my $client = Beekeeper::Client->instance;
   
-  my $req = $client->do_async_job(
+  my $req = $client->call_remote_async(
       method => 'myapp.svc.foo',
       params => { foo => 'bar' },
   );
@@ -74,7 +74,7 @@ Version 0.03
 
 Objects of this class represents a JSON-RPC request (see L<http://www.jsonrpc.org/specification>).
 
-Method C<Beekeeper::Client-\>do_async_job> returns objects of this class.
+Method C<Beekeeper::Client-\>call_remote_async> returns objects of this class.
 
 =head1 ACCESSORS
 

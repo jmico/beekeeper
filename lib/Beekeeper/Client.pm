@@ -23,7 +23,7 @@ use Exporter 'import';
 our @EXPORT_OK = qw(
     send_notification
     call_remote
-    do_async_job
+    call_remote_async
     do_background_job
     wait_all_jobs
     get_authentication_data
@@ -320,7 +320,7 @@ sub call_remote {
     return $resp;
 }
 
-sub do_async_job {
+sub call_remote_async {
     my $self = shift;
 
     my $req = $self->__do_rpc_request( @_, req_type => 'ASYNCHRONOUS' );
@@ -640,7 +640,7 @@ Version 0.03
   
   print $resp->result;
   
-  my $req = $client->do_async_job(
+  my $req = $client->call_remote_async(
       method     => "my.service.baz",
       params     => { %args },
       on_success => sub {
@@ -665,7 +665,7 @@ There are four different methods to do so:
   │ method            │ sent to      │ queued │ result │ blocks │
   ├───────────────────┼──────────────┼────────┼────────┼────────┤
   │ call_remote       │ 1 worker     │ yes    │ yes    │ yes    │
-  │ do_async_job      │ 1 worker     │ yes    │ yes    │ no     │
+  │ call_remote_async │ 1 worker     │ yes    │ yes    │ no     │
   │ do_background_job │ 1 worker     │ yes    │ no     │ no     │
   │ send_notification │ many workers │ no     │ no     │ no     │
   └───────────────────┴──────────────┴────────┴────────┴────────┘
@@ -774,7 +774,7 @@ an error response. If set to false returns a C<Beekeeper::JSONRPC::Error> instea
 
 =back
 
-=head3 do_async_job ( %args )
+=head3 call_remote_async ( %args )
 
 Makes an asynchronous RPC call to a service worker through the message bus.
 
@@ -810,7 +810,7 @@ the same as C<call_remote>.
 
 =head3 wait_all_jobs
 
-Wait (in the event loop) until all calls made by C<do_async_job> are completed.
+Wait (in the event loop) until all calls made by C<call_remote_async> are completed.
 
 =head3 set_authentication_data ( $data )
 

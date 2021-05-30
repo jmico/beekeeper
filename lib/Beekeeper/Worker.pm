@@ -980,7 +980,7 @@ logged, unless you specifically catch and ignore them.
 =head3 Client methods
 
 In order to make RPC calls to another services, methods C<send_notification>, 
-C<call_remote>, C<do_async_job>, C<do_background_job> and C<wait_all_jobs> are 
+C<call_remote>, C<call_remote_async>, C<do_background_job> and C<wait_all_jobs> are 
 automatically imported from C<Beekeeper::Client>.
 
 =head3 accept_notifications ( $method => $callback, ... )

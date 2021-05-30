@@ -86,7 +86,7 @@ sub time_this {
     my $payload = { data => 'X' x ($size * 1024) };
 
     my $type = $args{'type'} || 'N';
-    my @async_jobs;
+    my @async_calls;
     my $code;
 
     if ($type =~ m/^N(otification)?/i) {
@@ -119,7 +119,7 @@ sub time_this {
     elsif ($type =~ m/^A(sync)?/i) {
         $type = 'async call';
         $code = sub {
-            push @async_jobs, $client->do_async_job(
+            push @async_calls, $client->call_remote_async(
                 method => 'myapp.test.echo', 
                 params => $payload,
             );
@@ -168,7 +168,7 @@ sub time_this {
 
     if ($type eq 'async call') {
         $client->wait_all_jobs;
-        @async_jobs = ();
+        @async_calls = ();
     }
 
     my $ellapsed = time() - $start - $sleept;

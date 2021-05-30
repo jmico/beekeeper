@@ -171,7 +171,7 @@ ballpark performance measurements of a local setup running Mosquitto:
 
 - A `call_remote` synchronous call to a remote method adds 1.5 ms of latency and involves 4 network round trips. This implies a maximum of 650 synchronous calls per second.
 
-- A `do_async_job` asynchronous call to a remote method takes 0.1 ms. This implies a maximum of 10000 asynchronous calls per second (just the call, then it must wait for responses).
+- A `call_remote_async` asynchronous call to a remote method takes 0.1 ms. This implies a maximum of 10000 asynchronous calls per second (just the call, then it must wait for responses).
 
 - Scheduling a remote task with `do_background_job` takes 0.1 ms. This implies a maximum of 10000 calls per second.
 

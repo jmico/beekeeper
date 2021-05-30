@@ -30,7 +30,7 @@ sub test_01_load_balance_async : Test(6) {
     my @jobs;
 
     for (1..$tasks) {
-        push @jobs, $cli->do_async_job(
+        push @jobs, $cli->call_remote_async(
             method  => 'cache.bal',
             params  => { dset =>'A' },
         );
@@ -132,7 +132,7 @@ sub test_03_slow_consumer_async : Test(7) {
     # process these slower jobs should get less requests than the others
 
     for (1..$slow) {
-        push @jobs, $cli->do_async_job(
+        push @jobs, $cli->call_remote_async(
             method  => 'cache.bal',
             params  => { dset => 'C', sleep => 3 },
         );
@@ -140,7 +140,7 @@ sub test_03_slow_consumer_async : Test(7) {
 
     for (my $i = $slow; $i < $tasks; $i++) {
 
-        push @jobs, $cli->do_async_job(
+        push @jobs, $cli->call_remote_async(
             method  => 'cache.bal',
             params  => { dset => 'C' },
         );

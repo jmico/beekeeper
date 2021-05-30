@@ -122,13 +122,13 @@ sub fibonacci_2 {
 
     return $n if ($n <= 1);
 
-    my $req1 = $self->do_async_job(
+    my $req1 = $self->call_remote_async(
         method  => 'test.fib2',
         params  => $n - 1,
         timeout => 10,
     );
 
-    my $req2 = $self->do_async_job(
+    my $req2 = $self->call_remote_async(
         method  => 'test.fib2',
         params  => $n - 2,
         timeout => 10,
