@@ -18,7 +18,7 @@
     {
         "bus-id"   : "backend",
         "host"     : "localhost",
-        "username" : "test",
-        "password" : "abc123",
+        "username" : "backend",
+        "password" : "def456",
     },
 ]

@@ -22,14 +22,16 @@ my $toybroker_config_json = qq<
 
 # Mock toybroker.config.json file used by tests
 
-{
-    "listen_addr" : "127.0.0.1",
-    "listen_port" : "1883",
+[
+    {
+        "listen_addr" : "127.0.0.1",
+        "listen_port" : "1883",
 
-    "users" : {
-        "test" : { "password" : "abc123" },
+        "users" : {
+            "test" : { "password" : "abc123" },
+        },
     },
-}>;
+]>;
 
 sub read_config_file {
     my ($class, $file) = @_;

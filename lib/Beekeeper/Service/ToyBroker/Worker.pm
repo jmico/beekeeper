@@ -76,25 +76,41 @@ sub authorize_request {
 }
 
 sub start_broker {
-    my $self = shift;
-    weaken($self);
-
-    my $config = Beekeeper::Config->read_config_file( 'toybroker.config.json' ) || {};
-    $self->{config} = $config;
+    my ($self) = @_;
 
     $self->{connections} = {};
     $self->{clients}     = {};
     $self->{topics}      = {};
+    $self->{users}       = {};
 
-    my $max_packet_size = $config->{'max_packet_size'} || 65536;
+    my $config = Beekeeper::Config->read_config_file( 'toybroker.config.json' );
 
-    my $listen_addr = $config->{'listen_addr'} || '127.0.0.1';  # Must be an IPv4 or IPv6 address
-    my $listen_port = $config->{'listen_port'} ||  1883;
+    # Start a default listener if no config found
+    $config = [ {} ] unless defined $config;
 
-    ($listen_addr) = ($listen_addr =~ m/^([\w\.:]+)$/);  # untaint
-    ($listen_port) = ($listen_port =~ m/^(\d+)$/);
+    foreach my $listener (@$config) {
 
-    $self->{listener} = tcp_server ($listen_addr, $listen_port, sub {
+        if ($listener->{users}) {
+            %{$self->{users}} = ( %{$self->{users}}, %{$listener->{users}} );
+        }
+
+        $self->start_listener( $listener );
+    }
+}
+
+sub start_listener {
+    my ($self, $listener) = @_;
+    weaken($self);
+
+    my $max_packet_size = $listener->{'max_packet_size'} || 65536;
+
+    my $addr = $listener->{'listen_addr'} || '127.0.0.1';  # Must be an IPv4 or IPv6 address
+    my $port = $listener->{'listen_port'} ||  1883;
+
+    ($addr) = ($addr =~ m/^([\w\.:]+)$/);  # untaint
+    ($port) = ($port =~ m/^(\d+)$/);
+
+    $self->{"listener-$addr-$port"} = tcp_server ($addr, $port, sub {
         my ($fh, $host, $port) = @_;
 
         my $login_tmr = AnyEvent->timer( after => 5, cb => sub {
@@ -1088,7 +1104,7 @@ sub add_client {
     my $username  = $prop->{'username'};
     my $password  = $prop->{'password'};
 
-    my $users_cfg = $self->{config}->{'users'};
+    my $users_cfg = $self->{'users'};
     my $authorized;
 
     AUTH: {
