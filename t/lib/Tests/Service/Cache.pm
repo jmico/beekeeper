@@ -22,7 +22,7 @@ sub on_startup {
 
     $self->{Cache} = $self->shared_cache( id => "test", max_age => 20 );
 
-    $self->accept_jobs(
+    $self->accept_remote_calls(
         'cache.set'  => 'set',
         'cache.get'  => 'get',
         'cache.del'  => 'del',

@@ -11,7 +11,7 @@ sub on_startup {
 
     $self->setup_myapp_stuff;
 
-    $self->accept_jobs(
+    $self->accept_remote_calls(
         'myapp.chat.message'  => 'send_message',
         'myapp.chat.pmessage' => 'send_private_message',
         'myapp.chat.notice'   => 'send_notice',

@@ -310,7 +310,7 @@ sub __get_cb_coderef {
 }
 
 
-sub accept_jobs {
+sub accept_remote_calls {
     my ($self, %args) = @_;
 
     my $worker = $self->{_WORKER};
@@ -888,7 +888,7 @@ Version 0.03
           'myapp.msg' => 'got_message',
       );
       
-      $self->accept_jobs(
+      $self->accept_remote_calls(
           'myapp.sum' => 'do_sum',
       );
   
@@ -1025,7 +1025,7 @@ Example:
        # $req is a Beekeeper::JSONRPC::Notification object
   }
 
-=head3 accept_jobs ( $method => $callback, ... )
+=head3 accept_remote_calls ( $method => $callback, ... )
 
 Make this worker start accepting specified RPC requests from message bus.
 
@@ -1053,7 +1053,7 @@ Example:
   sub on_startup {
       my $self = shift;
       
-      $self->accept_jobs(
+      $self->accept_remote_calls(
           'foo.inc' => 'inc',       # call $self->inc for requests to 'foo.inc'
           'foo.baz' => $coderef,    # call $self->$coderef for requests to 'foo.baz'
           'foo.*'   => 'fallback',  # call $self->fallback for any other 'foo.*'
@@ -1080,7 +1080,7 @@ C<$method> must be one of the strings used previously in C<accept_notifications>
 
 Make this worker stop accepting specified RPC requests from message bus.
 
-C<$method> must be one of the strings used previously in C<accept_jobs>.
+C<$method> must be one of the strings used previously in C<accept_remote_calls>.
 
 =head3 stop_working 
 

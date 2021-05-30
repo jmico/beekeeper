@@ -430,7 +430,7 @@ sub _init_routing_table {
         },
     );
 
-    $self->accept_jobs(
+    $self->accept_remote_calls(
         '_bkpr.router.assign_addr' => 'assign_address',
         '_bkpr.router.remove_addr' => 'remove_address',
     );

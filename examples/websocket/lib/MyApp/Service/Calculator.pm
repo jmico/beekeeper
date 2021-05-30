@@ -10,7 +10,7 @@ use base 'Beekeeper::Worker';
 sub on_startup {
     my $self = shift;
 
-    $self->accept_jobs(
+    $self->accept_remote_calls(
         'myapp.calculator.eval_expr' => 'eval_expr',
     );
 }

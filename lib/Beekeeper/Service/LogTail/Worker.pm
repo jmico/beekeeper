@@ -30,7 +30,7 @@ sub on_startup {
 
     $self->_connect_to_all_brokers;
 
-    $self->accept_jobs(
+    $self->accept_remote_calls(
         '_bkpr.logtail.tail' => 'tail',
     );
 }

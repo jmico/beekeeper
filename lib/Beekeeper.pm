@@ -32,7 +32,7 @@ Create a service:
   sub on_startup {
       my $self = shift;
       
-      $self->accept_jobs( 'my.service.echo' => 'echo' );
+      $self->accept_remote_calls( 'my.service.echo' => 'echo' );
       
       $self->accept_notifications( 'my.service.msg' => 'msg' );
   }
@@ -170,7 +170,7 @@ A worker class just declares on startup which methods it will accept, then imple
   sub on_startup {
       my $self = shift;
   
-      $self->accept_jobs(
+      $self->accept_remote_calls(
           'myapp.str.uc' => 'uppercase',
       );
   }

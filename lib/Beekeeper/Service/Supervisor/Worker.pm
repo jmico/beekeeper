@@ -45,7 +45,7 @@ sub on_startup {
         '_bkpr.supervisor.restart_workers' => 'restart_workers',
     );
 
-    $self->accept_jobs(
+    $self->accept_remote_calls(
         '_bkpr.supervisor.worker_status'       => 'worker_status',
         '_bkpr.supervisor.worker_exit'         => 'worker_exit',
         '_bkpr.supervisor.get_workers_status'  => 'get_workers_status',

@@ -26,7 +26,7 @@ sub on_startup {
         'test.*'      => 'catchall',
     );
 
-    $self->accept_jobs(
+    $self->accept_remote_calls(
         'test.signal' => 'signal',
         'test.fail'   => 'fail',
         'test.sleep'  => '_sleep',

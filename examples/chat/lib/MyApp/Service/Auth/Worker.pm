@@ -24,7 +24,7 @@ sub on_startup {
 
     $self->setup_myapp_stuff;
 
-    $self->accept_jobs(
+    $self->accept_remote_calls(
         'myapp.auth.login'  => 'login',
         'myapp.auth.logout' => 'logout',
         'myapp.auth.kick'   => 'kick',

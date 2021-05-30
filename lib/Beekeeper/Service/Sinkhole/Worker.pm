@@ -71,7 +71,7 @@ sub on_unserviced_queues {
         my $local_bus = $self->{_BUS}->{cluster};
         log_error "Draining unserviced req/$local_bus/$queue";
 
-        $self->accept_jobs( "$queue.*" => 'reject_job' );
+        $self->accept_remote_calls( "$queue.*" => 'reject_job' );
     }
 }
 
