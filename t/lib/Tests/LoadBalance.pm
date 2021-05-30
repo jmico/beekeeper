@@ -77,7 +77,7 @@ sub test_02_load_balance_background : Test(6) {
     my $expected = int($tasks / $workers);
 
     for (1..$tasks) {
-        $cli->do_background_job(
+        $cli->fire_remote(
             method  => 'cache.bal',
             params  => { dset =>'B' },
         );

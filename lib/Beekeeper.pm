@@ -278,7 +278,7 @@ round trips. This implies a maximum of 650 synchronous calls per second.
 - A C<call_remote_async> asynchronous call to a remote method takes 0.1 ms. This implies a maximum 
 of 10000 asynchronous calls per second (just the call, then it must wait for responses).
 
-- Scheduling a remote task with C<do_background_job> takes 0.1 ms. This implies a maximum of 
+- Scheduling a remote task with C<fire_remote> takes 0.1 ms. This implies a maximum of 
 10000 calls per second.
 
 - Sending a notification with C<send_notification> takes 0.1 ms. A worker can emit 10000 notifications 

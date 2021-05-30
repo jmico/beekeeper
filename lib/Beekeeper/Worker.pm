@@ -821,7 +821,7 @@ sub __report_status {
     local $client->{caller_id};
 
     # Tell any supervisor our stats
-    $self->do_background_job(
+    $self->fire_remote(
         method => '_bkpr.supervisor.worker_status',
         params => {
             class => ref($self),
@@ -847,7 +847,7 @@ sub __report_exit {
     local $client->{auth_data} = $AUTH_TOKENS{'BKPR_SYSTEM'};
     local $client->{caller_id};
 
-    $self->do_background_job(
+    $self->fire_remote(
         method => '_bkpr.supervisor.worker_exit',
         params => {
             class => ref($self),
@@ -980,7 +980,7 @@ logged, unless you specifically catch and ignore them.
 =head3 Client methods
 
 In order to make RPC calls to another services, methods C<send_notification>, 
-C<call_remote>, C<call_remote_async>, C<do_background_job> and C<wait_async_calls> are 
+C<call_remote>, C<call_remote_async>, C<fire_remote> and C<wait_async_calls> are 
 automatically imported from C<Beekeeper::Client>.
 
 =head3 accept_notifications ( $method => $callback, ... )

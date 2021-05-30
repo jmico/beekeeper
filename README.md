@@ -173,7 +173,7 @@ ballpark performance measurements of a local setup running Mosquitto:
 
 - A `call_remote_async` asynchronous call to a remote method takes 0.1 ms. This implies a maximum of 10000 asynchronous calls per second (just the call, then it must wait for responses).
 
-- Scheduling a remote task with `do_background_job` takes 0.1 ms. This implies a maximum of 10000 calls per second.
+- Scheduling a remote task with `fire_remote` takes 0.1 ms. This implies a maximum of 10000 calls per second.
 
 - Sending a notification with `send_notification` takes 0.1 ms. A worker can emit 10000 notifications per second, even over 15000 if these are smaller than 1 KB.
 

@@ -145,7 +145,7 @@ sub test_03_background_jobs : Test(1) {
 
     foreach my $n (1..3) {
 
-        $cli->do_background_job(
+        $cli->fire_remote(
             method => "test.signal",
             params => { signal => 'USR1', pid => $$, after => $n/2 },
         );

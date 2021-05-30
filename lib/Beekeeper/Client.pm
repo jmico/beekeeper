@@ -24,7 +24,7 @@ our @EXPORT_OK = qw(
     send_notification
     call_remote
     call_remote_async
-    do_background_job
+    fire_remote
     wait_async_calls
     get_authentication_data
     set_authentication_data
@@ -328,7 +328,7 @@ sub call_remote_async {
     return $req;
 }
 
-sub do_background_job {
+sub fire_remote {
     my $self = shift;
 
     # Send job to a worker, but do not wait for result
@@ -666,7 +666,7 @@ There are four different methods to do so:
   ├───────────────────┼──────────────┼────────┼────────┼────────┤
   │ call_remote       │ 1 worker     │ yes    │ yes    │ yes    │
   │ call_remote_async │ 1 worker     │ yes    │ yes    │ no     │
-  │ do_background_job │ 1 worker     │ yes    │ no     │ no     │
+  │ fire_remote       │ 1 worker     │ yes    │ no     │ no     │
   │ send_notification │ many workers │ no     │ no     │ no     │
   └───────────────────┴──────────────┴────────┴────────┴────────┘
 
@@ -798,7 +798,7 @@ C<Beekeeper::JSONRPC::Error> object as parameter. Must be a coderef.
 
 =back
 
-=head3 do_background_job ( %args )
+=head3 fire_remote ( %args )
 
 Makes an asynchronous RPC call to a service worker through the message bus but
 does not expect to receive any response, it is a fire and forget call.

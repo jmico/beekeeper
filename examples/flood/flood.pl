@@ -27,7 +27,7 @@ my $Help = "
 Usage: flood [OPTIONS]
 Flood with requests a test worker pool.
 
-  -t, --type str   type of requests to be made (N, S, A or B)
+  -t, --type str   type of requests to be made (N, S, A or F)
   -c, --count N    how many requests to be made
   -r, --rate  N    sustain a rate of N requests per second
   -s, --size  N    size in KB of requests, default is 0
@@ -90,7 +90,7 @@ sub time_this {
     my $code;
 
     if ($type =~ m/^N(otification)?/i) {
-        $type = 'notification';
+        $type = 'notifications';
         $code = sub {
             $client->send_notification(
                 method => 'myapp.test.flood', 
@@ -99,7 +99,7 @@ sub time_this {
         };
     }
     elsif ($type =~ m/^S(ync)?/i) {
-        $type = 'sync call';
+        $type = 'sync calls';
         $code = sub {
             $client->call_remote(
                 method => 'myapp.test.echo', 
@@ -107,17 +107,8 @@ sub time_this {
             );
         };
     }
-    elsif ($type =~ m/^B(ackground)?/i) {
-        $type = 'background call';
-        $code = sub {
-            $client->do_background_job(
-                method => 'myapp.test.echo', 
-                params => $payload,
-            );
-        };
-    }
     elsif ($type =~ m/^A(sync)?/i) {
-        $type = 'async call';
+        $type = 'async calls';
         $code = sub {
             push @async_calls, $client->call_remote_async(
                 method => 'myapp.test.echo', 
@@ -125,8 +116,17 @@ sub time_this {
             );
         };
     }
+    elsif ($type =~ m/^F(ire)?/i) {
+        $type = 'fire & forget';
+        $code = sub {
+            $client->fire_remote(
+                method => 'myapp.test.echo', 
+                params => $payload,
+            );
+        };
+    }
     else {
-        die "type must be one of (N)otification, (S)ync, (A)sync or (B)ackground\n";
+        die "type must be one of (N)otification, (S)ync, (A)sync or (F)ire and forget\n";
     }
 
     my $rate = $args{'rate'} ? (1 / $args{'rate'}) : 0;
@@ -140,7 +140,7 @@ sub time_this {
     }
 
     local $| = 1;
-    printf( "%s %-16s of %3s Kb  ", $max_count, $type.'s', $size ) if (!$rate);
+    printf( "%s %-15s of %3s Kb  ", $max_count, $type, $size ) if (!$rate);
 
     my $count = 0;
     my $start = time();
@@ -176,7 +176,7 @@ sub time_this {
     my $tps = sprintf("%.0f", $count / $ellapsed);
     my $avg = sprintf("%.2f", $ellapsed / $count * 1000);
 
-    printf( "%s %-16s of %3s Kb  ", $count, $type.'s', $size ) if ($rate);
+    printf( "%s %-15s of %3s Kb  ", $count, $type, $size ) if ($rate);
     printf( "in %6s sec  %6s /sec %6s ms each\n", $took, $tps, $avg );
 }
 
@@ -210,9 +210,9 @@ sub run_benchmarks {
 
     print "\n";
 
-    # Background calls
+    # Fire calls
     foreach (@sizes) {
-        time_this( type => 'B', count => $count, size => $_ );
+        time_this( type => 'F', count => $count, size => $_ );
         sleep 1;
     }
 

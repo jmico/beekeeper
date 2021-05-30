@@ -59,7 +59,7 @@ sub talk {
 
     local $Beekeeper::Client::singleton = $self->{client};
 
-    $self->{client}->do_background_job(
+    $self->{client}->fire_remote(
         method  => 'myapp.chat.pmessage',
         params  => {
             to_user => $args{'to_user'},
