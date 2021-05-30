@@ -21,14 +21,14 @@ sub test_01_shared_cache_basic : Test(11) {
     my $cli = Beekeeper::Client->instance;
     my $resp;
 
-    $resp = $cli->do_job(
+    $resp = $cli->call_remote(
         method  => 'cache.get',
         params  => { key => 'foo' },
     );
 
     is( $resp->result, undef );
 
-    $resp = $cli->do_job(
+    $resp = $cli->call_remote(
         method  => 'cache.set',
         params  => { key => 'foo', val => 67 },
     );
@@ -37,14 +37,14 @@ sub test_01_shared_cache_basic : Test(11) {
 
     $self->_sleep( 0.1 );
 
-    $resp = $cli->do_job(
+    $resp = $cli->call_remote(
         method  => 'cache.get',
         params  => { key => 'foo' },
     );
 
     is( $resp->result, 67 );
 
-    $resp = $cli->do_job(
+    $resp = $cli->call_remote(
         method  => 'cache.del',
         params  => { key => 'foo' },
     );
@@ -53,14 +53,14 @@ sub test_01_shared_cache_basic : Test(11) {
 
     $self->_sleep( 0.1 );
 
-    $resp = $cli->do_job(
+    $resp = $cli->call_remote(
         method  => 'cache.get',
         params  => { key => 'foo' },
     );
 
     is( $resp->result, undef );
 
-    $resp = $cli->do_job(
+    $resp = $cli->call_remote(
         method  => 'cache.set',
         params  => { key => 'foo', val => 67 },
     );
@@ -69,7 +69,7 @@ sub test_01_shared_cache_basic : Test(11) {
 
     $self->_sleep( 0.1 );
 
-    $resp = $cli->do_job(
+    $resp = $cli->call_remote(
         method  => 'cache.set',
         params  => { key => 'foo', val => undef },
     );
@@ -78,14 +78,14 @@ sub test_01_shared_cache_basic : Test(11) {
 
     $self->_sleep( 0.1 );
 
-    $resp = $cli->do_job(
+    $resp = $cli->call_remote(
         method  => 'cache.get',
         params  => { key => 'foo' },
     );
 
     is( $resp->result, undef );
 
-    $resp = $cli->do_job(
+    $resp = $cli->call_remote(
         method  => 'cache.set',
         params  => { key => 'foo', val => [ 7, undef, { +bar => 'baz' } ] },
     );
@@ -94,14 +94,14 @@ sub test_01_shared_cache_basic : Test(11) {
 
     $self->_sleep( 0.1 );
 
-    $resp = $cli->do_job(
+    $resp = $cli->call_remote(
         method  => 'cache.get',
         params  => { key => 'foo' },
     );
 
     is_deeply( $resp->result, [ 7, undef, { +bar => 'baz' } ] );
 
-    $resp = $cli->do_job(
+    $resp = $cli->call_remote(
         method  => 'cache.set',
         params  => { key => 'foo', val => 48 },
     );
@@ -136,7 +136,7 @@ sub test_02_shared_cache_stress : Test(20) {
                       rand() < .1 ?              ""    : undef;
 
             $Data->{$key} = $val;
-            $resp = $cli->do_job(
+            $resp = $cli->call_remote(
                 method  => 'cache.set',
                 params  => { key => $key, val => $val },
             );
@@ -148,7 +148,7 @@ sub test_02_shared_cache_stress : Test(20) {
             my $key = $k[rand @k];
 
             delete $Data->{$key};
-            $resp = $cli->do_job(
+            $resp = $cli->call_remote(
                 method  => 'cache.del',
                 params  => { key => $key },
             );
@@ -162,7 +162,7 @@ sub test_02_shared_cache_stress : Test(20) {
 
     for (1..20) {
 
-        $resp = $cli->do_job(
+        $resp = $cli->call_remote(
             method  => 'cache.raw',
         );
 

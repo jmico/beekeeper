@@ -67,7 +67,7 @@ Create an API for the service:
       my ($class, %args) = @_;
       my $cli = Beekeeper::Client->instance;
       
-      my $result = $cli->do_job(
+      my $result = $cli->call_remote(
           method => "my.service.echo",
           params => { %args },
       );
@@ -199,7 +199,7 @@ This is the interface of the above service:
   
       my $client = Beekeeper::Client->instance;
   
-      my $resp = $client->do_job(
+      my $resp = $client->call_remote(
           method => 'myapp.str.uc',
           params => { string => $str },
       );
@@ -272,7 +272,7 @@ Beekeeper is pretty lightweight, so the performance depends mostly on *the broke
 These are 
 ballpark performance measurements of a local setup running Mosquitto:
 
-- A C<do_job> synchronous call to a remote method adds 1.5 ms of latency and involves 4 network 
+- A C<call_remote> synchronous call to a remote method adds 1.5 ms of latency and involves 4 network 
 round trips. This implies a maximum of 650 synchronous calls per second.
 
 - A C<do_async_job> asynchronous call to a remote method takes 0.1 ms. This implies a maximum 

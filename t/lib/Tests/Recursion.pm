@@ -25,7 +25,7 @@ sub test_01_recursion : Test(3) {
 
     # No recursion
 
-    $resp = $cli->do_job(
+    $resp = $cli->call_remote(
         method  => 'test.fact',
         params  => 2,
         timeout => 10,
@@ -35,7 +35,7 @@ sub test_01_recursion : Test(3) {
 
     # 1 level of recursion
 
-    $resp = $cli->do_job(
+    $resp = $cli->call_remote(
         method  => 'test.fact',
         params  => 3,
         timeout => 10,
@@ -47,7 +47,7 @@ sub test_01_recursion : Test(3) {
 
     for (my $i = 4; $i <= 4; $i++) {
 
-        $resp = $cli->do_job(
+        $resp = $cli->call_remote(
             method  => 'test.fact',
             params  => $i,
             timeout => 10,
@@ -65,7 +65,7 @@ sub test_02_recursion : Test(4) {
 
     # No recursion
 
-    $resp = $cli->do_job(
+    $resp = $cli->call_remote(
         method  => 'test.fib1',
         params  => 1,
         timeout => 10,
@@ -73,7 +73,7 @@ sub test_02_recursion : Test(4) {
 
     is( $resp->result, 1, "fib(1)");
 
-    $resp = $cli->do_job(
+    $resp = $cli->call_remote(
         method  => 'test.fib2',
         params  => 1,
         timeout => 10,
@@ -83,7 +83,7 @@ sub test_02_recursion : Test(4) {
 
     # 1 level of recursion
 
-    $resp = $cli->do_job(
+    $resp = $cli->call_remote(
         method  => 'test.fib1',
         params  => 2,
         timeout => 10,
@@ -91,7 +91,7 @@ sub test_02_recursion : Test(4) {
 
     is( $resp->result, 1, "fib(2)");
 
-    $resp = $cli->do_job(
+    $resp = $cli->call_remote(
         method  => 'test.fib2',
         params  => 2,
         timeout => 10,
@@ -120,7 +120,7 @@ sub test_03_recursion : Test(5) {
     #TODO: 11 workers should handle up to fib1(10) with proper load balance
     for (my $i = 3; $i <= 4; $i++) {
 
-        my $resp = $cli->do_job(
+        my $resp = $cli->call_remote(
             method  => 'test.fib1',
             params  => $i,
             timeout => 10,
@@ -132,7 +132,7 @@ sub test_03_recursion : Test(5) {
     #TODO: 11 workers should handle up to fib2(5) with proper load balance
     for (my $i = 3; $i <= 4; $i++) {
 
-        my $resp = $cli->do_job(
+        my $resp = $cli->call_remote(
             method  => 'test.fib2',
             params  => $i,
             timeout => 10,

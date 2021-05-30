@@ -140,7 +140,7 @@ Version 0.03
 
   my $client = Beekeeper::Client->instance;
   
-  my $resp = $client->do_job(
+  my $resp = $client->call_remote(
       method => 'myapp.svc.foo',
       params => { foo => 'bar' },
   );
@@ -158,7 +158,7 @@ When a RPC call could not be executed successfully the worker replies with a
 Beekeeper::JSONRPC::Error object. These objects may be returned also due to  
 client side errors, like network disconnections or timeouts.
 
-Method C<Beekeeper::Client-\>do_job> returns objects of this class on failure.
+Method C<Beekeeper::Client-\>call_remote> returns objects of this class on failure.
 
 =head1 ACCESSORS
 

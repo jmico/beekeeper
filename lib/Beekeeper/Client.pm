@@ -22,7 +22,7 @@ use Exporter 'import';
 
 our @EXPORT_OK = qw(
     send_notification
-    do_job
+    call_remote
     do_async_job
     do_background_job
     wait_all_jobs
@@ -296,7 +296,7 @@ sub stop_accepting_notifications {
 
 our $AE_WAITING;
 
-sub do_job {
+sub call_remote {
     my $self = shift;
 
     my $req = $self->__do_rpc_request( @_, req_type => 'SYNCHRONOUS' );
@@ -631,7 +631,7 @@ Version 0.03
       params => { foo => $foo },
   );
   
-  my $resp = $client->do_job(
+  my $resp = $client->call_remote(
       method => "my.service.bar",
       params => { %args },
   );
@@ -664,7 +664,7 @@ There are four different methods to do so:
   ┌───────────────────┬──────────────┬────────┬────────┬────────┐
   │ method            │ sent to      │ queued │ result │ blocks │
   ├───────────────────┼──────────────┼────────┼────────┼────────┤
-  │ do_job            │ 1 worker     │ yes    │ yes    │ yes    │
+  │ call_remote       │ 1 worker     │ yes    │ yes    │ yes    │
   │ do_async_job      │ 1 worker     │ yes    │ yes    │ no     │
   │ do_background_job │ 1 worker     │ yes    │ no     │ no     │
   │ send_notification │ many workers │ no     │ no     │ no     │
@@ -733,7 +733,7 @@ Make this client stop accepting specified notifications from message bus.
 
 C<$method> must be one of the strings used previously in C<accept_notifications>.
 
-=head3 do_job ( %args )
+=head3 call_remote ( %args )
 
 Makes a synchronous RPC call to a service worker through the message bus.
 
@@ -782,7 +782,7 @@ It returns immediately a C<Beekeeper::JSONRPC::Request> object which, once compl
 will have a defined C<response>.
 
 This method  accepts parameters C<method>, C<params>, C<address> and C<timeout> 
-the same as C<do_job>. Additionally two callbacks can be specified:
+the same as C<call_remote>. Additionally two callbacks can be specified:
 
 =over 4
 
@@ -806,7 +806,7 @@ does not expect to receive any response, it is a fire and forget call.
 It returns undef immediately.
 
 This method  accepts parameters C<method>, C<params>, C<address> and C<timeout> 
-the same as C<do_job>.
+the same as C<call_remote>.
 
 =head3 wait_all_jobs
 

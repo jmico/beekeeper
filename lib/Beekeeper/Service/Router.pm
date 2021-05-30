@@ -28,7 +28,7 @@ sub assign_remote_address {
 
     my $guard = $self->__use_authorization_token('BKPR_ROUTER');
 
-    $self->do_job(
+    $self->call_remote(
         method => '_bkpr.router.assign_addr',
         params => $params,
     );
@@ -39,7 +39,7 @@ sub remove_remote_address {
 
     my $guard = $self->__use_authorization_token('BKPR_ROUTER');
 
-    $self->do_job(
+    $self->call_remote(
         method => '_bkpr.router.remove_addr',
         params => { address => $address },
     );
@@ -52,7 +52,7 @@ sub remove_caller_address {
 
     my $guard = $self->__use_authorization_token('BKPR_ROUTER');
 
-    $self->do_job(
+    $self->call_remote(
         method => '_bkpr.router.remove_addr',
         params => $params,
     );

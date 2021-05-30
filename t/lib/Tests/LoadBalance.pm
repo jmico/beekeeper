@@ -38,7 +38,7 @@ sub test_01_load_balance_async : Test(6) {
 
     $cli->wait_all_jobs;
 
-    $resp = $cli->do_job(
+    $resp = $cli->call_remote(
         method  => 'cache.run',
         params  => { dset =>'A' },
     );
@@ -85,7 +85,7 @@ sub test_02_load_balance_background : Test(6) {
 
     $self->_sleep( 1 );
 
-    $resp = $cli->do_job(
+    $resp = $cli->call_remote(
         method  => 'cache.run',
         params  => { dset => 'B' },
     );
@@ -148,7 +148,7 @@ sub test_03_slow_consumer_async : Test(7) {
 
     $cli->wait_all_jobs;
 
-    $resp = $cli->do_job(
+    $resp = $cli->call_remote(
         method  => 'cache.run',
         params  => { dset => 'C' },
     );

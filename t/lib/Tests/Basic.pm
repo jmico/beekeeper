@@ -50,7 +50,7 @@ sub test_02_sync_jobs : Test(20) {
     
     my $cli = Beekeeper::Client->instance;
 
-    my $resp = $cli->do_job(
+    my $resp = $cli->call_remote(
         method => 'test.echo',
         params => "foo",
     );
@@ -59,7 +59,7 @@ sub test_02_sync_jobs : Test(20) {
     is( $resp->success, 1 );
     is( $resp->result, 'foo');
 
-    $resp = $cli->do_job(
+    $resp = $cli->call_remote(
         method => 'test.echo',
         params => [ 1, { a => 2 }, "" ],
     );
@@ -68,7 +68,7 @@ sub test_02_sync_jobs : Test(20) {
     is_deeply( $resp->result, [ 1, { a => 2 }, "" ]);
 
     # Unhandled exception with no raise_error
-    $resp = $cli->do_job(
+    $resp = $cli->call_remote(
         method => 'test.fail',
         params => { 'die' => "error message 123" },
         raise_error => 0,
@@ -82,7 +82,7 @@ sub test_02_sync_jobs : Test(20) {
 
     # Unhandled exception dies
     $resp = eval {
-        $cli->do_job(
+        $cli->call_remote(
             method => 'test.fail',
             params => { 'die' => "error message 456" },
         );
@@ -93,7 +93,7 @@ sub test_02_sync_jobs : Test(20) {
 
     # Handled exception
     $resp = eval {
-        $cli->do_job(
+        $cli->call_remote(
             method => 'test.fail',
             params => { 'error' => "error message 678" },
         );
@@ -104,7 +104,7 @@ sub test_02_sync_jobs : Test(20) {
 
     # Invalid method
     $resp = eval {
-        $cli->do_job(
+        $cli->call_remote(
             method  => 'test.#@@@@',
         );
     };
@@ -114,7 +114,7 @@ sub test_02_sync_jobs : Test(20) {
 
     # Invalid method
     $resp = eval {
-        $cli->do_job(
+        $cli->call_remote(
             method  => 'test.notfound',
         );
     };
@@ -124,7 +124,7 @@ sub test_02_sync_jobs : Test(20) {
 
     # Timeout
     $resp = eval {
-        $cli->do_job(
+        $cli->call_remote(
             method  => 'test.sleep',
             params  => '0.1',
             timeout => '0.01',
@@ -197,7 +197,7 @@ sub test_04_async_jobs : Test(18) {
 
     # Timeout
     eval {
-        my $req = $cli->do_job(
+        my $req = $cli->call_remote(
             method  => 'test.sleep',
             params  => '0.2',
             timeout => '0.01',

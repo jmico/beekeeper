@@ -88,7 +88,7 @@ sub factorial {
 
     return $n if ($n <= 2);
 
-    my $resp = $self->do_job(
+    my $resp = $self->call_remote(
         method  => 'test.fact',
         params  => $n - 1,
         timeout => 10,
@@ -102,13 +102,13 @@ sub fibonacci_1 {
 
     return $n if ($n <= 1);
 
-    my $resp1 = $self->do_job(
+    my $resp1 = $self->call_remote(
         method  => 'test.fib1',
         params  => $n - 1,
         timeout => 10,
     );
 
-    my $resp2 = $self->do_job(
+    my $resp2 = $self->call_remote(
         method  => 'test.fib1',
         params  => $n - 2,
         timeout => 10,

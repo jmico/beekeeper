@@ -15,7 +15,7 @@ sub tail {
 
     my $guard = $client->__use_authorization_token('BKPR_ADMIN');
 
-    my $resp = $client->do_job(
+    my $resp = $client->call_remote(
         method => '_bkpr.logtail.tail',
         params => \%filters,
     );

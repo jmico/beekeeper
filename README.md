@@ -104,7 +104,7 @@ sub uppercase {
 
     my $client = Beekeeper::Client->instance;
 
-    my $resp = $client->do_job(
+    my $resp = $client->call_remote(
         method => 'myapp.str.uc',
         params => { string => $str },
     );
@@ -169,7 +169,7 @@ The framework includes these command line tools to manage worker pools:
 Beekeeper is pretty lightweight, so the performance depends mostly on *the broker* performance. These are 
 ballpark performance measurements of a local setup running Mosquitto:
 
-- A `do_job` synchronous call to a remote method adds 1.5 ms of latency and involves 4 network round trips. This implies a maximum of 650 synchronous calls per second.
+- A `call_remote` synchronous call to a remote method adds 1.5 ms of latency and involves 4 network round trips. This implies a maximum of 650 synchronous calls per second.
 
 - A `do_async_job` asynchronous call to a remote method takes 0.1 ms. This implies a maximum of 10000 asynchronous calls per second (just the call, then it must wait for responses).
 

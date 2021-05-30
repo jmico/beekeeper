@@ -35,7 +35,7 @@ sub client {
 sub eval_expr {
     my ($self, $str) = @_;
 
-    my $resp = $self->client->do_job(
+    my $resp = $self->client->call_remote(
         method => 'myapp.calculator.eval_expr',
         params => { expr => $str },
     );

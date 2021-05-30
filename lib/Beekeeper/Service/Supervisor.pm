@@ -50,7 +50,7 @@ sub get_workers_status {
 
     my $guard = $client->__use_authorization_token('BKPR_ADMIN');
 
-    my $resp = $client->do_job(
+    my $resp = $client->call_remote(
         method  => '_bkpr.supervisor.get_workers_status',
         timeout => $args{'timeout'},
         params  => {
@@ -70,7 +70,7 @@ sub get_services_status {
 
     my $guard = $client->__use_authorization_token('BKPR_ADMIN');
 
-    my $resp = $client->do_job(
+    my $resp = $client->call_remote(
         method  => '_bkpr.supervisor.get_services_status',
         timeout => $args{'timeout'},
         params  => {

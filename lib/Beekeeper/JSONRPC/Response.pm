@@ -42,7 +42,7 @@ Version 0.03
 
   my $client = Beekeeper::Client->instance;
   
-  my $resp = $client->do_job(
+  my $resp = $client->call_remote(
       method => 'myapp.svc.foo',
       params => { foo => 'bar' },
   );
@@ -59,7 +59,7 @@ When a RPC call is made the worker replies with a Beekeeper::JSONRPC::Response o
 if the invoked method was executed successfully. On error, a Beekeeper::JSONRPC::Error
 is returned instead.
 
-Method C<Beekeeper::Client-\>do_job> returns objects of this class on success.
+Method C<Beekeeper::Client-\>call_remote> returns objects of this class on success.
 
 =head1 ACCESSORS
 
