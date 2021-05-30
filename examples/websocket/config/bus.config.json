@@ -17,6 +17,7 @@
 [
     {
         "bus-id"   : "backend",
+        "cluster"  : "backend",
         "host"     : "localhost",
         "username" : "backend",
         "password" : "def456",
@@ -24,6 +25,7 @@
     },
     {
         "bus-id"   : "frontend",
+        "cluster"  : "frontend",
         "host"     : "localhost",
         "port"     :  8001,
         "username" : "router",

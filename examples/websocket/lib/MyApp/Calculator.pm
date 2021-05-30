@@ -11,9 +11,16 @@ sub new {
 
     my $self = {};
 
+    #TODO: Read frontend connection parameters from config file
+
+    # Connect to bus 'frontend', wich will forward requests to 'backend'
     $self->{client} = Beekeeper::Client->instance(
         bus_id     => 'frontend', 
         forward_to => 'backend',
+        host       => "localhost",
+        port       =>  8001,
+        username   => "frontend",
+        password   => "abc123",
     );
 
     bless $self, $class;
