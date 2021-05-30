@@ -25,7 +25,7 @@ our @EXPORT_OK = qw(
     call_remote
     call_remote_async
     do_background_job
-    wait_all_jobs
+    wait_async_calls
     get_authentication_data
     set_authentication_data
 
@@ -548,10 +548,10 @@ sub __create_response_topic {
     return $response_topic;
 }
 
-sub wait_all_jobs {
+sub wait_async_calls {
     my ($self) = @_;
 
-    # Wait for all pending jobs
+    # Wait for all pending async requests
     my $cv = delete $self->{_CLIENT}->{async_cv};
     return unless defined $cv;
 
@@ -653,7 +653,7 @@ Version 0.03
       },
   );
   
-  $client->wait_all_jobs;
+  $client->wait_async_calls;
 
 =head1 DESCRIPTION
 
@@ -808,7 +808,7 @@ It returns undef immediately.
 This method  accepts parameters C<method>, C<params>, C<address> and C<timeout> 
 the same as C<call_remote>.
 
-=head3 wait_all_jobs
+=head3 wait_async_calls
 
 Wait (in the event loop) until all calls made by C<call_remote_async> are completed.
 

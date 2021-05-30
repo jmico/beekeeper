@@ -64,7 +64,7 @@ Version 0.03
       params => { foo => 'bar' },
   );
   
-  $client->wait_all_jobs;
+  $client->wait_async_calls;
   
   die unless ($req->success);
   

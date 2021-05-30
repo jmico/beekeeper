@@ -167,7 +167,7 @@ sub time_this {
     }
 
     if ($type eq 'async call') {
-        $client->wait_all_jobs;
+        $client->wait_async_calls;
         @async_calls = ();
     }
 

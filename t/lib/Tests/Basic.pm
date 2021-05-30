@@ -171,7 +171,7 @@ sub test_04_async_jobs : Test(18) {
     is( $req->success, undef );
     is( $req->result, undef );
 
-    $cli->wait_all_jobs;
+    $cli->wait_async_calls;
 
     isa_ok( $req->response, 'Beekeeper::JSONRPC::Response' );
     is( $req->success, 1 );
@@ -189,7 +189,7 @@ sub test_04_async_jobs : Test(18) {
         push @reqs, $req;
     }
 
-    $cli->wait_all_jobs;
+    $cli->wait_async_calls;
 
     foreach my $n (1..$count) {
         is( $reqs[$n-1]->result, $var + $n );
@@ -203,7 +203,7 @@ sub test_04_async_jobs : Test(18) {
             timeout => '0.01',
         );
 
-        $cli->wait_all_jobs;
+        $cli->wait_async_calls;
     };
 
     like( $@, qr/Call to 'test.sleep' failed: -31600 Request timeout /);

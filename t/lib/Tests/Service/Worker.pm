@@ -134,7 +134,7 @@ sub fibonacci_2 {
         timeout => 10,
     );
 
-    $self->wait_all_jobs;
+    $self->wait_async_calls;
 
     return $req1->result + $req2->result; 
 }

@@ -50,7 +50,7 @@ sub test_01_int_signal : Test(21) {
     }
 
     DEBUG && diag "Waiting for backlog";
-    $cli->wait_all_jobs;
+    $cli->wait_async_calls;
 
     my @ok = grep { $_->success } @req;
     is( scalar(@ok), scalar(@req), "All jobs executed " . scalar(@ok). "/". scalar(@req));

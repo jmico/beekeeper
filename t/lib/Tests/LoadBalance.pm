@@ -36,7 +36,7 @@ sub test_01_load_balance_async : Test(6) {
         );
     }
 
-    $cli->wait_all_jobs;
+    $cli->wait_async_calls;
 
     $resp = $cli->call_remote(
         method  => 'cache.run',
@@ -146,7 +146,7 @@ sub test_03_slow_consumer_async : Test(7) {
         );
     }
 
-    $cli->wait_all_jobs;
+    $cli->wait_async_calls;
 
     $resp = $cli->call_remote(
         method  => 'cache.run',
