@@ -94,7 +94,7 @@ sub on_worker_status {
         my $local_bus = $self->{_BUS}->{cluster};
         log_warn "Stopped draining req/$local_bus/$queue";
 
-        $self->stop_accepting_jobs( "$queue.*" );
+        $self->stop_accepting_calls( "$queue.*" );
     }
 }
 

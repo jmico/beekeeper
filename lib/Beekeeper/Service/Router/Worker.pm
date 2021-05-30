@@ -102,7 +102,7 @@ sub init_frontend_connection {
 sub on_shutdown {
     my ($self, %args) = @_;
 
-    $self->stop_accepting_jobs('_bkpr.router.*');
+    $self->stop_accepting_calls('_bkpr.router.*');
 
     my $frontend_cluster = $self->{frontend_cluster};
 

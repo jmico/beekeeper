@@ -646,7 +646,7 @@ sub stop_accepting_notifications {
 }
 
 
-sub stop_accepting_jobs {
+sub stop_accepting_calls {
     my ($self, @methods) = @_;
 
     croak "No method specified" unless @methods;
@@ -706,7 +706,7 @@ sub stop_accepting_jobs {
             on_unsuback  => sub {
                 my ($success, $prop) = @_;
 
-                #TODO: Report caller of stop_accepting_jobs method
+                #TODO: Report caller of stop_accepting_calls method
                 warn "Could not unsubscribe from $topic" unless $success; 
 
                 my $postponed = $worker->{postponed} ||= [];
@@ -780,7 +780,7 @@ sub stop_working {
 
         $worker->{stop_cv}->begin;
 
-        $self->stop_accepting_jobs( $service . '.*' );
+        $self->stop_accepting_calls( $service . '.*' );
     }
 }
 
@@ -1076,7 +1076,7 @@ Make this worker stop accepting specified notifications from message bus.
 
 C<$method> must be one of the strings used previously in C<accept_notifications>.
 
-=head3 stop_accepting_jobs ( $method, ... )
+=head3 stop_accepting_calls ( $method, ... )
 
 Make this worker stop accepting specified RPC requests from message bus.
 
