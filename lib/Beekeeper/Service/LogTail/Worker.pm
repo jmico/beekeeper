@@ -46,7 +46,7 @@ sub _connect_to_all_brokers {
 
     foreach my $config (@$cluster_config) {
 
-        my $bus_id = $config->{'bus-id'};
+        my $bus_id = $config->{'bus_id'};
 
         if ($bus_id eq $own_bus->bus_id) {
             # Already connected to our own bus

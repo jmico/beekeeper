@@ -83,7 +83,7 @@ sub new {
                 # Use default parameters (if any)
                 my ($default) = grep { $config->{$_}->{default} } keys %$config;
                 croak "No default bus defined into config file bus.config.json" unless $default;
-                $bus_id = $config->{$default}->{'bus-id'};
+                $bus_id = $config->{$default}->{'bus_id'};
                 %args = ( %{$config->{$default}}, bus_id => $bus_id, %args );
             }
         }

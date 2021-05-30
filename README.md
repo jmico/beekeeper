@@ -127,8 +127,8 @@ The file `pool.config.json` defines all worker pools running on a host, specifyi
 
 ```
 [{
-    "pool-id" : "myapp",
-    "bus-id"  : "backend",
+    "pool_id" : "myapp",
+    "bus_id"  : "backend",
     "workers" : {
         "MyApp::Worker" : { "workers_count" : 4 },
     },
@@ -138,7 +138,7 @@ The file `bus.config.json` defines all logical buses used by the application, sp
 
 ```
 [{
-    "bus-id"   : "backend",
+    "bus_id"   : "backend",
     "host"     : "localhost",
     "username" : "backend",
     "password" : "def456",
@@ -151,7 +151,7 @@ Neither the worker code nor the client code have hardcoded references to the log
 
 To start or stop a pool of workers you use the `bkpr` command. Given the above example config, this will start 4 processes running `MyApp::Worker` code:
 ```
-bkpr --pool-id "myapp" start
+bkpr --pool_id "myapp" start
 ```
 When started it daemonizes itself and forks all worker processes, then continues monitoring those forked processes and immediately respawns defunct ones.
 

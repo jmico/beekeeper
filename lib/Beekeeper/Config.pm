@@ -30,7 +30,7 @@ sub get_bus_config {
 
     die "Couldn't read config file bus.config.json: file not found\n" unless defined ($config);
 
-    my %bus_cfg  = map { $_->{'bus-id'}  => $_ } @$config;
+    my %bus_cfg  = map { $_->{'bus_id'}  => $_ } @$config;
 
     return ($bus_id eq '*') ? \%bus_cfg : $bus_cfg{$bus_id};
 }
@@ -46,7 +46,7 @@ sub get_pool_config {
 
     die "Couldn't read config file pool.config.json: file not found\n" unless defined ($config);
 
-    my %pool_cfg = map { $_->{'pool-id'} => $_ } @$config;
+    my %pool_cfg = map { $_->{'pool_id'} => $_ } @$config;
 
     return ($pool_id eq '*') ? \%pool_cfg : $pool_cfg{$pool_id};
 }
@@ -68,14 +68,14 @@ sub get_cluster_config {
     }
     elsif ($bus_id) {
 
-        my ($bus_config) = grep { $_->{'bus-id'} eq $bus_id } @$config;
+        my ($bus_config) = grep { $_->{'bus_id'} eq $bus_id } @$config;
         return [] unless $bus_config;
 
         $cluster = $bus_config->{'cluster'};
         return [ $bus_config ] unless $cluster;
 
         @cluster_config = grep {
-            (defined $_->{'cluster'} && $_->{'cluster'} eq $cluster) || $_->{'bus-id'} eq $bus_id
+            (defined $_->{'cluster'} && $_->{'cluster'} eq $cluster) || $_->{'bus_id'} eq $bus_id
         } @$config;
     }
 
@@ -153,9 +153,9 @@ The file format is in relaxed JSON, which allows comments and trailings commas.
 
 Each entry define a worker pool. Required parameters are:
 
-C<pool-id>: arbitrary identifier for the worker pool
+C<pool_id>: arbitrary identifier for the worker pool
 
-C<bus-id>: identifier of logical bus used by worker processes
+C<bus_id>: identifier of logical bus used by worker processes
 
 C<workers>: a map of worker classes to arbitrary config hashes
 
@@ -163,8 +163,8 @@ Example:
 
   [
       {
-          "pool-id"     : "myapp",
-          "bus-id"      : "backend",
+          "pool_id"     : "myapp",
+          "bus_id"      : "backend",
           "description" : "pool of MyApp workers",
   
           "workers" : {
@@ -187,7 +187,7 @@ The file format is in relaxed JSON, which allows comments and trailings commas.
 
 Each entry define a logical bus. Accepted parameters are:
 
-C<bus-id>: unique identifier of the logical bus (required)
+C<bus_id>: unique identifier of the logical bus (required)
 
 C<cluster>: identifier of the cluster of logical buses that this bus belongs to (if any)
 
@@ -205,13 +205,13 @@ Example:
 
   [
       {
-          "bus-id"   : "backend",
+          "bus_id"   : "backend",
           "host"     : "localhost",
           "username" : "backend",
           "password" : "def456",
       },
       {
-          "bus-id"   : "frontend",
+          "bus_id"   : "frontend",
           "host"     : "localhost",
           "username" : "frontend",
           "password" : "def456",

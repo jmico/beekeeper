@@ -64,7 +64,7 @@ sub on_startup {
 sub init_frontend_connection {
     my ($self, $config) = @_;
 
-    my $bus_id = $config->{'bus-id'};
+    my $bus_id = $config->{'bus_id'};
 
     $self->{wait_frontends_up}->begin;
 

@@ -6,7 +6,7 @@
 #
 # Each bus definition accepts the following parameters:
 #
-#  - bus-id   : unique identifier of the logical bus (required)
+#  - bus_id   : unique identifier of the logical bus (required)
 #  - cluster  : identifier of the cluster of buses that this bus belongs to (if any)
 #  - host     : hostname or IP address of the broker (default is localhost)
 #  - port     : port of the broker (default is 1883)
@@ -16,7 +16,7 @@
 
 [
     {
-        "bus-id"   : "backend",
+        "bus_id"   : "backend",
         "cluster"  : "backend",
         "host"     : "localhost",
         "username" : "backend",
@@ -24,7 +24,7 @@
         "default"  : 1,
     },
     {
-        "bus-id"   : "frontend",
+        "bus_id"   : "frontend",
         "cluster"  : "frontend",
         "host"     : "localhost",
         "port"     :  8001,

@@ -11,7 +11,7 @@ my $bus_config_json = qq<
 
 [
     {
-        "bus-id"   : "test",
+        "bus_id"   : "test",
         "host"     : "localhost",
         "username" : "test",
         "password" : "abc123",

@@ -225,8 +225,8 @@ The file C<pool.config.json> defines all worker pools running on a host, specify
 bus should be used and which services it will run. For example:
 
   [{
-      "pool-id" : "myapp",
-      "bus-id"  : "backend",
+      "pool_id" : "myapp",
+      "bus_id"  : "backend",
       "workers" : {
           "MyApp::Worker" : { "workers_count" : 4 },
       },
@@ -236,7 +236,7 @@ The file C<bus.config.json> defines all logical buses used by the application, s
 connection parameters to the brokers that will service them. For example:
 
   [{
-      "bus-id"   : "backend",
+      "bus_id"   : "backend",
       "host"     : "localhost",
       "username" : "backend",
       "password" : "def456",

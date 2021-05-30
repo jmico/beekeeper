@@ -35,7 +35,7 @@ sub new {
         CORE::exit(1);
     }
 
-    $self->{config}->{'pool-id'}   = $pool_id;
+    $self->{config}->{'pool_id'}   = $pool_id;
     $self->{config}->{daemon_name} = "beekeeper-$pool_id";
     $self->{config}->{description} = "worker pool $pool_id";
 
@@ -64,7 +64,7 @@ sub cmd_help {
 sub load_config {
     my $self = shift;
 
-    my $pool_id  = $self->{config}->{'pool-id'};
+    my $pool_id  = $self->{config}->{'pool_id'};
     my $conf_dir = $self->{options}->{'config-dir'};
 
     Beekeeper::Config->set_config_dir($conf_dir) if ($conf_dir);
@@ -77,7 +77,7 @@ sub load_config {
     }
 
     # Ensure that local bus is defined
-    my $bus_id = $pool_cfg->{'bus-id'};
+    my $bus_id = $pool_cfg->{'bus_id'};
 
     unless ($bus_cfg->{$bus_id}) {
         die "Bus '$bus_id' is not defined into config file bus.config.json\n";
@@ -102,7 +102,7 @@ sub main {
     my %workers;     # will hold a pid -> class map of running workers
 
     my $workers_config = $self->{config}->{'workers'};
-    my $pool_id        = $self->{config}->{'pool-id'};
+    my $pool_id        = $self->{config}->{'pool_id'};
 
     my @spawn_workers = (
         # Every pool spawns at least a Supervisor and a Sinkhole
@@ -333,8 +333,8 @@ sub spawn_worker {
         debug       => $self->{options}->{debug},
         bus_config  => $self->{bus_config},
         pool_config => $self->{config},
-        pool_id     => $self->{config}->{'pool-id'},
-        bus_id      => $self->{config}->{'bus-id'},
+        pool_id     => $self->{config}->{'pool_id'},
+        bus_id      => $self->{config}->{'bus_id'},
         config      => $self->{config}->{'workers'}->{$worker_class},
     );
 
@@ -404,17 +404,17 @@ which logical bus should be used and which services it will run.
 
 Each entry define a worker pool. Required parameters are:
 
-C<pool-id> An arbitrary identifier for the worker pool.
+C<pool_id> An arbitrary identifier for the worker pool.
 
-C<bus-id> An identifier of logical bus used by worker processes.
+C<bus_id> An identifier of logical bus used by worker processes.
 
 C<workers> A map of worker classes to (arbitrary) config hashes.
 
 The following example defines "MyApp" as a pool of 2 C<MyApp::Worker> processes:
 
   [{
-      "pool-id" : "MyApp",
-      "bus-id"  : "backend",
+      "pool_id" : "MyApp",
+      "bus_id"  : "backend",
       "workers" : {
           "MyApp::Worker" : { "workers_count" : 2 },
       },
@@ -428,7 +428,7 @@ that will service them.
 
 Each entry define a logical bus. Required parameters are:
 
-C<bus-id>: unique identifier of the logical bus (required)
+C<bus_id>: unique identifier of the logical bus (required)
 
 C<cluster>: identifier of the cluster of logical buses that this bus belongs to (if any)
 
@@ -446,7 +446,7 @@ C<password>: password used to connect to the broker
 The following example defines the logical bus "backend":
 
   [{
-      "bus-id" : "backend",
+      "bus_id" : "backend",
       "host"   : "10.0.0.1",
       "user"   : "username",
       "pass"   : "password",
