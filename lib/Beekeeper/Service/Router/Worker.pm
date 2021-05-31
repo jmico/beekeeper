@@ -31,12 +31,6 @@ sub authorize_request {
 sub on_startup {
     my $self = shift;
 
-    log_info "Router started";
-
-    my $backend_bus = $self->{_BUS};
-    my $backend_id  = $backend_bus->bus_id;
-    log_debug "Connected to backend bus \@$backend_id";
-
     $self->_init_routing_table;
 
     my $worker_config = $self->{_WORKER}->{config};
@@ -64,7 +58,8 @@ sub on_startup {
 sub init_frontend_connection {
     my ($self, $config) = @_;
 
-    my $bus_id = $config->{'bus_id'};
+    my $bus_id  = $config->{'bus_id'};
+    my $back_id = $self->{_BUS}->bus_id;
 
     $self->{wait_frontends_up}->begin;
 
@@ -89,7 +84,7 @@ sub init_frontend_connection {
     $bus->connect(
         on_connack => sub {
             # Setup routing
-            log_debug "Connected to frontend bus \@$bus_id";
+            log_info "Routing: $back_id <--> $bus_id";
             $self->{FRONTEND}->{$bus_id} = $bus;
             $self->{wait_frontends_up}->end;
             $self->pull_frontend_requests( frontend => $bus );
@@ -102,7 +97,7 @@ sub init_frontend_connection {
 sub on_shutdown {
     my ($self, %args) = @_;
 
-    $self->stop_accepting_calls('_bkpr.router.*');
+    log_info "Shutting down";
 
     my $frontend_role = $self->{frontend_role};
 
@@ -153,6 +148,8 @@ sub on_shutdown {
     $tmr = AnyEvent->timer( after => SHUTDOWN_WAIT, cb => sub { $wait->send });
     $wait->recv;
 
+    $cv = AnyEvent->condvar;
+
     # 5. Stop forwarding responses to frontend
     foreach my $frontend_bus (values %{$self->{FRONTEND}}) {
 
@@ -176,7 +173,7 @@ sub on_shutdown {
     # 6. Wait for unsubacks, assuring that no more responses are buffered 
     $tmr = AnyEvent->timer( after => 30, cb => sub { $cv->send });
     $cv->recv;
- 
+
     # Disconnect from all frontends
     my @frontends = values %{$self->{FRONTEND}};
     foreach my $frontend_bus (@frontends) {
