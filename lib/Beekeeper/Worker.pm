@@ -43,7 +43,7 @@ our @EXPORT_OK = qw(
 our %EXPORT_TAGS = ('log' => [ @EXPORT_OK, @EXPORT ]);
 
 our $Logger = sub { warn(@_) }; # redefined later by __init_logger
-our $LogLevel = LOG_WARN;
+our $LogLevel = LOG_INFO;
 
 sub log_fatal    (@) { $LogLevel >= LOG_FATAL  && $Logger->( LOG_FATAL,  @_ ) }
 sub log_alert    (@) { $LogLevel >= LOG_ALERT  && $Logger->( LOG_ALERT,  @_ ) }
