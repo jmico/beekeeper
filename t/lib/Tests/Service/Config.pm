@@ -13,6 +13,7 @@ my $bus_config_json = qq<
     {
         "bus_id"   : "test",
         "host"     : "localhost",
+        "port"     :  %PORT%,
         "username" : "test",
         "password" : "abc123",
     },
@@ -25,7 +26,7 @@ my $toybroker_config_json = qq<
 [
     {
         "listen_addr" : "127.0.0.1",
-        "listen_port" : "1883",
+        "listen_port" : %PORT%,
 
         "users" : {
             "test" : { "password" : "abc123" },
@@ -38,6 +39,10 @@ sub read_config_file {
 
     my $data = $file eq "bus.config.json"       ? $bus_config_json       : 
                $file eq "toybroker.config.json" ? $toybroker_config_json : '';
+
+    #TODO: Find an unused port
+    my $test_port = 51883;
+    $data =~ s/%PORT%/$test_port/;
 
     # Allow comments and end-comma
     my $json = JSON::XS->new->relaxed;

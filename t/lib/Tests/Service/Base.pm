@@ -146,7 +146,7 @@ sub start_workers {
         };
         unless ($status && $status->{$supervisor_class}->{count}) {
             $class->stop_all_workers;
-            $class->BAIL_OUT("Could not start supervisor");
+            $class->FAIL_ALL("Could not start supervisor");
         }
     }
 
@@ -188,7 +188,7 @@ sub start_workers {
 
         unless ($max_wait > 0) {
             $class->stop_all_workers;
-            $class->BAIL_OUT("Failed to start $workers_count workers $worker_class");
+            $class->FAIL_ALL("Failed to start $workers_count workers $worker_class");
         }
     }
 
@@ -231,7 +231,7 @@ sub stop_workers {
         $leaving && return;
         $leaving = 1;
         $class->stop_all_workers;
-        $class->SKIP_ALL("Failed to stop workers " . join(', ', values %Worker_pids));
+        $class->FAIL_ALL("Failed to stop workers " . join(', ', values %Worker_pids));
     }
 }
 
