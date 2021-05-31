@@ -264,7 +264,7 @@ sub accept_notifications {
         croak "Already accepting notifications $fq_meth" if exists $callbacks->{"msg.$fq_meth"};
         $callbacks->{"msg.$fq_meth"} = $callback;
 
-        my $local_bus = $self->{_BUS}->{cluster};
+        my $local_bus = $self->{_BUS}->{bus_role};
 
         my $topic = "msg/$local_bus/$service/$method";
         $topic =~ tr|.*|/#|;
@@ -337,7 +337,7 @@ sub accept_remote_calls {
             carp "Running multiple services within a single worker hurts load balancing (don't do that)";
         }
 
-        my $local_bus = $self->{_BUS}->{cluster};
+        my $local_bus = $self->{_BUS}->{bus_role};
 
         my $queue = "\$share/BKPR/req/$local_bus/$service";
         $queue =~ tr|.*|/#|;
@@ -608,7 +608,7 @@ sub stop_accepting_notifications {
             next;
         }
 
-        my $local_bus = $self->{_BUS}->{cluster};
+        my $local_bus = $self->{_BUS}->{bus_role};
 
         my $topic = "msg/$local_bus/$service/$method";
         $topic =~ tr|.*|/#|;
@@ -677,7 +677,7 @@ sub stop_accepting_calls {
             next;
         }
 
-        my $local_bus = $self->{_BUS}->{cluster};
+        my $local_bus = $self->{_BUS}->{bus_role};
 
         my $topic = "\$share/BKPR/req/$local_bus/$service";
         $topic =~ tr|.*|/#|;

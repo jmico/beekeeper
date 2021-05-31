@@ -51,35 +51,35 @@ sub get_pool_config {
     return ($pool_id eq '*') ? \%pool_cfg : $pool_cfg{$pool_id};
 }
 
-sub get_cluster_config {
+sub get_bus_group_config {
     my ($class, %args) = @_;
 
-    my $cluster = $args{'cluster'};
-    my $bus_id  = $args{'bus_id'};
-    my @cluster_config;
+    my $bus_role = $args{'bus_role'};
+    my $bus_id   = $args{'bus_id'};
+    my @group_config;
 
-    die "No cluster or bus_id was specified" unless ($bus_id || $cluster);
+    die "No bus_role or bus_id was specified" unless ($bus_id || $bus_role);
 
     my $config = $class->read_config_file( 'bus.config.json' );
 
-    if ($cluster) {
+    if ($bus_role) {
 
-        @cluster_config = grep { defined $_->{'cluster'} && $_->{'cluster'} eq $cluster } @$config;
+        @group_config = grep { defined $_->{'bus_role'} && $_->{'bus_role'} eq $bus_role } @$config;
     }
     elsif ($bus_id) {
 
         my ($bus_config) = grep { $_->{'bus_id'} eq $bus_id } @$config;
         return [] unless $bus_config;
 
-        $cluster = $bus_config->{'cluster'};
-        return [ $bus_config ] unless $cluster;
+        $bus_role = $bus_config->{'bus_role'};
+        return [ $bus_config ] unless $bus_role;
 
-        @cluster_config = grep {
-            (defined $_->{'cluster'} && $_->{'cluster'} eq $cluster) || $_->{'bus_id'} eq $bus_id
+        @group_config = grep {
+            (defined $_->{'bus_role'} && $_->{'bus_role'} eq $bus_role) || $_->{'bus_id'} eq $bus_id
         } @$config;
     }
 
-    return \@cluster_config;
+    return \@group_config;
 }
 
 sub read_config_file {
@@ -189,7 +189,7 @@ Each entry define a logical bus. Accepted parameters are:
 
 C<bus_id>: unique identifier of the logical bus (required)
 
-C<cluster>: identifier of the cluster of logical buses that this bus belongs to (if any)
+C<bus_role>: specifies if the bus is acting as frontend or backend
 
 C<host>: hostname or IP address of the broker
 

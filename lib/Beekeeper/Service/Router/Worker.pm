@@ -42,14 +42,14 @@ sub on_startup {
     my $worker_config = $self->{_WORKER}->{config};
     my $bus_config    = $self->{_WORKER}->{bus_config};
 
-    # Determine name of frontend cluster
-    my $frontend_cluster = $worker_config->{'frontend_cluster'} || 'frontend';
-    $self->{frontend_cluster} = $frontend_cluster;
+    # Determine name of frontend bus group
+    my $frontend_role = $worker_config->{'frontend_role'} || 'frontend';
+    $self->{frontend_role} = $frontend_role;
 
-    my $frontends_config = Beekeeper::Config->get_cluster_config( cluster => $frontend_cluster );
+    my $frontends_config = Beekeeper::Config->get_bus_group_config( bus_role => $frontend_role );
 
     unless (@$frontends_config) {
-        die "No bus in cluster '$frontend_cluster' found into config file bus.config.json\n";
+        die "No bus with role '$frontend_role' was found into config file bus.config.json\n";
     }
 
     $self->{wait_frontends_up} = AnyEvent->condvar;
@@ -104,10 +104,10 @@ sub on_shutdown {
 
     $self->stop_accepting_calls('_bkpr.router.*');
 
-    my $frontend_cluster = $self->{frontend_cluster};
+    my $frontend_role = $self->{frontend_role};
 
-    my $backend_bus     = $self->{_BUS};
-    my $backend_cluster = $self->{_BUS}->{cluster};
+    my $backend_bus  = $self->{_BUS};
+    my $backend_role = $self->{_BUS}->{bus_role};
 
     my $cv = AnyEvent->condvar;
 
@@ -116,7 +116,7 @@ sub on_shutdown {
 
         foreach my $lane (1..QUEUE_LANES) {
 
-            my $topic = "\$share/BKPR/req/$backend_cluster-$lane";
+            my $topic = "\$share/BKPR/req/$backend_role-$lane";
             $cv->begin;
             $frontend_bus->unsubscribe(
                 topic       => $topic,
@@ -132,7 +132,7 @@ sub on_shutdown {
     # 2. Stop forwarding notifications to frontend
     foreach my $lane (1..QUEUE_LANES) {
 
-        my $topic = "\$share/BKPR/msg/$frontend_cluster-$lane";
+        my $topic = "\$share/BKPR/msg/$frontend_role-$lane";
         $cv->begin;
         $backend_bus->unsubscribe(
             topic       => $topic,
@@ -185,7 +185,7 @@ sub on_shutdown {
         $frontend_bus->disconnect;
     }
 
-    # Disconnect from backend cluster
+    # Disconnect from backend bus group
     $self->{MqttSessions}->disconnect;
 }
 
@@ -201,13 +201,13 @@ sub pull_frontend_requests {
     my $frontend_bus = $args{frontend};
     my $frontend_id  = $frontend_bus->bus_id;
 
-    my $backend_bus     = $self->{_BUS};
-    my $backend_id      = $backend_bus->bus_id;
-    my $backend_cluster = $backend_bus->cluster;
+    my $backend_bus  = $self->{_BUS};
+    my $backend_id   = $backend_bus->bus_id;
+    my $backend_role = $backend_bus->bus_role;
 
     foreach my $lane (1..QUEUE_LANES) {
 
-        my $src_queue = "\$share/BKPR/req/$backend_cluster-$lane";
+        my $src_queue = "\$share/BKPR/req/$backend_role-$lane";
 
         my ($payload_ref, $msg_prop);
         my ($dest_queue, $reply_to, $caller_id, $mqtt_session);
@@ -255,7 +255,7 @@ sub pull_frontend_requests {
                 $self->{_WORKER}->{jobs_count}++;
             },
             on_suback => sub {
-                log_debug "Forwarding $src_queue \@$frontend_id --> req/$backend_cluster/{app}/{service} \@$backend_id";
+                log_debug "Forwarding $src_queue \@$frontend_id --> req/$backend_role/{app}/{service} \@$backend_id";
             }
         );
     }
@@ -325,11 +325,11 @@ sub pull_backend_notifications {
     my $backend_bus  = $self->{_BUS};
     my $backend_id   = $backend_bus->bus_id;
 
-    my $frontend_cluster = $self->{frontend_cluster};
+    my $frontend_role = $self->{frontend_role};
 
     foreach my $lane (1..QUEUE_LANES) {
 
-        my $src_queue = "\$share/BKPR/msg/$frontend_cluster-$lane",
+        my $src_queue = "\$share/BKPR/msg/$frontend_role-$lane",
 
         my ($payload_ref, $msg_prop, $destination, $address);
 
@@ -444,7 +444,7 @@ sub assign_address {
     my $caller_addr = $params->{caller_addr};
     my $auth_data   = $params->{auth_data};
 
-    my $frontend_cluster = $self->{frontend_cluster};
+    my $frontend_role = $self->{frontend_role};
 
     unless (defined $address && $address =~ m/^[\w-]+\.[\w-]+$/) {
         # eg: frontend.user-1234
@@ -461,12 +461,12 @@ sub assign_address {
         die ( $caller_id ? "Invalid caller_addr $caller_addr" : "caller_addr not specified");
     }
 
-    unless ( $address =~ m/^$frontend_cluster\./) {
+    unless ( $address =~ m/^$frontend_role\./) {
         # eg: frontend.user-1234
-        die ( "Invalid address $address: router can handle only $frontend_cluster.* namespace" );
+        die ( "Invalid address $address: router can handle only $frontend_role.* namespace" );
     }
 
-    $address =~ s/^$frontend_cluster\.//;
+    $address =~ s/^$frontend_role\.//;
 
     $self->{MqttSessions}->set( $caller_id => [ $address, $caller_addr, $auth_data ] );
 
@@ -479,14 +479,14 @@ sub remove_address {
     my $caller_id = $params->{caller_id};
     my $address   = $params->{address};
 
-    my $frontend_cluster = $self->{frontend_cluster};
+    my $frontend_role = $self->{frontend_role};
 
     if (defined $caller_id && $caller_id !~ m/^\w{16,}$/) {
         # eg: 7nXDsxMDwgLUSedX
         die "Invalid caller_id $caller_id";
     }
 
-    if (defined $address && $address !~ m/^$frontend_cluster\.[\w-]+$/) {
+    if (defined $address && $address !~ m/^$frontend_role\.[\w-]+$/) {
         # eg: @frontend.user-1234
         die "Invalid address $address";
     }
@@ -502,7 +502,7 @@ sub remove_address {
 
     if ($address) {
 
-        $address =~ s/^$frontend_cluster\.//;
+        $address =~ s/^$frontend_role\.//;
 
         my $sessions = $self->{Addr_to_sessions}->{$address};
 

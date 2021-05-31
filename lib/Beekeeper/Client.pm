@@ -150,7 +150,7 @@ sub send_notification {
 
     my %send_args;
 
-    my $local_bus = $self->{_BUS}->{cluster};
+    my $local_bus = $self->{_BUS}->{bus_role};
 
     $remote_bus = $self->{_CLIENT}->{forward_to} unless (defined $remote_bus);
 
@@ -202,7 +202,7 @@ sub accept_notifications {
 
         #TODO: Allow to accept private notifications without subscribing
 
-        my $local_bus = $self->{_BUS}->{cluster};
+        my $local_bus = $self->{_BUS}->{bus_role};
 
         my $topic = "msg/$local_bus/$service/$method";
         $topic =~ tr|.*|/#|;
@@ -266,7 +266,7 @@ sub stop_accepting_notifications {
             next;
         }
 
-        my $local_bus = $self->{_BUS}->{cluster};
+        my $local_bus = $self->{_BUS}->{bus_role};
 
         my $topic = "msg/$local_bus/$service/$method";
         $topic =~ tr|.*|/#|;
@@ -355,7 +355,7 @@ sub __do_rpc_request {
 
     my %send_args;
 
-    my $local_bus = $self->{_BUS}->{cluster};
+    my $local_bus = $self->{_BUS}->{bus_role};
 
     $remote_bus = $client->{forward_to} unless (defined $remote_bus);
 

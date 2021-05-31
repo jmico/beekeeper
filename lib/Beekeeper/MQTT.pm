@@ -219,7 +219,7 @@ sub new {
 
     my $self = {
         bus_id          => undef,
-        cluster         => undef,
+        bus_role        => undef,
         handle          => undef,    # the socket
         hosts           => undef,    # list of all hosts in cluster
         is_connected    => undef,    # true once connected
@@ -245,15 +245,15 @@ sub new {
     };
 
     $self->{bus_id}   = delete $args{'bus_id'};
-    $self->{cluster}  = delete $args{'cluster'} || $self->{bus_id};
+    $self->{bus_role} = delete $args{'bus_role'} || $self->{bus_id};
     $self->{error_cb} = delete $args{'on_error'};
 
     bless $self, $class;
     return $self;
 }
 
-sub bus_id  { $_[0]->{bus_id}  }
-sub cluster { $_[0]->{cluster} }
+sub bus_id   { $_[0]->{bus_id}   }
+sub bus_role { $_[0]->{bus_role} }
 
 sub _fatal {
     my ($self, $errstr) = @_;

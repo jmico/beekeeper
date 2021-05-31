@@ -7,7 +7,7 @@
 # Each bus definition accepts the following parameters:
 #
 #  - bus_id   : unique identifier of the logical bus (required)
-#  - cluster  : identifier of the cluster of buses that this bus belongs to (if any)
+#  - bus_role : specifies if the bus is acting as frontend or backend
 #  - host     : hostname or IP address of the broker (default is localhost)
 #  - port     : port of the broker (default is 1883)
 #  - tls      : if set to true enables the use of TLS on broker connection
@@ -17,7 +17,7 @@
 [
     {
         "bus_id"   : "backend",
-        "cluster"  : "backend",
+        "bus_role" : "backend",
         "host"     : "localhost",
         "username" : "backend",
         "password" : "def456",
@@ -25,7 +25,7 @@
     },
     {
         "bus_id"   : "frontend",
-        "cluster"  : "frontend",
+        "bus_role" : "frontend",
         "host"     : "localhost",
         "port"     :  8001,
         "username" : "router",

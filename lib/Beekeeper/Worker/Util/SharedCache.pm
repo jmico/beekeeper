@@ -33,7 +33,7 @@ sub new {
         vers      => {},
         time      => {},
         _BUS      => undef,
-        _CLUSTER  => undef,
+        _BUS_GROUP=> undef,
     };
 
     bless $self, $class;
@@ -69,14 +69,14 @@ sub _connect_to_all_brokers {
     my ($self, $worker) = @_;
     weaken($self);
 
-    #TODO: using multiple shared_cache from the same worker will cause multiple cluster connections
+    #TODO: using multiple shared_cache from the same worker will cause multiple bus connections
 
     my $worker_bus = $worker->{_BUS};
-    my $cluster_config = Beekeeper::Config->get_cluster_config( bus_id => $worker_bus->bus_id );
+    my $group_config = Beekeeper::Config->get_bus_group_config( bus_id => $worker_bus->bus_id );
 
-    my $cluster = $self->{_CLUSTER} = [];
+    my $bus_group = $self->{_BUS_GROUP} = [];
 
-    foreach my $config (@$cluster_config) {
+    foreach my $config (@$group_config) {
 
         my $bus_id = $config->{'bus_id'};
 
@@ -105,7 +105,7 @@ sub _connect_to_all_brokers {
             },
         );
 
-        push @$cluster, $bus;
+        push @$bus_group, $bus;
 
         $bus->connect(
             on_connack => sub {
@@ -124,7 +124,7 @@ sub _setup_sync_listeners {
 
     my $cache_id  = $self->{id};
     my $uid       = $self->{uid};
-    my $local_bus = $bus->{cluster};
+    my $local_bus = $bus->{bus_role};
 
     $bus->subscribe(
         topic      => "msg/$local_bus/_sync/$cache_id/set",
@@ -160,7 +160,7 @@ sub _send_sync_request {
 
     my $cache_id  = $self->{id};
     my $uid       = $self->{uid};
-    my $local_bus = $bus->{cluster};
+    my $local_bus = $bus->{bus_role};
 
     $bus->publish(
         topic          => "req/$local_bus/_sync/$cache_id/dump",
@@ -200,7 +200,7 @@ sub _sync_completed {
 
     $self->{synced} = 1;
 
-    foreach my $bus ( @{$self->{_CLUSTER}} ) {
+    foreach my $bus ( @{$self->{_BUS_GROUP}} ) {
 
         # Connections to other buses could have failed or be in progress
         next unless $bus->{is_connected};
@@ -217,7 +217,7 @@ sub _accept_sync_requests {
     my $cache_id  = $self->{id};
     my $uid       = $self->{uid};
     my $bus_id    = $bus->{bus_id};
-    my $local_bus = $bus->{cluster};
+    my $local_bus = $bus->{bus_role};
 
     log_debug "Shared cache '$self->{id}': Accepting sync requests from $local_bus";
 
@@ -261,13 +261,13 @@ sub set {
     $self->{on_update}->($key, $value, $old) if $self->{on_update};
 
     # Notify all workers in every cluster about the change
-    my @cluster = grep { $_->{is_connected} } @{$self->{_CLUSTER}};
+    my @bus_group = grep { $_->{is_connected} } @{$self->{_BUS_GROUP}};
 
-    unshift @cluster, $self->{_BUS};
+    unshift @bus_group, $self->{_BUS};
 
-    foreach my $bus (@cluster) {
-        my $local_bus = $bus->{cluster};
-        my $cache_id = $self->{id};
+    foreach my $bus (@bus_group) {
+        my $local_bus = $bus->{bus_role};
+        my $cache_id  = $self->{id};
 
         $bus->publish(
             topic    => "msg/$local_bus/_sync/$cache_id/set",
@@ -497,7 +497,7 @@ sub disconnect {
 
     $self->_save_state if $self->{persist};
 
-    foreach my $bus (@{$self->{_CLUSTER}}) {
+    foreach my $bus (@{$self->{_BUS_GROUP}}) {
 
         next unless ($bus->{is_connected});
         $bus->disconnect;

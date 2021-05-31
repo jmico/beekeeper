@@ -430,7 +430,7 @@ Each entry define a logical bus. Required parameters are:
 
 C<bus_id>: unique identifier of the logical bus (required)
 
-C<cluster>: identifier of the cluster of logical buses that this bus belongs to (if any)
+C<bus_role>: specifies if the bus is acting as frontend or backend
 
 C<host>: hostname or IP address of the broker
 

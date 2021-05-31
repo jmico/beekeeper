@@ -40,11 +40,11 @@ sub _connect_to_all_brokers {
     weaken($self);
 
     my $own_bus = $self->{_BUS};
-    my $cluster_config = Beekeeper::Config->get_cluster_config( bus_id => $own_bus->bus_id );
+    my $group_config = Beekeeper::Config->get_bus_group_config( bus_id => $own_bus->bus_id );
 
-    $self->{_CLUSTER} = [];
+    $self->{_BUS_GROUP} = [];
 
-    foreach my $config (@$cluster_config) {
+    foreach my $config (@$group_config) {
 
         my $bus_id = $config->{'bus_id'};
 
@@ -74,7 +74,7 @@ sub _connect_to_all_brokers {
             },
         );
 
-        push @{$self->{_CLUSTER}}, $bus;
+        push @{$self->{_BUS_GROUP}}, $bus;
 
         $bus->connect;
     }
@@ -107,7 +107,7 @@ sub _collect_log {
 sub on_shutdown {
     my ($self, %args) = @_;
 
-     foreach my $bus (@{$self->{_CLUSTER}}) {
+     foreach my $bus (@{$self->{_BUS_GROUP}}) {
 
         next unless ($bus->{is_connected});
         $bus->disconnect;
