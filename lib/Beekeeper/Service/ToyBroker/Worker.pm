@@ -57,13 +57,18 @@ sub on_startup    { }
 sub on_shutdown {
     my $self = shift;
 
+    log_info "Shutting down";
+
     # Wait for clients to gracefully disconnect
-    for (1..100) {
-        last unless (keys %{$self->{connections}} <= 1); # our one
+    for (1..60) {
+        my $conn_count = scalar keys %{$self->{connections}};
+        last if $conn_count <= 1; # our one
         my $wait = AnyEvent->condvar;
-        my $tmr = AnyEvent->timer( after => 0.1, cb => $wait );
+        my $tmr = AnyEvent->timer( after => 0.5, cb => $wait );
         $wait->recv;
     }
+
+    undef $self->{_LOGGER}->{_BUS};
 
     # Get rid of our connection to ourselves
     $self->{_BUS}->disconnect;
@@ -110,12 +115,10 @@ sub start_listener {
     ($addr) = ($addr =~ m/^([\w\.:]+)$/);  # untaint
     ($port) = ($port =~ m/^(\d+)$/);
 
-    $self->{"listener-$addr-$port"} = tcp_server ($addr, $port, sub {
-        my ($fh, $host, $port) = @_;
+    log_info "Listening on $addr:$port";
 
-        my $login_tmr = AnyEvent->timer( after => 5, cb => sub {
-            $self->_shutdown($fh) unless $self->get_client($fh);
-        });
+    $self->{"listener-$addr-$port"} = tcp_server ($addr, $port, sub {
+        my ($FH, $host, $port) = @_;
 
         my $packet_type;
         my $packet_flags;
@@ -127,12 +130,11 @@ sub start_listener {
         my $offs;
         my $byte;
 
-        $self->{connections}->{"$fh"} = AnyEvent::Handle->new(
-            fh => $fh,
+        my $fh; $fh = AnyEvent::Handle->new(
+            fh => $FH,
             keepalive => 1,
             no_delay => 1,
             on_read => sub {
-                my $fh = $_[0];
 
                 PARSE_PACKET: {
 
@@ -240,17 +242,22 @@ sub start_listener {
             },
             on_eof => sub {
                 # Clean disconnection, client will not write anymore
-                my $fh = $_[0];
                 $self->remove_client($fh);
                 delete $self->{connections}->{"$fh"};
             },
             on_error => sub {
-                my $fh = $_[0];
                 log_error "$_[2]\n";
                 $self->remove_client($fh);
                 delete $self->{connections}->{"$fh"};
             }
         );
+
+        $self->{connections}->{"$fh"} = $fh;
+
+        #TODO: Close connection on login timeout
+        # my $login_tmr = AnyEvent->timer( after => 5, cb => sub {
+        #     $self->_shutdown($fh) unless $self->get_client($fh);
+        # });
     });
 }
 
