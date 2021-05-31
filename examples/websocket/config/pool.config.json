@@ -17,7 +17,7 @@
 [
     {
         "pool_id"       : "myapp",
-        "bus_id"        : "backend",
+        "bus_id"        : "backend-1",
         "description"   : "pool of MyApp workers",
         "use_toybroker" :  1,
 

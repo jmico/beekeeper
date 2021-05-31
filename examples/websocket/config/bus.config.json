@@ -16,7 +16,7 @@
 
 [
     {
-        "bus_id"   : "backend",
+        "bus_id"   : "backend-1",
         "bus_role" : "backend",
         "host"     : "localhost",
         "username" : "backend",
@@ -24,7 +24,7 @@
         "default"  : 1,
     },
     {
-        "bus_id"   : "frontend",
+        "bus_id"   : "frontend-1",
         "bus_role" : "frontend",
         "host"     : "localhost",
         "port"     :  8001,

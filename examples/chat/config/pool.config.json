@@ -28,7 +28,7 @@
     },
     {
         "pool_id"       : "myapp-A",
-        "bus_id"        : "backend-A",
+        "bus_id"        : "backend-1",
         "description"   : "pool #1 of MyApp workers",
 
         "workers" : {
@@ -40,7 +40,7 @@
     },
     {
         "pool_id"     : "myapp-B",
-        "bus_id"      : "backend-B",
+        "bus_id"      : "backend-2",
         "description" : "pool #2 of MyApp workers",
 
         "workers" : {

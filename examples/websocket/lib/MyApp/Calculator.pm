@@ -15,7 +15,8 @@ sub new {
 
     # Connect to bus 'frontend', wich will forward requests to 'backend'
     $self->{client} = Beekeeper::Client->instance(
-        bus_id     => 'frontend', 
+        bus_id     => 'frontend-1',
+        bus_role   => "frontend",
         forward_to => 'backend',
         host       => "localhost",
         port       =>  8001,
