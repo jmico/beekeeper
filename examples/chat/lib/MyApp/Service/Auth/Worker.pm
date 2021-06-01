@@ -44,8 +44,8 @@ sub login {
     # The authentication data will be present on all subsequent requests
     $self->set_authentication_data( $uuid );
 
-    # Assign an arbitrary address to the user logging in
-    $self->assign_remote_address( "frontend.user-$uuid" );
+    # Make the authentication data persist and assign an arbitrary address to the user
+    $self->bind_remote_session( address => "frontend.user-$uuid" );
 
     MyApp::Service::Chat->send_notice(
         to_uuid => $uuid,
@@ -65,7 +65,7 @@ sub logout {
         message => "Bye!",
     );
 
-    $self->remove_caller_address;
+    $self->unbind_remote_session;
 
     return 1;
 }
@@ -81,7 +81,7 @@ sub kick {
         message => "Sorry, you were kicked",
     );
 
-    $self->remove_remote_address( "frontend.user-$kick_uuid" );
+    $self->unbind_remote_address( address => "frontend.user-$kick_uuid" );
 
     return 1;
 }

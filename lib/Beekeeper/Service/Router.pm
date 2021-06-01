@@ -8,19 +8,19 @@ our $VERSION = '0.03';
 use Exporter 'import';
 
 our @EXPORT_OK = qw(
-    assign_remote_address
-    remove_remote_address
-    remove_caller_address
+    bind_remote_session
+    unbind_remote_session
+    unbind_remote_address
 );
 
 our %EXPORT_TAGS = ('all' => \@EXPORT_OK );
 
 
-sub assign_remote_address {
-    my ($self, $address) = @_;
+sub bind_remote_session {
+    my ($self, %args) = @_;
 
     my $params = {
-        address     => $address,
+        address     => $args{'address'},
         caller_id   => $self->{_CLIENT}->{caller_id},
         caller_addr => $self->{_CLIENT}->{caller_addr},
         auth_data   => $self->{_CLIENT}->{auth_data},
@@ -29,31 +29,33 @@ sub assign_remote_address {
     my $guard = $self->__use_authorization_token('BKPR_ROUTER');
 
     $self->call_remote(
-        method => '_bkpr.router.assign_addr',
+        method => '_bkpr.router.bind',
         params => $params,
     );
 }
 
-sub remove_remote_address {
-    my ($self, $address) = @_;
-
-    my $guard = $self->__use_authorization_token('BKPR_ROUTER');
-
-    $self->call_remote(
-        method => '_bkpr.router.remove_addr',
-        params => { address => $address },
-    );
-}
-
-sub remove_caller_address {
-    my $self = shift;
+sub unbind_remote_session {
+    my ($self) = @_;
 
     my $params = { caller_id => $self->{_CLIENT}->{caller_id} };
 
     my $guard = $self->__use_authorization_token('BKPR_ROUTER');
 
     $self->call_remote(
-        method => '_bkpr.router.remove_addr',
+        method => '_bkpr.router.unbind',
+        params => $params,
+    );
+}
+
+sub unbind_remote_address {
+    my ($self, %args) = @_;
+
+    my $params = { address => $args{'address'} };
+
+    my $guard = $self->__use_authorization_token('BKPR_ROUTER');
+
+    $self->call_remote(
+        method => '_bkpr.router.unbind',
         params => $params,
     );
 }
@@ -68,7 +70,7 @@ __END__
 
 =head1 NAME
 
-Beekeeper::Service::Router - Route messages between buses
+Beekeeper::Service::Router - Route messages between backend and frontend buses
 
 =head1 VERSION
 
@@ -76,43 +78,57 @@ Version 0.03
 
 =head1 SYNOPSIS
 
-  $self->assign_remote_address( "frontend-user-123" );
+  $self->bind_remote_session( address => "frontend.user-123" );
   
   $self->send_notification(
-      method  => 'myapp.info',
-      address => 'frontend-user-123',
+      method  => 'myapp.private_message',
+      address => 'frontend.user-123',
       params  => 'hello',
   );
   
-  $self->remove_remote_address( "frontend-user-123" );
+  $self->unbind_remote_session;
+  
+  $self->unbind_remote_address( address => "frontend.user-123" );
 
 =head1 DESCRIPTION
 
 Router workers shovel requests messages between frontend and backend brokers.
 
-In order to push unicasted notifications all routers share a table of client
-connections and server side assigned arbitrary addresses.
+Additionally, routers include some primitives that can be used to implement session 
+management and push notifications.
 
 =head1 METHODS
 
-=head3 assign_remote_address ( $address )
+=head3 bind_remote_session ( address => $address )
 
-Assign an arbitrary address to remote caller.
+Make authorization data persist for remote caller session and optionally assign an 
+arbitrary address to the remote client.
 
-This address can be used later to push notifications to the client.
+The authorization data can be used to store a session ID or other tokens which identify
+requests as coming from a particular remote client.
 
-The same address can be assigned to multiple remote clients, all of them will
-receive the notifications sent to it.
+If an address is provided it can be used to push notifications to the client. The same
+address can be assigned to multiple remote clients, and all of them will receive the 
+notifications sent to it. This is intended to allow to push notifications to users logged 
+into multiple devices.
 
-=head3 remove_remote_address ( $address )
+=head3 unbind_remote_session
 
-Cancel an address assignment. Clients will no longer receive notifications
-sent to this address anymore.
+Clear the authorization data and address assignment of a single remote caller session.
 
-=head3 remove_caller_address
+This does not affect other remote clients which share the same address. This is intended
+to implement "logout from this device" functionality.
 
-Cancel an address assignment just for remote caller. Other remote clients
-may still receive notifications from this address.
+=head3 unbind_remote_address ( address => $address )
+
+Clear the authorization data and address assignment of all remote clients which were
+assigned the given address.
+
+This is intended to implement "logout from all devices" functionality.
+
+=head1 SEE ALSO
+ 
+L<Beekeeper::Service::Router::Worker>
 
 =head1 AUTHOR
 

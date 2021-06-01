@@ -32,9 +32,9 @@ Create a lot of clients who flood with messages each other.
   -s, --size    N  size in KB of requests, default is 0
   -h, --help       display this help and exit
 
-To create a 100 clients sending in total 1000 messages per second to each other:
+To create a 100 clients sending in total 500 messages per second to each other:
 
-  flood -c 100 -r 1000
+  flood -c 100 -r 500
 
 ";
 

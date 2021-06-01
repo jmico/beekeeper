@@ -404,6 +404,8 @@ sub _init_routing_table {
                 my $addr  = $value->[0];
                 my $topic = $value->[1];
 
+                return unless defined $addr;
+
                 my $relpy_topics = $self->{Addr_to_topics}->{$addr} ||= [];
                 return if grep { $_ eq $topic } @$relpy_topics;
                 push @$relpy_topics, $topic;
@@ -415,6 +417,8 @@ sub _init_routing_table {
                 # Unbind
                 my $addr  = $old_value->[0];
                 my $topic = $old_value->[1];
+
+                return unless defined $addr;
 
                 my $relpy_topics = $self->{Addr_to_topics}->{$addr} || return;
                 @$relpy_topics = grep { $_ ne $topic } @$relpy_topics;
@@ -428,25 +432,18 @@ sub _init_routing_table {
     );
 
     $self->accept_remote_calls(
-        '_bkpr.router.assign_addr' => 'assign_address',
-        '_bkpr.router.remove_addr' => 'remove_address',
+        '_bkpr.router.bind'   => 'bind_remote_session',
+        '_bkpr.router.unbind' => 'unbind_remote_session',
     );
 }
 
-sub assign_address {
+sub bind_remote_session {
     my ($self, $params) = @_;
 
     my $address     = $params->{address};
     my $caller_id   = $params->{caller_id};
     my $caller_addr = $params->{caller_addr};
     my $auth_data   = $params->{auth_data};
-
-    my $frontend_role = $self->{frontend_role};
-
-    unless (defined $address && $address =~ m/^[\w-]+\.[\w-]+$/) {
-        # eg: frontend.user-1234
-        die ( $address ? "Invalid address $address" : "address not specified");
-    }
 
     unless (defined $caller_id && $caller_id =~ m/^\w{16,}$/) {
         # eg: 7nXDsxMDwgLUSedX
@@ -458,19 +455,29 @@ sub assign_address {
         die ( $caller_id ? "Invalid caller_addr $caller_addr" : "caller_addr not specified");
     }
 
-    unless ( $address =~ m/^$frontend_role\./) {
-        # eg: frontend.user-1234
-        die ( "Invalid address $address: router can handle only $frontend_role.* namespace" );
-    }
+    if (defined $address) {
 
-    $address =~ s/^$frontend_role\.//;
+        my $frontend_role = $self->{frontend_role};
+
+        unless ($address =~ m/^[\w-]+\.[\w-]+$/) {
+            # eg: frontend.user-1234
+            die ( "Invalid address $address" );
+        }
+
+        unless ($address =~ m/^$frontend_role\./) {
+            # eg: frontend.user-1234
+            die ( "Invalid address $address: router can handle only $frontend_role.* namespace" );
+        }
+
+        $address =~ s/^$frontend_role\.//;
+    }
 
     $self->{MqttSessions}->set( $caller_id => [ $address, $caller_addr, $auth_data ] );
 
     return 1;
 }
 
-sub remove_address {
+sub unbind_remote_session {
     my ($self, $params) = @_;
 
     my $caller_id = $params->{caller_id};
@@ -525,7 +532,7 @@ __END__
 
 =head1 NAME
  
-Beekeeper::Service::Router::Worker - Route messages between backend and frontend
+Beekeeper::Service::Router::Worker - Route messages between backend and frontend buses
 
 =head1 VERSION
  
@@ -535,13 +542,22 @@ Version 0.03
 
 =head1 DESCRIPTION
 
-This worker pulls requests from any frontend brokers and forward them to the 
-single backend broker it is connected to. It also pull generated responses from
-the backend and forward them to the aproppiate frontend broker which the
-client is connected to.
+Router workers pull requests from all frontend brokers and forward them to the single
+backend broker it is connected to, and pull generated responses from the backend and
+forward them to the aproppiate frontend broker which the client is connected to.
 
-In order to push unicasted notifications it keeps a shared table of client
-connections and server side assigned arbitrary addresses.
+Additionally, routers include some primitives that can be used to implement session
+management and push notifications. In order to push unicasted notifications, routers will
+keep an in-memory shared table of client connections and server side assigned addresses.
+
+=head1 TODO
+
+Measure and report the percentage of busy time ('load' in bkpr-top). This metric is essential
+to assess the routing capacity of a given system.
+
+=head1 SEE ALSO
+ 
+L<Beekeeper::Service::Router>
 
 =head1 AUTHOR
 
