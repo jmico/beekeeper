@@ -9,10 +9,16 @@ use Test::More;
 use Time::HiRes 'sleep';
 
 use constant DEBUG => 0;
-$ENV{'PERL_BATCH'} = 1;
+
 
 sub start_test_workers : Test(startup => 1) {
     my $self = shift;
+
+    if ($self->automated_testing) {
+        # On smoke testers there is no broker to test for load balance quality
+        $self->stop_all_workers;
+        $self->SKIP_ALL("Load balance tests are not deterministic");
+    }
 
     my $running = $self->start_workers('Tests::Service::Cache', workers_count => 5);
     is( $running, 5, "Spawned 5 workers");
@@ -54,13 +60,7 @@ sub test_01_load_balance_async : Test(6) {
 
         DEBUG && diag "$pid: $got  $offs  $dev %";
 
-        if ($self->automated_testing) {
-            # Load balance tests are not deterministic
-            ok(1, "expected average $expected async runs, got $got");
-        }
-        else {
-            cmp_ok($dev,'<', 60, "expected average $expected async runs, got $got");
-        }
+        cmp_ok($dev,'<', 60, "expected average $expected async runs, got $got");
     }
 
     is($total, $tasks, "expected total $tasks async runs, got $total");
@@ -101,13 +101,7 @@ sub test_02_load_balance_background : Test(6) {
 
         DEBUG && diag "$pid: $got  $offs  $dev %";
 
-        if ($self->automated_testing) {
-            # Load balance tests are not deterministic
-            ok(1, "expected average $expected background runs, got $got");
-        }
-        else {
-            cmp_ok($dev,'<', 60, "expected average $expected background runs, got $got");
-        }
+        cmp_ok($dev,'<', 60, "expected average $expected background runs, got $got");
     }
 
     is( $total, $tasks, "expected total $tasks background runs, got $total");
@@ -178,13 +172,7 @@ sub test_03_slow_consumer_async : Test(7) {
 
         if ($slowed_workers{$pid}) {
 
-            if ($self->automated_testing) {
-                # Load balance tests are not deterministic
-                ok(1, "expected average 1 slow runs, got $got");
-            }
-            else {
-                cmp_ok($got,'<', $expected_fast * 0.20, "expected average 1 slow runs, got $got");
-            }
+            cmp_ok($got,'<', $expected_fast * 0.20, "expected average 1 slow runs, got $got");
         }
         else {
             my $offs = $got - $expected_fast;
@@ -192,13 +180,7 @@ sub test_03_slow_consumer_async : Test(7) {
 
             DEBUG && diag "$pid: $got  $offs  $dev %";
 
-            if ($self->automated_testing) {
-                # Load balance tests are not deterministic
-                ok(1, "expected average $expected_fast fast runs, got $got");
-            }
-            else {
-                cmp_ok($dev,'<', 60, "expected average $expected_fast fast runs, got $got");
-            }
+            cmp_ok($dev,'<', 60, "expected average $expected_fast fast runs, got $got");
         }
 
         $total += $got;        
