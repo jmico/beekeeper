@@ -46,30 +46,30 @@ sub automated_testing {
 }
 
 sub _sleep {
-    my ($class, $time) = @_;
+    my ($self, $time) = @_;
     # Run tests really slow on limited hardware of smoke testers
-    $time *= 10 if $class->automated_testing;
+    $time *= 10 if $self->automated_testing;
     sleep $time;
 }
 
 sub check_01_supported_os : Test(startup => 1) {
-    my $class = shift;
+    my $self = shift;
 
     unless ($^O eq 'linux' || $^O eq 'freebsd') {
-        $class->BAIL_OUT("OS unsupported");
+        $self->BAIL_OUT("OS unsupported");
     }
 
     ok( 1, "Supported OS ($^O)");
 }
 
 sub check_02_broker_connection : Test(startup => 1) {
-    my $class = shift;
+    my $self = shift;
     my $server;
     my $error;
 
     local $SIG{'__WARN__'} = sub { $error = @_ };
 
-    unless ($class->automated_testing) {
+    unless ($self->automated_testing) {
 
         # Try to connect to broker
         my $config = Beekeeper::Config->get_bus_config( bus_id => 'test' );
@@ -90,31 +90,31 @@ sub check_02_broker_connection : Test(startup => 1) {
     }
 
     # If no real broker is available, spawn a ToyBroker
-    $Toybroker_pid = $class->_spawn_worker('Beekeeper::Service::ToyBroker::Worker');
+    $Toybroker_pid = $self->_spawn_worker('Beekeeper::Service::ToyBroker::Worker');
 
     # Wait a bit until ToyBroker is ready
-    $class->_sleep( 0.5 );
+    $self->_sleep( 0.5 );
 
     my $is_running = kill(0, $Toybroker_pid);
 
     unless ($is_running) {
         # Probably address already in use by another broker or a ToyBroker zombie
-        $class->stop_all_workers;
-        $class->BAIL_OUT("Could not start ToyBroker, no MQTT broker available to run tests");
+        $self->stop_all_workers;
+        $self->SKIP_ALL("Could not start ToyBroker, no MQTT broker available to run tests");
     }
 
     ok( 1, "Running tests on ToyBroker");
 }
 
 sub stop_test_workers : Test(shutdown) {
-    my $class = shift;
+    my $self = shift;
 
     # Stop forked workers when test ends
-    $class->stop_all_workers;
+    $self->stop_all_workers;
 }
 
 sub start_workers {
-    my ($class, $worker_class, %config) = @_;
+    my ($self, $worker_class, %config) = @_;
 
     my $workers_count = $config{'workers_count'} ||= 2;
     my $no_wait = delete $config{'no_wait'};
@@ -127,15 +127,15 @@ sub start_workers {
 
         $SIG{'USR2'} = sub {
             # Send by child when supervisor does not compile
-            $class->stop_all_workers;
-            $class->FAIL_ALL("Could not start supervisor: $supervisor_class does not compile");
+            $self->stop_all_workers;
+            $self->FAIL_ALL("Could not start supervisor: $supervisor_class does not compile");
         };
 
         # Spawn a supervisor
-        $Supervisor_pid = $class->_spawn_worker( $supervisor_class, foreground => 0 ); #TODO: does not quit on foreground
+        $Supervisor_pid = $self->_spawn_worker( $supervisor_class, foreground => 0 ); #TODO: does not quit on foreground
 
         # Wait until supervisor is running
-        $class->_sleep( 0.5 );
+        $self->_sleep( 0.5 );
 
         # Verify that it is running
         my $status = eval { 
@@ -145,15 +145,15 @@ sub start_workers {
             );
         };
         unless ($status && $status->{$supervisor_class}->{count}) {
-            $class->stop_all_workers;
-            $class->FAIL_ALL("Could not start supervisor");
+            $self->stop_all_workers;
+            $self->FAIL_ALL("Could not start supervisor");
         }
     }
 
     $SIG{'USR2'} = sub {
         # Send by childs when workers do not compile
-        $class->stop_all_workers;
-        $class->FAIL_ALL("Could not start workers: $worker_class does not compile");
+        $self->stop_all_workers;
+        $self->FAIL_ALL("Could not start workers: $worker_class does not compile");
     };
 
     my $already_running = grep { $_ eq $worker_class } values %Worker_pids;
@@ -162,12 +162,12 @@ sub start_workers {
     # Spawn workers
     for (1..$workers_count) {
 
-        my $pid = $class->_spawn_worker($worker_class, %config);
+        my $pid = $self->_spawn_worker($worker_class, %config);
 
         $Worker_pids{$pid} = $worker_class;
         push @started_pids, $pid;
 
-        $class->_sleep( 0.1 );
+        $self->_sleep( 0.1 );
     }
 
     unless ($no_wait) {
@@ -177,7 +177,7 @@ sub start_workers {
 
         my $max_wait = 20;
         while ($max_wait--) {
-            $class->_sleep( 0.1 );
+            $self->_sleep( 0.1 );
             my $status = Beekeeper::Service::Supervisor->get_services_status(
                 class   => $worker_class,
                 timeout => 1,
@@ -187,8 +187,8 @@ sub start_workers {
         }
 
         unless ($max_wait > 0) {
-            $class->stop_all_workers;
-            $class->FAIL_ALL("Failed to start $workers_count workers $worker_class");
+            $self->stop_all_workers;
+            $self->FAIL_ALL("Failed to start $workers_count workers $worker_class");
         }
     }
 
@@ -196,17 +196,17 @@ sub start_workers {
 }
 
 sub stop_all_workers {
-    my $class = shift;
+    my $self = shift;
 
-    $class->stop_workers('INT', keys %Worker_pids) if keys %Worker_pids;
-    $class->stop_workers('INT', $Supervisor_pid)   if $Supervisor_pid;
-    $class->stop_workers('INT', $Toybroker_pid)    if $Toybroker_pid;
+    $self->stop_workers('INT', keys %Worker_pids) if keys %Worker_pids;
+    $self->stop_workers('INT', $Supervisor_pid)   if $Supervisor_pid;
+    $self->stop_workers('INT', $Toybroker_pid)    if $Toybroker_pid;
 }
 
 my $leaving;
 
 sub stop_workers {
-    my ($class, $signal, @pids) = @_;
+    my ($self, $signal, @pids) = @_;
 
     # Signal workers to quit
     foreach my $worker_pid (@pids) {
@@ -219,7 +219,7 @@ sub stop_workers {
     my @lingering = @pids;
     while (@lingering && $max_wait--) {
         @lingering = grep { kill(0, $_) } @lingering;
-        $class->_sleep( 0.1 );
+        $self->_sleep( 0.1 );
     }
 
     foreach my $worker_pid (@pids) {
@@ -230,13 +230,13 @@ sub stop_workers {
     if (@lingering) {
         $leaving && return;
         $leaving = 1;
-        $class->stop_all_workers;
-        $class->FAIL_ALL("Failed to stop workers " . join(', ', values %Worker_pids));
+        $self->stop_all_workers;
+        $self->FAIL_ALL("Failed to stop workers " . join(', ', values %Worker_pids));
     }
 }
 
 sub _spawn_worker {
-    my ($class, $worker_class, %config) = @_;
+    my ($self, $worker_class, %config) = @_;
 
     # Mimic Beekeeper::WorkerPool->spawn_worker
 
