@@ -124,7 +124,7 @@ __END__
 
 =head1 NAME
  
-Beekeeper::Service::Sinkhole::Worker - Handle unserviced job queues
+Beekeeper::Service::Sinkhole::Worker - Handle unserviced call topics
 
 =head1 VERSION
  
@@ -138,7 +138,7 @@ disruption in the application, as any other service depending of the broken
 one will halt too for the duration of the timeout.
 
 In order to mitigate this situation all Sinkhole workers will be notified by
-the Supervisor when unserviced queues are detected, making these to respond 
+the Supervisor when unserviced topics are detected, making these to respond 
 immediately to all requests with an error response. Then callers will quickly 
 receive an error response instead of timing out.
 

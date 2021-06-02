@@ -1511,8 +1511,33 @@ Version 0.03
 
 ToyBroker implements a small MQTT subset needed to run a Beekeeper worker pool.
 
-Being single threaded it does not scale at all, but it is handy for development
+Being single threaded it does not scale at all, but it is suitable for development
 or running tests.
+
+ToyBroker is configured from file C<toybroker.config.json>, which is looked for 
+in ENV C<BEEKEEPER_CONFIG_DIR>, C<~/.config/beekeeper> and then C</etc/beekeeper>.
+
+Example configuration:
+
+  [
+      {
+          "listen_addr" : "127.0.0.1",
+          "listen_port" : "1883",
+  
+          "users" : {
+              "backend" : { "password" : "def456" },
+          },
+      },
+      {
+          "listen_addr" : "127.0.0.1",
+          "listen_port" : "8001",
+  
+          "users" : {
+              "frontend" : { "password" : "abc123" },
+              "router"   : { "password" : "ghi789" },
+          },
+      },
+  ]
 
 =head1 AUTHOR
 

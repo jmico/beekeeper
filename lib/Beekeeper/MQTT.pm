@@ -1764,7 +1764,7 @@ __END__
 
 =head1 NAME
  
-Beekeeper::MQTT - A lightweight asynchronous MQTT 5.0 client.
+Beekeeper::MQTT - Asynchronous MQTT 5.0 client.
  
 =head1 VERSION
  
@@ -1829,7 +1829,7 @@ a randomly choosen node of the cluster.
 
 =item port
 
-Port of the MQTT server. If not specified use the MQTT default of 1818.
+Port of the MQTT server. If not specified use the MQTT default of 1883.
 
 =item tls
 
@@ -1984,7 +1984,7 @@ Must be set to a true value to indicate a message retransmission.
 
 =item retain => $bool
 
-...
+When true sets the message retain flag.
 
 =item message_expiry_interval => $int
 
@@ -1993,7 +1993,7 @@ period has ellapsed.
 
 =item response_topic => $str
 
-...
+Utf8 string containing the response topic name.
 
 =item on_puback => $cb->($reason_code)
 

@@ -548,15 +548,17 @@ This module implements a locally mirrored shared cache: each worker keeps a
 copy of all cached data, and all copies are synced through message bus.
 
 Access operations are essentially free, as data is held locally. But changes 
-are expensive as they need to be propagated to every worker, and memory usage
-is high due to data cloning.
+are expensive as they need to be propagated to every worker, and overall 
+memory usage is high due to data cloning.
 
-Keep in mind that retrieved data may be stale due to latency in changes 
-propagation through the bus (which involves two network operations).
+Keep in mind that retrieved data may be stale due to latency in the propagation
+of changes through the bus which involves two MQTT messages.
 
 Even if you are using this cache for small data sets that do not change very
-often, please consider if a distributed memory cache like Redis or such (or 
-even a plain DB) is a better alternative.
+often, please consider if a distributed memory cache (or even a plain DB) is 
+a better alternative.
+
+Due to propagation costs, B<this cache does not scale>.
 
 =head1 AUTHOR
 

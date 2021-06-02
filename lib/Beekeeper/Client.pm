@@ -800,22 +800,25 @@ C<Beekeeper::JSONRPC::Error> object as parameter. Must be a coderef.
 
 =head3 fire_remote ( %args )
 
-Makes an asynchronous RPC call to a service worker through the message bus but
-does not expect to receive any response, it is a fire and forget call.
+Fire and forget an asynchronous RPC call to a service worker through the message bus.
 
-It returns undef immediately.
+It returns undef immediately, there is no way to know if the call was executed
+successfully or not.
 
-This method  accepts parameters C<method>, C<params>, C<address> and C<timeout> 
-the same as C<call_remote>.
+This method accepts parameters C<method>, C<params> and C<address> the same as C<call_remote>.
 
 =head3 wait_async_calls
 
-Wait (in the event loop) until all calls made by C<call_remote_async> are completed.
+Wait (running the event loop) until all calls made by C<call_remote_async> are completed
+either by success, error or timeout.
 
 =head3 set_authentication_data ( $data )
 
-Add an arbitrary authentication data blob to subsequent jobs requests or 
-notifications sent.
+Add an arbitrary authentication data blob to subsequent calls or notifications sent.
+
+This data persists for client lifetime in standalone clients. Within worker context
+it persists until the end of current request only, and will be piggybacked on
+calls made to another workers within the scope of current request.
 
 The meaning of this data is application specific, this framework doesn't give 
 any special one to it.

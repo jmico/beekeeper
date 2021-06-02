@@ -5,7 +5,7 @@ shared topics). But being shared topics a relatively recent feature, brokers sti
 or shortcomings in its implementation.
 
 - **ToyBroker** is a simple pure Perl MQTT 5 broker included with this distribution. It is 
-  very handy for development and running tests, but it does not scale, does not provide any kind 
+  suitable for development and running tests, but it does not scale, does not provide any kind 
   of security, and does not provides a WebSocket frontend. So it cannot be used on production.
 
 - **![Eclipse Mosquitto](https://mosquitto.org/)** (as of 2.0.10) works fine. It does not resend
@@ -57,7 +57,7 @@ See a full list of MQTT brokers at https://en.wikipedia.org/wiki/Comparison_of_M
   with wrong permissions by mistake, but if a worker has write access to the backend bus it can easily 
   override these restrictions and make any arbitrary request.
 
-- Thus, remote users should never ever be allowed to connect directly to the backend broker.
+- Remote users should never ever be allowed to connect directly to the backend broker.
 
 
 ### Mosquitto setup

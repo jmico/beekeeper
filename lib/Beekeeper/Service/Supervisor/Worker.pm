@@ -424,20 +424,20 @@ workers periodic performance reports.
 
 =head3 worker_status
 
-Handler for 'supervisor.worker_status' job.
+Handler for 'supervisor.worker_status' request.
 
-This job is sent by workers every few seconds and acts as a heart-beat.
+This request is made by workers every few seconds and acts as a heart-beat.
 It contains statistical data about worker performance.
 
-Note that workers doing long jobs (like slow SQL queries) may not send 
+Note that workers processing long tasks (like slow SQL queries) may not make 
 this request timely.
 
 =head3 on_worker_exit
 
-Handler for 'supervisor.worker_exit' job.
+Handler for 'supervisor.worker_exit' request.
 
-This job is sent by workers just before exiting gracefully. It is not sent 
-when worker is terminated abruptly (as process has no chance to do so).
+This request is made by workers just before exiting gracefully. It is not made 
+when a worker is terminated abruptly (as the process has no chance to do so).
 
 =head3 check_workers
 
@@ -462,13 +462,13 @@ error response instead of timing out.
 
 =head3 get_workers_status
 
-Handler for 'supervisor.get_workers_status' job.
+Handler for 'supervisor.get_workers_status' request.
 
 Used by bkpr-top command line tool.
 
 =head3 get_services_status
 
-Handler for 'supervisor.get_services_status' job.
+Handler for 'supervisor.get_services_status' request.
 
 Used by bkpr-top command line tool.
 

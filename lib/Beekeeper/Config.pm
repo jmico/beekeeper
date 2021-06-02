@@ -141,7 +141,7 @@ Version 0.03
 Beekeeper applications use two config files to define how clients, workers
 and brokers connect to each other.
 
-These files are searched for in ENV C<BEEKEEPER_CONFIG_DIR>, C<~/.config/beekeeper>
+These files are looked for in ENV C<BEEKEEPER_CONFIG_DIR>, C<~/.config/beekeeper>
 and then C</etc/beekeeper>.
 
 =head3 pool.config.json

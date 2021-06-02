@@ -104,10 +104,13 @@ Version 0.03
 =head1 DESCRIPTION
 
 Supervisor service keeps a table of the status and performance metrics of every 
-worker connected to a logical bus in every broker.
+worker connected to a logical bus.
 
-This status table can be queried to shovel worker status to an external monitoring
-application. The command line tool L<bkpr-top> display this status table.
+The command line tool L<bkpr-top> displays the contents of this status table.
+
+This module provides methods C<get_services_status> and C<get_workers_status> to
+query the table, allowing for example to shovel services status to an external 
+monitoring application.
 
 =head1 SEE ALSO
  

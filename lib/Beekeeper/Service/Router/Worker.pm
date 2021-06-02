@@ -550,6 +550,14 @@ Additionally, routers include some primitives that can be used to implement sess
 management and push notifications. In order to push unicasted notifications, routers will
 keep an in-memory shared table of client connections and server side assigned addresses.
 
+If the application does not bind client sessions the routers can scale really well,
+as you can have a lot of them in a large number of servers. 
+
+But please note that when the application does use the session binding mechanism all
+routers will need the in-memory shared table, and this shared table will not scale as 
+well as the rest of the system. So a better strategy (some kind of partition) will 
+be needed for applications with a large number of concurrent clients.
+
 =head1 TODO
 
 Measure and report the percentage of busy time ('load' in bkpr-top). This metric is essential

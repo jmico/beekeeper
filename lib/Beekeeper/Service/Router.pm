@@ -97,6 +97,14 @@ Router workers shovel requests messages between frontend and backend brokers.
 Additionally, routers include some primitives that can be used to implement session 
 management and push notifications.
 
+If the application does not bind client sessions the routers can scale really well,
+as you can have a lot of them in a large number of servers. 
+
+But please note that when the application does use the session binding mechanism all
+routers will need to share an address table, and this shared table will not scale as 
+well as the rest of the system. So a better strategy (some kind of partition) will 
+be needed for applications with a large number of concurrent clients.
+
 =head1 METHODS
 
 =head3 bind_remote_session ( address => $address )

@@ -44,7 +44,7 @@ Display real-time performance metrics of running workers.
 
 Filters --host, --pool and --class can be combined.
 
-Change sorting field with (M)emory, (C)pu, (L)oad, (N)otifications and (J)obs.
+Change sorting field pressing (M)emory, (C)pu, (L)oad, (N)otifications and (J)obs.
 
 ";
 
@@ -254,7 +254,7 @@ Version 0.03
   
   Filters --host, --pool and --class can be combined.
   
-  Change sorting field with (M)emory, (C)pu, (L)oad, (N)otifications and (J)obs.
+  Change sorting field pressing (M)emory, (C)pu, (L)oad, (N)otifications and (J)obs.
 
 =head1 DESCRIPTION
 

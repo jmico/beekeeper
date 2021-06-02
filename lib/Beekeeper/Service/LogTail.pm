@@ -54,14 +54,16 @@ Version 0.03
 =head1 DESCRIPTION
 
 By default all workers use a C<Beekeeper::Logger> logger which logs errors and
-warnings both to files and to a topic C</topic/log> on the message bus.
+warnings both to files and to a topic C<log/{level}/{service}> on the message bus.
 
-This service keeps an in memory buffer of every log entry sent to that topic in 
+This service keeps an in-memory buffer of every log entry sent to that topic in 
 every broker in a logical message bus.
 
 The command line tool C<bkpr-log> use this service to inspect logs in real time. 
 
-This can be used to shovel logs to an external log management system.
+Please note that receiving all log traffic on a single process does not scale
+at all, so a better strategy will be needed for inspecting logs of big real world
+applications.
 
 =head1 METHODS
 

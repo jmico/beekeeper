@@ -63,7 +63,7 @@ fork all worker processes, then monitor those forked processes and B<immediately
 respawn defunct ones.
 
 Beekeeper applications use config files C<pool.config.json> and C<bus.config.json> to
-define how clients, workers and brokers connect to each other. These files are searched
+define how clients, workers and brokers connect to each other. These files are looked
 for in ENV C<BEEKEEPER_CONFIG_DIR>, C<~/.config/beekeeper>and then C</etc/beekeeper>.
 
 =head1 SEE ALSO
