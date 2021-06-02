@@ -249,7 +249,7 @@ sub pull_frontend_requests {
 
                 DEBUG && log_trace "Forwarded request:  $src_queue \@$frontend_id --> $dest_queue \@$backend_id";
 
-                $self->{_WORKER}->{jobs_count}++;
+                $self->{_WORKER}->{calls_count}++;
             },
             on_suback => sub {
                 log_debug "Forwarding $src_queue \@$frontend_id --> req/$backend_role/{app}/{service} \@$backend_id";

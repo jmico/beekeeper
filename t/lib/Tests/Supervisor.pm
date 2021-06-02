@@ -23,10 +23,10 @@ sub test_01_client : Test(9) {
     #
     # {
     #   'host'  => 'hostname',
-    #   'jps'   => '0.00',
     #   'pool'  => 'test-pool',
     #   'pid'   => 4916,
     #   'load'  => '0.00',
+    #   'cps'   => '0.00',
     #   'nps'   => '0.00',
     #   'mem'   => '0.00',
     #   'cpu'   => '0.00',
@@ -51,7 +51,7 @@ sub test_01_client : Test(9) {
     #     'cpu'   => '0.00',
     #     'load'  => '0.00',
     #     'nps'   => '0.00',
-    #     'jps'   => '0.00'
+    #     'cps'   => '0.00'
     #     'count' => 2,
     # }, ...
 

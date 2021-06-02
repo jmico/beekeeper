@@ -90,7 +90,7 @@ sub new {
         job_queue_low   => [],
         queued_tasks    => 0,
         last_report     => 0,
-        jobs_count      => 0,
+        calls_count      => 0,
         notif_count     => 0,
         busy_time       => 0,
         busy_since      => 0,
@@ -448,7 +448,7 @@ sub __drain_task_queue {
 
             my ($body_ref, $msg_headers) = @$task;
 
-            $worker->{jobs_count}++;
+            $worker->{calls_count}++;
             my ($request, $request_id, $result, $response);
 
             $result = eval {
@@ -796,9 +796,9 @@ sub __report_status {
 
     $worker->{last_report} = $now;
 
-    # Average jobs per second
-    my $jps = sprintf("%.2f", $worker->{jobs_count} / $period);
-    $worker->{jobs_count} = 0;
+    # Average calls per second
+    my $cps = sprintf("%.2f", $worker->{calls_count} / $period);
+    $worker->{calls_count} = 0;
 
     # Average notifications per second
     my $nps = sprintf("%.2f", $worker->{notif_count} / $period);
@@ -828,7 +828,7 @@ sub __report_status {
             host  => $worker->{hostname},
             pool  => $worker->{pool_id},
             pid   => $$,
-            jps   => $jps,
+            cps   => $cps,
             nps   => $nps,
             load  => $load,
             queue => [ keys %queues ],
