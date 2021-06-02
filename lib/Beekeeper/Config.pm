@@ -149,7 +149,7 @@ and then C</etc/beekeeper>.
 This file defines all worker pools running on this host, specifying 
 which logical bus should be used and which services it will run.
 
-The file format is in relaxed JSON, which allows comments and trailings commas.
+The file format is in relaxed JSON, which allows comments and trailing commas.
 
 Each entry define a worker pool. Required parameters are:
 
@@ -183,7 +183,7 @@ For development purposes is handy to use a single broker to hold all
 logical buses and easily simulate a complex topology, but in production 
 enviroments brokers should be isolated from each other.
 
-The file format is in relaxed JSON, which allows comments and trailings commas.
+The file format is in relaxed JSON, which allows comments and trailing commas.
 
 Each entry define a logical bus. Accepted parameters are:
 

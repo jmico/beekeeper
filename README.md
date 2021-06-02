@@ -124,7 +124,7 @@ print MyApp::Client->uppercase("hello!");
 
 Beekeeper applications use two config files to define how clients, workers and brokers connect to 
 each other. These files are looked for in ENV `BEEKEEPER_CONFIG_DIR`, `~/.config/beekeeper` and 
-then `/etc/beekeeper`. File format is relaxed JSON, which allows comments and trailings commas.
+then `/etc/beekeeper`. File format is relaxed JSON, which allows comments and trailing commas.
 
 The file `pool.config.json` defines all worker pools running on a host, specifying which logical bus
 should be used and which services it will run. For example:
@@ -179,7 +179,7 @@ performance, particularly on the broker introduced latency. These are ballpark p
 
 - A `call_remote` synchronous call involves 4 MQTT messages. A broker adds around 3 ms of latency 
   processing these 4 messages, so this limits a single client to make a maximum of 350 synchronous 
-  calls per second. The cpu load will be very low (less than 1%), as the client spend most of the
+  calls per second. The cpu load will be very low (less than 1%), as the client spends most of the
   time waiting for messages.
 
 - A `call_remote_async` asynchronous call to a remote method takes 0.3 ms. This implies a maximum of
@@ -211,7 +211,7 @@ This distribution includes some examples that can be run out of the box using an
 
 [examples/flood](./examples/flood) allows to estimate the performance of a Beekeper setup.
 
-[examples/webstomp](./examples/webstomp) use a service from a browser using WebSockets.
+[examples/webstomp](./examples/webstomp) uses a service from a browser using WebSockets.
 
 [examples/chat](./examples/chat) implements a real world setup with isolated buses and redundancy.
 
@@ -230,7 +230,7 @@ This distribution includes some examples that can be run out of the box using an
 
 This framework requires `Anyevent`, `JSON::XS`, `Term::ReadKey`, and `ps`.
 
-To install these dependencies on a Debian system do:
+To install these dependencies on a Debian system run:
 ```
 apt install libanyevent-perl
 apt install libjson-xs-perl

@@ -213,7 +213,7 @@ Then other workers or clients can just:
 
 Beekeeper applications use two config files to define how clients, workers and brokers connect to 
 each other. These files are looked for in ENV C<BEEKEEPER_CONFIG_DIR>, C<~/.config/beekeeper> and 
-then C</etc/beekeeper>. File format is relaxed JSON, which allows comments and trailings commas.
+then C</etc/beekeeper>. File format is relaxed JSON, which allows comments and trailing commas.
 
 The file C<pool.config.json> defines all worker pools running on a host, specifying which logical bus
 should be used and which services it will run. For example:
