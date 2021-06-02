@@ -55,7 +55,7 @@ sub _sleep {
 sub check_01_supported_os : Test(startup => 1) {
     my $self = shift;
 
-    unless ($^O eq 'linux' || $^O eq 'freebsd') {
+    unless ($^O eq 'linux') {
         $self->BAIL_OUT("OS unsupported");
     }
 
