@@ -1,6 +1,12 @@
+0.03    2021-06-03
+  - Beekeeper uses MQTT 5 instead of STOMP as messaging protocol.
+  - ToyBroker is now an MQTT 5 broker accordingly.
+  - API changes: remote call methods has been renamed.
+  - JS client and WebSocket examples has been improved.
+
 0.02    2021-04-30
-  - Fix tests failing on smoke testers
-  - Fix POD errors
+  - Fix tests failing on smoke testers.
+  - Fix POD errors.
 
 0.01	2020-05-14
-  - Initial release
+  - Initial release.
