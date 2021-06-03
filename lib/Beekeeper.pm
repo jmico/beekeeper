@@ -298,7 +298,7 @@ C<examples/basic> is a barebones example of the usage of Beekeper.
 
 C<examples/flood> allows to estimate the performance of a Beekeper setup.
 
-C<examples/webstomp> uses a service from a browser using WebSockets.
+C<examples/websocket> uses a service from a browser using WebSockets.
 
 C<examples/chat> implements a real world setup with isolated buses and redundancy.
 
