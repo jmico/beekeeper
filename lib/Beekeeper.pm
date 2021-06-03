@@ -113,7 +113,7 @@ B<Benefits of this architecture:>
 
 B<Key characteristics:>
 
-- The broker is an MQTT messaging server, like Mosquitto, HiveMQ or EMQ.
+- The broker is an MQTT messaging server, like Mosquitto, HiveMQ or EMQ X.
 
 - The messaging protocol is MQTT 5 (see the L<specification|https://docs.oasis-open.org/mqtt/mqtt/v5.0/mqtt-v5.0.html>).
 
@@ -266,7 +266,7 @@ performance, particularly on the broker introduced latency. These are ballpark p
 
 - A C<call_remote> synchronous call involves 4 MQTT messages. A broker adds around 3 ms of latency 
   processing these 4 messages, so this limits a single client to make a maximum of 350 synchronous 
-  calls per second. The cpu load will be very low (less than 1%), as the client spend most of the
+  calls per second. The cpu load will be very low (less than 1%), as the client spends most of the
   time waiting for messages.
 
 - A C<call_remote_async> asynchronous call to a remote method takes 0.3 ms. This implies a maximum of
@@ -298,7 +298,7 @@ C<examples/basic> is a barebones example of the usage of Beekeper.
 
 C<examples/flood> allows to estimate the performance of a Beekeper setup.
 
-C<examples/webstomp> use a service from a browser using WebSockets.
+C<examples/webstomp> uses a service from a browser using WebSockets.
 
 C<examples/chat> implements a real world setup with isolated buses and redundancy.
 

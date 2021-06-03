@@ -22,7 +22,7 @@ Requests and responses are shoveled between buses by a few router processes.
 
 **Key characteristics:**
 
-- The broker is an MQTT messaging server, like Mosquitto, HiveMQ or EMQ.
+- The broker is an MQTT messaging server, like Mosquitto, HiveMQ or EMQ X.
 
 - The messaging protocol is MQTT 5 (see the [specification](https://docs.oasis-open.org/mqtt/mqtt/v5.0/mqtt-v5.0.html)).
 

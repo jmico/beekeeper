@@ -25,11 +25,11 @@ sub test_01_client : Test(9) {
     #   'host'  => 'hostname',
     #   'pool'  => 'test-pool',
     #   'pid'   => 4916,
-    #   'load'  => '0.00',
+    #   'mem'   => '0.00',
     #   'cps'   => '0.00',
     #   'nps'   => '0.00',
-    #   'mem'   => '0.00',
     #   'cpu'   => '0.00',
+    #   'load'  => '0.00',
     #   'queue' => ['test'],
     #   'class' => 'Tests::Service::Worker'
     # }, ...
@@ -48,10 +48,10 @@ sub test_01_client : Test(9) {
     #
     # 'Tests::Service::Worker' => {
     #     'mem'   => '0.00',
+    #     'cps'   => '0.00'
+    #     'nps'   => '0.00',
     #     'cpu'   => '0.00',
     #     'load'  => '0.00',
-    #     'nps'   => '0.00',
-    #     'cps'   => '0.00'
     #     'count' => 2,
     # }, ...
 

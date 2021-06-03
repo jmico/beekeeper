@@ -82,7 +82,6 @@ max_queued_messages 10000
 allow_anonymous false
 acl_file /etc/mosquitto/conf.d/beekeeper.backend.acl
 password_file /etc/mosquitto/conf.d/beekeeper.backend.users
-
 ```
 Create `/etc/mosquitto/conf.d/beekeeper.backend.acl`
 ```
@@ -137,7 +136,6 @@ max_queued_messages 100
 allow_anonymous false
 acl_file /etc/mosquitto/conf.d/beekeeper.frontend.acl
 password_file /etc/mosquitto/conf.d/beekeeper.frontend.users
-
 ```
 Create `/etc/mosquitto/conf.d/beekeeper.frontend.acl`
 ```
