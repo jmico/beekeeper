@@ -76,7 +76,7 @@ if ($opt_list) {
         'P' => 'pool',
         'H' => 'host',
         'I' => 'pid',
-        'M' => 'msize',
+        'M' => 'mem',
         'N' => 'nps',
         'C' => 'cps',
         'U' => 'cpu',
@@ -159,6 +159,7 @@ else {
     my %sort_fields = (
         'S' => 'class',
         'W' => 'count',
+        'M' => 'mem',
         'N' => 'nps',
         'C' => 'cps',
         'U' => 'cpu',
