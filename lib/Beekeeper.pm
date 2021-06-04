@@ -132,11 +132,11 @@ B<Key characteristics:>
 
 B<What does this framework provides:>
 
-- C<Beekeeper::Worker>, to create service workers.
+- L<Beekeeper::Worker>, to create service workers.
 
-- C<Beekeeper::Client>, to create service clients.
+- L<Beekeeper::Client>, to create service clients.
 
-- C<bkpr> command which spawns and controls worker processes.
+- L<bkpr> command which spawns and controls worker processes.
 
 - Command line tools for monitoring and controlling worker pools.
 
@@ -153,7 +153,7 @@ B<What does this framework provides:>
 
 =head3 Creating workers
 
-Workers provide a service accepting certain RPC calls from clients. The base class C<Beekeeper::Worker> 
+Workers provide a service accepting certain RPC calls from clients. The base class L<Beekeeper::Worker> 
 provides all the glue needed to accept requests and communicate trough the message bus with clients 
 or another workers.
 
@@ -181,7 +181,7 @@ A worker class just declares on startup which methods it will accept, then imple
 =head3 Creating clients
 
 Clients of the service need an interface to use it without knowledge of the underlying RPC mechanisms.
-The class C<Beekeeper::Client> provides methods to connect to the broker and make RPC calls.
+The class L<Beekeeper::Client> provides methods to connect to the broker and make RPC calls.
 
 This is the interface of the above service:
 
@@ -242,7 +242,7 @@ the broker connection parameters, these communicate to each other using the defi
 
 =head3 Running
 
-To start or stop a pool of workers you use the C<bkpr> command. Given the above example config, this 
+To start or stop a pool of workers you use the L<bkpr> command. Given the above example config, this 
 will start 4 processes running C<MyApp::Worker> code:
 
   bkpr --pool "myapp" start
@@ -252,11 +252,11 @@ processes and immediately respawns defunct ones.
 
 The framework includes these command line tools to manage worker pools:
 
-- C<bkpr-top> allows to monitor in real time the performance of workers.
+- L<bkpr-top> allows to monitor in real time the performance of workers.
 
-- C<bkpr-log> allows to monitor in real time the log output of workers.
+- L<bkpr-log> allows to monitor in real time the log output of workers.
 
-- C<bkpr-restart> gracefully restarts worker pools.
+- L<bkpr-restart> gracefully restarts worker pools.
 
 
 =head1 Performance
