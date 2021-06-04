@@ -56,7 +56,7 @@ sub check_01_supported_os : Test(startup => 1) {
     my $self = shift;
 
     unless ($^O eq 'linux') {
-        $self->BAIL_OUT("OS unsupported");
+        $self->BAILOUT("OS unsupported");
     }
 
     ok( 1, "Supported OS ($^O)");
