@@ -10,6 +10,7 @@ use base 'Test::Class';
 use Beekeeper::Client;
 use Beekeeper::Config;
 use Beekeeper::Service::Supervisor;
+use AnyEvent::Impl::Perl;
 use Time::HiRes 'sleep';
 
 our $DEBUG = 0;
@@ -74,6 +75,7 @@ sub check_02_broker_connection : Test(startup => 1) {
         # Try to connect to broker
         my $config = Beekeeper::Config->get_bus_config( bus_id => 'test' );
         my $bus = Beekeeper::MQTT->new( %$config, timeout => 1 );
+
         my $broker_host = eval { 
             $bus->connect( blocking => 1 );
             $bus->{server_prop}->{host}; 
@@ -100,7 +102,7 @@ sub check_02_broker_connection : Test(startup => 1) {
     unless ($is_running) {
         # Probably address already in use by another broker or a ToyBroker zombie
         $self->stop_all_workers;
-        $self->SKIP_ALL("Could not start ToyBroker, no MQTT broker available to run tests");
+        $self->FAIL_ALL("Could not start ToyBroker, no MQTT broker available to run tests");
     }
 
     ok( 1, "Running tests on ToyBroker");
@@ -297,17 +299,24 @@ sub _spawn_worker {
 
     my $foreground = exists $config{foreground} ? $config{foreground} : $DEBUG;
 
-    my $worker = $worker_class->new(
-        pool_config => $pool_config,
-        bus_config  => $bus_cfg,
-        parent_pid  => $parent_pid,
-        pool_id     => $pool_config->{pool_id},
-        bus_id      => $pool_config->{bus_id},
-        config      => $worker_config,
-        foreground  => $foreground,
-    );
+    eval {
 
-    $worker->__work_forever;
+        my $worker = $worker_class->new(
+            pool_config => $pool_config,
+            bus_config  => $bus_cfg,
+            parent_pid  => $parent_pid,
+            pool_id     => $pool_config->{pool_id},
+            bus_id      => $pool_config->{bus_id},
+            config      => $worker_config,
+            foreground  => $foreground,
+        );
+
+        $worker->__work_forever;
+    };
+
+    if ($DEBUG && $@) {
+        diag "$worker_class died: $@";
+    }
 
     CORE::exit;
 }

@@ -34,15 +34,20 @@ my $toybroker_config_json = qq<
     },
 ]>;
 
+my $TEST_PORT;
+
 sub read_config_file {
     my ($class, $file) = @_;
 
     my $data = $file eq "bus.config.json"       ? $bus_config_json       : 
                $file eq "toybroker.config.json" ? $toybroker_config_json : '';
 
-    #TODO: Find an unused port
-    my $test_port = 51883;
-    $data =~ s/%PORT%/$test_port/;
+    unless ($TEST_PORT) {
+        #TODO: Find an unused port
+        $TEST_PORT = 50000 + int(rand(10000));
+    }
+
+    $data =~ s/%PORT%/$TEST_PORT/;
 
     # Allow comments and end-comma
     my $json = JSON::XS->new->relaxed;
