@@ -941,7 +941,7 @@ sub subscribe {
     }
 
     my $packet_id = $self->{packet_seq}++;
-    $self->{packet_seq} = 1 if $packet_id > 0xFFFF;
+    $self->{packet_seq} = 1 if $packet_id == 0xFFFF;
 
     # Set callback for incomings PUBLISH
     my $subscr_id = $self->{subscr_seq}++;
@@ -1092,7 +1092,7 @@ sub unsubscribe {
     }
 
     my $packet_id = $self->{packet_seq}++;
-    $self->{packet_seq} = 1 if $packet_id > 0xFFFF;
+    $self->{packet_seq} = 1 if $packet_id == 0xFFFF;
 
     # Set callback for UNSUBACK
     $self->{packet_cb}->{$packet_id} = {
@@ -1258,7 +1258,7 @@ sub publish {
     my $packet_id;
     if ($qos) {
         $packet_id = $self->{packet_seq}++;
-        $self->{packet_seq} = 1 if $packet_id > 0xFFFF;
+        $self->{packet_seq} = 1 if $packet_id == 0xFFFF;
     }
 
     my $raw_prop = '';
