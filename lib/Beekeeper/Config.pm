@@ -6,6 +6,7 @@ use warnings;
 our $VERSION = '0.03';
 
 use JSON::XS;
+use Carp;
 
 my %Cache;
 my $Config_dir;
@@ -14,7 +15,7 @@ my $Config_dir;
 sub set_config_dir {
     my ($class, $dir) = @_;
 
-    die "Couldn't read config files from $dir: directory does not exist\n" unless ($dir && -d $dir);
+    croak "Couldn't read config files from $dir: directory does not exist\n" unless ($dir && -d $dir);
 
     $Config_dir = $dir;
 }
@@ -24,11 +25,11 @@ sub get_bus_config {
 
     my $bus_id = $args{'bus_id'};
 
-    die "bus_id was not specified" unless ($bus_id);
+    croak "bus_id was not specified" unless ($bus_id);
 
     my $config = $class->read_config_file( 'bus.config.json' );
 
-    die "Couldn't read config file bus.config.json: file not found\n" unless defined ($config);
+    croak "Couldn't read config file bus.config.json: file not found\n" unless defined ($config);
 
     my %bus_cfg  = map { $_->{'bus_id'}  => $_ } @$config;
 
@@ -40,11 +41,11 @@ sub get_pool_config {
 
     my $pool_id = $args{'pool_id'};
 
-    die "pool_id was not specified" unless ($pool_id);
+    croak "pool_id was not specified" unless ($pool_id);
 
     my $config = $class->read_config_file( 'pool.config.json' );
 
-    die "Couldn't read config file pool.config.json: file not found\n" unless defined ($config);
+    croak "Couldn't read config file pool.config.json: file not found\n" unless defined ($config);
 
     my %pool_cfg = map { $_->{'pool_id'} => $_ } @$config;
 
@@ -58,7 +59,7 @@ sub get_bus_group_config {
     my $bus_id   = $args{'bus_id'};
     my @group_config;
 
-    die "No bus_role or bus_id was specified" unless ($bus_id || $bus_role);
+    croak "No bus_role or bus_id was specified" unless ($bus_id || $bus_role);
 
     my $config = $class->read_config_file( 'bus.config.json' );
 
@@ -85,7 +86,7 @@ sub get_bus_group_config {
 sub read_config_file {
     my ($class, $file) = @_;
 
-    die "Couldn't read config file: filename was not specified\n" unless ($file);
+    croak "Couldn't read config file: filename was not specified\n" unless ($file);
 
     my $cdir;
     $cdir = $Config_dir;
@@ -100,7 +101,7 @@ sub read_config_file {
     return undef unless (-e $file);
 
     local($/);
-    open(my $fh, '<', $file) or die "Couldn't read config file $file: $!";
+    open(my $fh, '<', $file) or croak "Couldn't read config file $file: $!";
     my $data = <$fh>;
     close($fh);
 
@@ -110,7 +111,7 @@ sub read_config_file {
     my $config = eval { $json->decode($data) };
 
     if ($@) {
-        die "Couldn't parse config file $file: Invalid JSON syntax";
+        croak "Couldn't parse config file $file: Invalid JSON syntax";
     }
 
     $Cache{$file} = $config;
