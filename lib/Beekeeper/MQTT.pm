@@ -7,6 +7,7 @@ our $VERSION = '0.03';
 
 use AnyEvent;
 use AnyEvent::Handle;
+use Time::HiRes;
 use List::Util 'shuffle';
 use Scalar::Util 'weaken';
 use Exporter 'import';
@@ -261,6 +262,8 @@ sub _fatal {
     $self->{error_cb}->($errstr);
 }
 
+our $BUSY_SINCE = undef;
+our $BUSY_TIME  = 0;
 
 sub connect {
     my ($self, %args) = @_;
@@ -366,11 +369,19 @@ sub _connect {
             my $offs;
             my $byte;
 
+            my $timing_packets;
+
+            unless (defined $BUSY_SINCE) {
+                # Measure time elapsed while processing incoming packets
+                $BUSY_SINCE = Time::HiRes::time;
+                $timing_packets = 1; 
+            }
+
             PARSE_PACKET: {
 
                 $rbuff_len = length $fh->{rbuf};
 
-                return unless $rbuff_len >= 2;
+                last PARSE_PACKET unless $rbuff_len >= 2;
 
                 unless ($packet_type) {
 
@@ -382,7 +393,7 @@ sub _connect {
                         $byte = unpack "C", substr( $fh->{rbuf}, $offs++, 1 );
                         $packet_len += ($byte & 0x7f) * $mult;
                         last unless ($byte & 0x80);
-                        return if ($offs >= $rbuff_len); # Not enough data
+                        last PARSE_PACKET if ($offs >= $rbuff_len); # Not enough data
                         $mult *= 128;
                         redo if ($offs < 5);
                     }
@@ -396,7 +407,7 @@ sub _connect {
 
                 if ($rbuff_len < ($offs + $packet_len)) {
                     # Not enough data
-                    return;
+                    last PARSE_PACKET;
                 }
 
                 # Consume packet from buffer
@@ -463,6 +474,11 @@ sub _connect {
 
                 # Handle could have been destroyed at this point
                 redo PARSE_PACKET if defined $fh->{rbuf};
+            }
+
+            if (defined $timing_packets) {
+                $BUSY_TIME += Time::HiRes::time - $BUSY_SINCE;
+                undef $BUSY_SINCE;
             }
         },
     );

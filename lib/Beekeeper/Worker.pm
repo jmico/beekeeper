@@ -56,6 +56,9 @@ sub log_info     (@) { $LogLevel >= LOG_INFO   && $Logger->( LOG_INFO,   @_ ) }
 sub log_debug    (@) { $LogLevel >= LOG_DEBUG  && $Logger->( LOG_DEBUG,  @_ ) }
 sub log_trace    (@) { $LogLevel >= LOG_TRACE  && $Logger->( LOG_TRACE,  @_ ) }
 
+our $BUSY_SINCE; *BUSY_SINCE = \$Beekeeper::MQTT::BUSY_SINCE;
+our $BUSY_TIME;  *BUSY_TIME  = \$Beekeeper::MQTT::BUSY_TIME;
+
 my %AUTH_TOKENS;
 my $JSON;
 
@@ -90,10 +93,9 @@ sub new {
         job_queue_low   => [],
         queued_tasks    => 0,
         last_report     => 0,
-        calls_count      => 0,
+        calls_count     => 0,
         notif_count     => 0,
         busy_time       => 0,
-        busy_since      => 0,
     };
 
     $JSON = JSON::XS->new;
@@ -279,7 +281,6 @@ sub accept_notifications {
 
                 unless ($worker->{queued_tasks}) {
                     $worker->{queued_tasks} = 1;
-                    $worker->{busy_since} = Time::HiRes::time;
                     AnyEvent::postpone { $self->__drain_task_queue };
                 }
             },
@@ -353,7 +354,6 @@ sub accept_remote_calls {
 
                 unless ($worker->{queued_tasks}) {
                     $worker->{queued_tasks} = 1;
-                    $worker->{busy_since} = Time::HiRes::time;
                     AnyEvent::postpone { $self->__drain_task_queue };
                 }
             },
@@ -371,8 +371,16 @@ sub __drain_task_queue {
     my $self = shift;
 
     # Ensure that draining does not recurse
-    die "Task queue processing is recursing" if ($_TASK_QUEUE_DEPTH);
+    die "Unexpected task queue processing recursion" if $_TASK_QUEUE_DEPTH;
     $_TASK_QUEUE_DEPTH++;
+
+    my $timing_tasks;
+
+    unless (defined $BUSY_SINCE) {
+        # Measure time elapsed while processing requests
+        $BUSY_SINCE = Time::HiRes::time;
+        $timing_tasks = 1; 
+    }
 
     my $worker = $self->{_WORKER};
     my $client = $self->{_CLIENT};
@@ -581,9 +589,10 @@ sub __drain_task_queue {
 
     $_TASK_QUEUE_DEPTH--;
 
-    # Measure time elapsed since request reception till 
-    $worker->{busy_time} += Time::HiRes::time - $worker->{busy_since};
-    $worker->{busy_since} = 0;
+    if (defined $timing_tasks) {
+        $BUSY_TIME += Time::HiRes::time - $BUSY_SINCE;
+        undef $BUSY_SINCE;
+    }
 
     $worker->{queued_tasks} = 0;
 }
@@ -805,8 +814,8 @@ sub __report_status {
     $worker->{notif_count} = 0;
 
     # Average load as percentage of wall clock busy time (not cpu usage)
-    my $load = sprintf("%.2f", $worker->{busy_time} / $period * 100);
-    $worker->{busy_time} = 0;
+    my $load = sprintf("%.2f", ($BUSY_TIME - $worker->{busy_time}) / $period * 100);
+    $worker->{busy_time} = $BUSY_TIME;
 
     #ENHACEMENT: report handled and unhandled errors count
 

@@ -558,11 +558,6 @@ routers will need the in-memory shared table, and this shared table will not sca
 well as the rest of the system. So a better strategy (some kind of partition) will 
 be needed for applications with a large number of concurrent clients.
 
-=head1 TODO
-
-Measure and report the percentage of busy time ('load' in bkpr-top). This metric is essential
-to assess the routing capacity of a given system.
-
 =head1 SEE ALSO
  
 L<Beekeeper::Service::Router>
