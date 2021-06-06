@@ -286,7 +286,9 @@ performance, particularly on the broker introduced latency. These are ballpark p
   code to do useful work the memory usage will of course increase. As a lot of workers will be required
   to handle a substantial number of requests, there will be some memory pressure. 
 
-- Routers add around 5 ms of latency to frontend requests.
+- A single router can handle around 3000 requests per second.
+
+- Routers add 2 ms to frontend requests roundtrip.
 
 
 =head1 Examples
