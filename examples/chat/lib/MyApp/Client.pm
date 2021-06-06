@@ -8,6 +8,7 @@ use MyApp::Service::Chat;
 use MyApp::Service::Auth;
 
 use Beekeeper::Client;
+use Beekeeper::Config;
 
 my $Help = "Available commands:
   /login username pass   Login
@@ -26,17 +27,13 @@ sub new {
     binmode STDOUT, ":utf8";
     binmode STDIN,  ":utf8";
 
-    #TODO: Read frontend connection parameters from config file
+    my $config = Beekeeper::Config->read_config_file('client.config.json');
 
     # Connect to bus 'frontend', wich will forward requests to 'backend'
     $self->{client} = Beekeeper::Client->instance(
-        bus_id     => "frontend-1",
         bus_role   => "frontend",
         forward_to => "backend",
-        host       => "localhost",
-        port       =>  8001,
-        username   => "frontend",
-        password   => "abc123",
+        %$config,
     );
 
     $self->{chat} = MyApp::Service::Chat->new;

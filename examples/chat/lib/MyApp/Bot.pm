@@ -17,20 +17,16 @@ sub new {
         username => $args{'username'},
     };
 
-    #TODO: Read frontend connection parameters from config file
+    my $config = Beekeeper::Config->read_config_file('client.config.json');
 
     # Force a new connection
     local $Beekeeper::Client::singleton;
 
     # Connect to bus 'frontend', wich will forward requests to 'backend'
     $self->{client} = Beekeeper::Client->instance( 
-        bus_id     => "frontend-1",
         bus_role   => "frontend",
         forward_to => "backend",
-        host       => "localhost",
-        port       =>  8001,
-        username   => "frontend",
-        password   => "abc123",
+        %$config,
     );
 
     $self->{chat} = MyApp::Service::Chat->new;

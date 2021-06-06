@@ -3,7 +3,9 @@ package MyApp::Calculator;
 use strict;
 use warnings;
 
+use AnyEvent::Impl::Perl;
 use Beekeeper::Client;
+use Beekeeper::Config;
 
 
 sub new {
@@ -11,17 +13,13 @@ sub new {
 
     my $self = {};
 
-    #TODO: Read frontend connection parameters from config file
+    my $config = Beekeeper::Config->read_config_file('client.config.json');
 
     # Connect to bus 'frontend', wich will forward requests to 'backend'
     $self->{client} = Beekeeper::Client->instance(
-        bus_id     => 'frontend-1',
         bus_role   => "frontend",
         forward_to => 'backend',
-        host       => "localhost",
-        port       =>  8001,
-        username   => "frontend",
-        password   => "abc123",
+        %$config,
     );
 
     bless $self, $class;
