@@ -3,7 +3,7 @@ package Beekeeper::JSONRPC::Response;
 use strict;
 use warnings;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 
 sub new {
@@ -36,7 +36,7 @@ Beekeeper::JSONRPC::Response - Representation of a JSON-RPC response.
  
 =head1 VERSION
  
-Version 0.03
+Version 0.04
 
 =head1 SYNOPSIS
 

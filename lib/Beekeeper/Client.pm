@@ -3,7 +3,7 @@ package Beekeeper::Client;
 use strict;
 use warnings;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 use Beekeeper::MQTT;
 use Beekeeper::JSONRPC;
@@ -621,7 +621,7 @@ Beekeeper::Client - Make RPC calls through message bus
 
 =head1 VERSION
  
-Version 0.03
+Version 0.04
 
 =head1 SYNOPSIS
 
