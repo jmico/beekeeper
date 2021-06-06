@@ -593,7 +593,8 @@ sub __use_authorization_token {
 
 1;
 
-package Beekeeper::Client::Guard;
+package    # hide from PAUSE 
+    Beekeeper::Client::Guard;
 
 sub new {
     my ($class, $ref) = @_;
