@@ -13,6 +13,7 @@ BEGIN {
     }
 }
 
+use AnyEvent::Impl::Perl;
 use Beekeeper::Service::LogTail;
 use Getopt::Long;
 
