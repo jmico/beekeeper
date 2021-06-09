@@ -107,7 +107,7 @@ sub start_listener {
     my ($self, $listener) = @_;
     weaken($self);
 
-    my $max_packet_size = $listener->{'max_packet_size'} || 65536;
+    my $max_packet_size = $listener->{'max_packet_size'};
 
     my $addr = $listener->{'listen_addr'} || '127.0.0.1';  # Must be an IPv4 or IPv6 address
     my $port = $listener->{'listen_port'} ||  1883;
@@ -157,7 +157,7 @@ sub start_listener {
                             redo if ($offs < 5);
                         }
 
-                        if ($packet_len > $max_packet_size) {
+                        if ($max_packet_size && $packet_len > $max_packet_size) {
                             $self->disconnect($fh, reason_code => 0x95);
                             return;
                         }
