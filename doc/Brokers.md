@@ -155,7 +155,6 @@ topic   write   priv/#
 Create broker users running the following commands:
 ```
 mosquitto_passwd -c -b /etc/mosquitto/conf.d/beekeeper.frontend.users  frontend  abc123
-mosquitto_passwd    -b /etc/mosquitto/conf.d/beekeeper.frontend.users  backend   def456
 mosquitto_passwd    -b /etc/mosquitto/conf.d/beekeeper.frontend.users  router    ghi789
 ```
 The broker instance can be started with:
