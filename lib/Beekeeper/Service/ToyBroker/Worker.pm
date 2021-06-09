@@ -1265,7 +1265,8 @@ sub unsubscribe_client {
 }
 
 
-package Beekeeper::Service::ToyBroker::Client;
+package
+    Beekeeper::Service::ToyBroker::Client;   # hide from PAUSE
 
 sub new {
     my ($class, %args) = @_;
@@ -1331,7 +1332,8 @@ sub resend_unacked_messages {
 }
 
 
-package Beekeeper::Service::ToyBroker::TopicFilter;
+package
+    Beekeeper::Service::ToyBroker::TopicFilter;   # hide from PAUSE
 
 sub new {
     my ($class, $topic_filter) = @_;
@@ -1397,7 +1399,8 @@ sub remove_shared_subscription {
 }
 
 
-package Beekeeper::Service::ToyBroker::Subscription;
+package
+    Beekeeper::Service::ToyBroker::Subscription;   # hide from PAUSE
 
 sub new {
     my $class = shift;
@@ -1436,7 +1439,8 @@ sub send_message {
 }
 
 
-package Beekeeper::Service::ToyBroker::SharedSubscription;
+package
+    Beekeeper::Service::ToyBroker::SharedSubscription;   # hide from PAUSE
 
 sub new {
     my ($class, %args) = @_;
