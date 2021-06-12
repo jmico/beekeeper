@@ -70,6 +70,7 @@ pid_file /run/mosquitto/mosquitto.backend.pid
 log_dest file /var/log/mosquitto/mosquitto.backend.log
 
 per_listener_settings true
+set_tcp_nodelay true
 
 # Backend
 listener 1883 0.0.0.0
@@ -112,6 +113,7 @@ pid_file /run/mosquitto/mosquitto.frontend.pid
 log_dest file /var/log/mosquitto/mosquitto.frontend.log
 
 per_listener_settings true
+set_tcp_nodelay true
 
 # Frontend tcp
 listener 8001 0.0.0.0
