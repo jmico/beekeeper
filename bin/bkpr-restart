@@ -13,7 +13,6 @@ BEGIN {
     }
 }
 
-use AnyEvent::Impl::Perl;
 use Beekeeper::Service::Supervisor;
 use Getopt::Long;
 

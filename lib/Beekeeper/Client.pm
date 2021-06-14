@@ -15,6 +15,10 @@ use Time::HiRes;
 use Digest::SHA 'sha256_hex';
 use Carp;
 
+# Prefer AnyEvent perl backend as it is fast enough and it
+# does not ignore exceptions thrown from within callbacks
+$ENV{'PERL_ANYEVENT_MODEL'} ||= 'Perl' unless $AnyEvent::MODEL;
+
 use constant QUEUE_LANES => 2;
 use constant REQ_TIMEOUT => 60;
 

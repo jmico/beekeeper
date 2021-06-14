@@ -15,7 +15,6 @@ BEGIN {
     }
 }
 
-use AnyEvent::Impl::Perl;
 use Beekeeper::Service::Supervisor;
 use Term::ReadKey;
 use Getopt::Long;
