@@ -16,8 +16,6 @@ use Digest::SHA 'sha256_hex';
 use Scalar::Util 'blessed';
 use Carp;
 
-#TODO: our @CARP_NOT = ('AnyEvent', 'Beekeeper::MQTT');
-
 use constant COMPILE_ERROR_EXIT_CODE => 99;
 use constant REPORT_STATUS_PERIOD    => 5;
 use constant UNSUBSCRIBE_LINGER      => 2;
@@ -232,7 +230,7 @@ sub __init_worker {
 sub on_startup {
     # Placeholder, intended to be overrided
     my $class = ref $_[0];
-    warn "Worker class $class doesn't define on_startup() method";
+    log_warn "Worker class $class doesn't define on_startup() method";
 }
 
 sub on_shutdown {
@@ -242,8 +240,8 @@ sub on_shutdown {
 sub authorize_request {
     # Placeholder, must to be overrided
     my $class = ref $_[0];
-    warn "Worker class $class doesn't define authorize_request() method";
-    return undef; # do NOT authorize
+    log_error "Worker class $class doesn't define authorize_request() method";
+    return undef; # do not authorize
 }
 
 
@@ -253,17 +251,19 @@ sub accept_notifications {
     my $worker    = $self->{_WORKER};
     my $callbacks = $worker->{callbacks};
 
+    my ($file, $line) = (caller)[1,2];
+    my $at = "at $file line $line\n";
+
     foreach my $fq_meth (keys %args) {
 
         $fq_meth =~ m/^  ( [\w-]+ (?: \.[\w-]+ )* ) 
-                      \. ( [\w-]+ | \* ) $/x or croak "Invalid notification method $fq_meth";
+                      \. ( [\w-]+ | \* ) $/x or die "Invalid notification method '$fq_meth' $at";
 
         my ($service, $method) = ($1, $2);
 
         my $callback = $self->__get_cb_coderef($fq_meth, $args{$fq_meth});
 
-        #TODO: croak does not report correct caller
-        croak "Already accepting notifications $fq_meth" if exists $callbacks->{"msg.$fq_meth"};
+        die "Already accepting notifications '$fq_meth' $at" if exists $callbacks->{"msg.$fq_meth"};
         $callbacks->{"msg.$fq_meth"} = $callback;
 
         my $local_bus = $self->{_BUS}->{bus_role};
@@ -286,7 +286,7 @@ sub accept_notifications {
             },
             on_suback => sub {
                 my ($success, $prop) = @_;
-                croak "Could not subscribe to $topic" unless $success;
+                die "Could not subscribe to topic '$topic' $at" unless $success;
             }
         );
     }
@@ -306,7 +306,9 @@ sub __get_cb_coderef {
         return \&{"${class}::${callback}"};
     }
     else {
-        croak "Invalid callback '$callback' for '$method'";
+        my ($file, $line) = (caller(1))[1,2];
+        my $at = "at $file line $line\n";
+        die "Invalid callback '$callback' for '$method' $at";
     }
 }
 
@@ -318,24 +320,26 @@ sub accept_remote_calls {
     my $callbacks = $worker->{callbacks};
     my %subscribed_to;
 
+    my ($file, $line) = (caller)[1,2];
+    my $at = "at $file line $line\n";
+
     foreach my $fq_meth (keys %args) {
 
         $fq_meth =~ m/^  ( [\w-]+ (?: \.[\w-]+ )* ) 
-                      \. ( [\w-]+ | \* ) $/x or croak "Invalid job method $fq_meth";
+                      \. ( [\w-]+ | \* ) $/x or die "Invalid job method '$fq_meth' $at";
 
         my ($service, $method) = ($1, $2);
 
         my $callback = $self->__get_cb_coderef($fq_meth, $args{$fq_meth});
 
-        #TODO: croak does not report correct caller
-        croak "Already accepting jobs $fq_meth" if exists $callbacks->{"req.$fq_meth"};
+        die "Already accepting jobs '$fq_meth' $at" if exists $callbacks->{"req.$fq_meth"};
         $callbacks->{"req.$fq_meth"} = $callback;
 
         next if $subscribed_to{$service};
         $subscribed_to{$service} = 1;
 
-        if (keys %subscribed_to > 1) {
-            carp "Running multiple services within a single worker hurts load balancing (don't do that)";
+        if (keys %subscribed_to == 2) {
+            log_warn "Running multiple services within a single worker hurts load balancing $at";
         }
 
         my $local_bus = $self->{_BUS}->{bus_role};
@@ -359,7 +363,7 @@ sub accept_remote_calls {
             },
             on_suback => sub {
                 my ($success, $prop) = @_;
-                croak "Could not subscribe to $queue" unless $success;
+                die "Could not subscribe to topic '$queue' $at" unless $success;
             }
         );
     }
@@ -371,7 +375,7 @@ sub __drain_task_queue {
     my $self = shift;
 
     # Ensure that draining does not recurse
-    die "Unexpected task queue processing recursion" if $_TASK_QUEUE_DEPTH;
+    Carp::confess "Unexpected task queue processing recursion" if $_TASK_QUEUE_DEPTH;
     $_TASK_QUEUE_DEPTH++;
 
     my $timing_tasks;
@@ -410,7 +414,7 @@ sub __drain_task_queue {
                 my $request = decode_json($$body_ref);
 
                 unless (ref $request eq 'HASH' && $request->{jsonrpc} eq '2.0') {
-                    log_warn "Received invalid JSON-RPC 2.0 notification";
+                    log_error "Received invalid JSON-RPC 2.0 notification";
                     return;
                 }
 
@@ -420,7 +424,7 @@ sub __drain_task_queue {
                 my $method = $request->{method};
 
                 unless (defined $method && $method =~ m/^([\.\w-]+)\.([\w-]+)$/) {
-                    log_warn "Received notification with invalid method $method";
+                    log_error "Received notification with invalid method '$method'";
                     return;
                 }
 
@@ -432,12 +436,12 @@ sub __drain_task_queue {
                 local $client->{auth_data}   = $msg_headers->{'auth'};
 
                 unless (($self->authorize_request($request) || "") eq BKPR_REQUEST_AUTHORIZED) {
-                    log_warn "Notification $method was not authorized";
+                    log_error "Notification '$method' was not authorized";
                     return;
                 }
 
                 unless ($cb) {
-                    log_warn "No callback found for received notification $method";
+                    log_error "No callback found for received notification '$method'";
                     return;
                 }
 
@@ -464,7 +468,7 @@ sub __drain_task_queue {
                 $request = decode_json($$body_ref);
 
                 unless (ref $request eq 'HASH' && $request->{jsonrpc} eq '2.0') {
-                    log_warn "Received invalid JSON-RPC 2.0 request";
+                    log_error "Received invalid JSON-RPC 2.0 request";
                     die Beekeeper::JSONRPC::Error->invalid_request;
                 }
 
@@ -475,7 +479,7 @@ sub __drain_task_queue {
                 $request->{_mqtt_prop} = $msg_headers;
 
                 unless (defined $method && $method =~ m/^([\.\w-]+)\.([\w-]+)$/) {
-                    log_warn "Received request with invalid method $method";
+                    log_error "Received request with invalid method '$method'";
                     die Beekeeper::JSONRPC::Error->method_not_found;
                 }
 
@@ -487,12 +491,12 @@ sub __drain_task_queue {
                 local $client->{auth_data}   = $msg_headers->{'auth'};
 
                 unless (($self->authorize_request($request) || "") eq BKPR_REQUEST_AUTHORIZED) {
-                    log_warn "Request $method was not authorized";
+                    log_error "Request '$method' was not authorized";
                     die Beekeeper::JSONRPC::Error->request_not_authorized;
                 }
 
                 unless ($cb) {
-                    log_warn "No callback found for received request $method";
+                    log_error "No callback found for received request '$method'";
                     die Beekeeper::JSONRPC::Error->method_not_found;
                 }
 
@@ -563,7 +567,7 @@ sub __drain_task_queue {
                 }
                 else {
                     # Should not happen (clients must publish with QoS 1)
-                    log_warn "Request published with QoS 0 to " . $msg_headers->{'topic'};
+                    log_warn "Request published with QoS 0 to topic " . $msg_headers->{'topic'};
                 }
 
                 $self->{_BUS}->flush_buffer( buffer_id => 'response' );
@@ -601,19 +605,22 @@ sub __drain_task_queue {
 sub stop_accepting_notifications {
     my ($self, @methods) = @_;
 
-    croak "No method specified" unless @methods;
+    my ($file, $line) = (caller)[1,2];
+    my $at = "at $file line $line\n";
+
+    die "No method specified $at" unless @methods;
 
     foreach my $fq_meth (@methods) {
 
         $fq_meth =~ m/^  ( [\w-]+ (?: \.[\w-]+ )* ) 
-                      \. ( [\w-]+ | \* ) $/x or croak "Invalid method $fq_meth";
+                      \. ( [\w-]+ | \* ) $/x or die "Invalid method '$fq_meth' $at";
 
         my ($service, $method) = ($1, $2);
 
         my $worker = $self->{_WORKER};
 
         unless (defined $worker->{callbacks}->{"msg.$fq_meth"}) {
-            carp "Not previously accepting notifications $fq_meth";
+            log_warn "Not previously accepting notifications '$fq_meth' $at";
             next;
         }
 
@@ -642,8 +649,7 @@ sub stop_accepting_notifications {
             on_unsuback => sub {
                 my ($success, $prop) = @_;
 
-                #TODO: Report caller of stop_accepting_notifications method
-                warn "Could not unsubscribe from $topic" unless $success; 
+                log_error "Could not unsubscribe from topic '$topic' $at" unless $success; 
 
                 my $postponed = $worker->{postponed} ||= [];
                 push @$postponed, $postpone;
@@ -658,12 +664,15 @@ sub stop_accepting_notifications {
 sub stop_accepting_calls {
     my ($self, @methods) = @_;
 
-    croak "No method specified" unless @methods;
+    my ($file, $line) = (caller)[1,2];
+    my $at = "at $file line $line\n";
+
+    die "No method specified $at" unless @methods;
 
     foreach my $fq_meth (@methods) {
 
         $fq_meth =~ m/^  ( [\w-]+ (?: \.[\w-]+ )* ) 
-                      \. ( [\w-]+ | \* ) $/x or croak "Invalid method $fq_meth";
+                      \. ( [\w-]+ | \* ) $/x or die "Invalid method '$fq_meth' $at";
 
         my ($service, $method) = ($1, $2);
 
@@ -672,7 +681,7 @@ sub stop_accepting_calls {
             # through a single MQTT subscription (in order to load balance them), it is 
             # not possible to reject a single method. A workaround is to use a different
             # class for each method that need to be individually rejected.
-            croak "Cannot cancel individual job subscription to $fq_meth";
+            die "Cannot cancel individual job subscription to '$fq_meth' $at";
         }
 
         my $worker    = $self->{_WORKER};
@@ -681,8 +690,7 @@ sub stop_accepting_calls {
         my @cb_keys = grep { $_ =~ m/^req.\Q$service\E\b/ } keys %$callbacks;
 
         unless (@cb_keys) {
-            #TODO: BUG: carp reports caller as Beekeeper/WorkerPool.pm line 440
-            carp "Not previously accepting jobs $fq_meth";
+            log_warn "Not previously accepting jobs '$fq_meth' $at";
             next;
         }
 
@@ -715,8 +723,7 @@ sub stop_accepting_calls {
             on_unsuback  => sub {
                 my ($success, $prop) = @_;
 
-                #TODO: Report caller of stop_accepting_calls method
-                warn "Could not unsubscribe from $topic" unless $success; 
+                log_error "Could not unsubscribe from topic '$topic' $at" unless $success; 
 
                 my $postponed = $worker->{postponed} ||= [];
                 push @$postponed, $postpone;

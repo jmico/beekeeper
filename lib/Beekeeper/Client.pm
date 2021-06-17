@@ -142,7 +142,7 @@ sub send_notification {
 
     $fq_meth =~ m/^     ( [\w-]+ (?:\.[\w-]+)* )
                      \. ( [\w-]+ ) 
-                 (?: \@ ( [\w-]+ ) (\.[\w-]+)* )? $/x or croak "Invalid method $fq_meth";
+                 (?: \@ ( [\w-]+ ) (\.[\w-]+)* )? $/x or croak "Invalid method '$fq_meth'";
 
     my ($service, $method, $remote_bus, $addr) = ($1, $2, $3, $4);
 
@@ -186,22 +186,25 @@ sub send_notification {
 sub accept_notifications {
     my ($self, %args) = @_;
 
+    my ($file, $line) = (caller)[1,2];
+    my $at = "at $file line $line\n";
+
     my $callbacks = $self->{_CLIENT}->{callbacks};
 
     foreach my $fq_meth (keys %args) {
 
         $fq_meth =~ m/^  ( [\w-]+ (?: \.[\w-]+ )* ) 
-                      \. ( [\w-]+ | \* ) $/x or croak "Invalid notification method $fq_meth";
+                      \. ( [\w-]+ | \* ) $/x or croak "Invalid notification method '$fq_meth'";
 
         my ($service, $method) = ($1, $2);
 
         my $callback = $args{$fq_meth};
 
         unless (ref $callback eq 'CODE') {
-            croak "Invalid callback for '$method'";
+            croak "Invalid callback for '$fq_meth'";
         }
 
-        croak "Already accepting notifications $fq_meth" if exists $callbacks->{"msg.$fq_meth"};
+        croak "Already accepting notifications '$fq_meth'" if exists $callbacks->{"msg.$fq_meth"};
         $callbacks->{"msg.$fq_meth"} = $callback;
 
         #TODO: Allow to accept private notifications without subscribing
@@ -220,7 +223,7 @@ sub accept_notifications {
                 my $request = eval { decode_json($$body_ref) };
 
                 unless (ref $request eq 'HASH' && $request->{jsonrpc} eq '2.0') {
-                    warn "Received invalid JSON-RPC 2.0 notification";
+                    warn "Received invalid JSON-RPC 2.0 notification $at";
                     return;
                 }
 
@@ -230,7 +233,7 @@ sub accept_notifications {
                 my $method = $request->{method};
 
                 unless (defined $method && $method =~ m/^([\.\w-]+)\.([\w-]+)$/) {
-                    warn "Received notification with invalid method $method";
+                    warn "Received notification with invalid method '$method' $at";
                     return;
                 }
 
@@ -238,7 +241,7 @@ sub accept_notifications {
                          $callbacks->{"msg.$1.*"};
 
                 unless ($cb) {
-                    warn "No callback found for received notification $method";
+                    warn "No callback found for received notification '$method' $at";
                     return;
                 }
 
@@ -246,7 +249,7 @@ sub accept_notifications {
             },
             on_suback => sub {
                 my ($success, $prop) = @_;
-                croak "Could not subscribe to $topic" unless $success;
+                die "Could not subscribe to topic '$topic' $at" unless $success;
             }
         );
     }
@@ -256,17 +259,20 @@ sub accept_notifications {
 sub stop_accepting_notifications {
     my ($self, @methods) = @_;
 
+    my ($file, $line) = (caller)[1,2];
+    my $at = "at $file line $line\n";
+
     croak "No method specified" unless @methods;
 
     foreach my $fq_meth (@methods) {
 
         $fq_meth =~ m/^  ( [\w-]+ (?: \.[\w-]+ )* ) 
-                      \. ( [\w-]+ | \* ) $/x or croak "Invalid method $fq_meth";
+                      \. ( [\w-]+ | \* ) $/x or croak "Invalid method '$fq_meth'";
 
         my ($service, $method) = ($1, $2);
 
         unless (defined $self->{_CLIENT}->{callbacks}->{"msg.$fq_meth"}) {
-            carp "Not previously accepting notifications $fq_meth";
+            carp "Not previously accepting notifications '$fq_meth'";
             next;
         }
 
@@ -278,6 +284,9 @@ sub stop_accepting_notifications {
         $self->{_BUS}->unsubscribe(
             topic       => $topic,
             on_unsuback => sub {
+                my ($success, $prop) = @_;
+
+                die "Could not unsubscribe from topic '$topic' $at" unless $success; 
 
                 delete $self->{_CLIENT}->{callbacks}->{"msg.$fq_meth"};
 
@@ -307,7 +316,7 @@ sub call_remote {
 
     # Make AnyEvent allow one level of recursive condvar blocking, as we may
     # block both in $worker->__work_forever and in $client->__do_rpc_request
-    $AE_WAITING && croak "Recursive condvar blocking wait attempted";
+    $AE_WAITING && Carp::confess "Recursive condvar blocking wait attempted";
     local $AE_WAITING = 1;
     local $AnyEvent::CondVar::Base::WAITING = 0;
 
@@ -353,7 +362,7 @@ sub __do_rpc_request {
 
     $fq_meth =~ m/^     ( [\w-]+ (?:\.[\w-]+)* )
                      \. ( [\w-]+ ) 
-                 (?: \@ ( [\w-]+ ) (\.[\w-]+)* )? $/x or croak "Invalid method $fq_meth";
+                 (?: \@ ( [\w-]+ ) (\.[\w-]+)* )? $/x or croak "Invalid method '$fq_meth'";
 
     my ($service, $method, $remote_bus, $addr) = ($1, $2, $3, $4);
 
@@ -473,6 +482,9 @@ sub __create_response_topic {
     my $self = shift;
     my $client = $self->{_CLIENT};
 
+    my ($file, $line) = (caller)[1,2];
+    my $at = "at $file line $line\n";
+
     # Subscribe to an exclusive topic for receiving RPC responses
 
     my $response_topic = 'priv/' . $self->{_BUS}->{client_id};
@@ -488,7 +500,8 @@ sub __create_response_topic {
             my $resp = eval { decode_json($$body_ref) };
 
             unless (ref $resp eq 'HASH' && $resp->{jsonrpc} eq '2.0') {
-                warn "Received invalid JSON-RPC 2.0 message";
+                my $errmsg = "Received invalid JSON-RPC 2.0 message $at";
+                defined *{'log_error'} ? log_error $errmsg : warn $errmsg;
                 return;
             }
 
@@ -528,7 +541,8 @@ sub __create_response_topic {
                 my $method = $resp->{method};
 
                 unless (defined $method && $method =~ m/^([\.\w-]+)\.([\w-]+)$/) {
-                    warn "Received notification with invalid method $method";
+                    my $errmsg = "Received notification with invalid method '$method' $at";
+                    defined *{'log_error'} ? log_error $errmsg : warn $errmsg;
                     return;
                 }
 
@@ -536,7 +550,8 @@ sub __create_response_topic {
                          $client->{callbacks}->{"msg.$1.*"};
 
                 unless ($cb) {
-                    warn "No callback found for received notification $method";
+                    my $errmsg = "No callback found for received notification '$method' $at";
+                    defined *{'log_error'} ? log_error $errmsg : warn $errmsg;
                     return;
                 }
 
@@ -545,7 +560,7 @@ sub __create_response_topic {
         },
         on_suback => sub {
             my ($success, $prop) = @_;
-            croak "Could not subscribe to $response_topic" unless $success;
+            die "Could not subscribe to response topic '$response_topic' $at" unless $success;
         }
     );
 
@@ -561,7 +576,7 @@ sub wait_async_calls {
 
     # Make AnyEvent to allow one level of recursive condvar blocking, as we may
     # block both in $worker->__work_forever and here
-    $AE_WAITING && croak "Recursive condvar blocking wait attempted";
+    $AE_WAITING && Carp::confess "Recursive condvar blocking wait attempted";
     local $AE_WAITING = 1;
     local $AnyEvent::CondVar::Base::WAITING = 0;
 
@@ -597,8 +612,8 @@ sub __use_authorization_token {
 
 1;
 
-package    # hide from PAUSE 
-    Beekeeper::Client::Guard;
+package
+    Beekeeper::Client::Guard;   # hide from PAUSE
 
 sub new {
     my ($class, $ref) = @_;

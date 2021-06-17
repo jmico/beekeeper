@@ -105,12 +105,12 @@ sub test_02_sync_jobs : Test(20) {
     # Invalid method
     $resp = eval {
         $cli->call_remote(
-            method  => 'test.#@@@@',
+            method  => 'test.#',
         );
     };
 
     is( $resp, undef );
-    like( $@, qr/Invalid method test.#@@@@ at /); # local error, call not made
+    like( $@, qr/Invalid method 'test.#' at /); # local error, call not made
 
     # Invalid method
     $resp = eval {

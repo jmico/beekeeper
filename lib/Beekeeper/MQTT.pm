@@ -1353,7 +1353,7 @@ sub publish {
         # As client may be syncronous, wait until entire message is sent.
 
         # Make AnyEvent allow one level of recursive condvar blocking
-        $AE_WAITING && croak "Recursive condvar blocking wait attempted";
+        $AE_WAITING && Carp::confess "Recursive condvar blocking wait attempted";
         local $AE_WAITING = 1;
         local $AnyEvent::CondVar::Base::WAITING = 0;
 
@@ -1733,7 +1733,7 @@ sub flush_buffer {
         # Kernel write buffer is full, see publish() above
 
         # Make AnyEvent allow one level of recursive condvar blocking
-        $AE_WAITING && croak "Recursive condvar blocking wait attempted";
+        $AE_WAITING && Carp::confess "Recursive condvar blocking wait attempted";
         local $AE_WAITING = 1;
         local $AnyEvent::CondVar::Base::WAITING = 0;
 
