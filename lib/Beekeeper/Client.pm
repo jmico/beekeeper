@@ -289,18 +289,6 @@ sub stop_accepting_notifications {
                 die "Could not unsubscribe from topic '$topic' $at" unless $success; 
 
                 delete $self->{_CLIENT}->{callbacks}->{"msg.$fq_meth"};
-
-                # Discard notifications already queued
-                my $job_queue = $self->{_WORKER}->{job_queue_high};
-
-                @$job_queue = grep {
-                    my $task = $_;
-                    my ($body_ref, $msg_headers) = @$task;
-                    my $request = decode_json($$body_ref);
-                    my $req_method = $request->{method};
-                    $req_method =~ m/^([\.\w-]+)\.([\w-]+)$/;
-                    not ($service eq $1 && ($method eq '*' || $method eq $2));
-                } @$job_queue;
             },
         );
     }
