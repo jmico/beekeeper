@@ -139,11 +139,15 @@ sub new {
 sub __init_auth_tokens {
     my ($self) = @_;
 
-    my $secret = 'salt'; #TODO: read from config file
+    # Using a hashing function makes harder to access the wrong worker pool by mistake,
+    # but it is not an effective access restriction: anyone with access to the backend
+    # bus credentials can easily inspect and clone auth data tokens
 
-    $AUTH_TOKENS{'BKPR_SYSTEM'} = sha256_hex('BKPR_SYSTEM'. $secret);
-    $AUTH_TOKENS{'BKPR_ADMIN'}  = sha256_hex('BKPR_ADMIN' . $secret);
-    $AUTH_TOKENS{'BKPR_ROUTER'} = sha256_hex('BKPR_ROUTER'. $secret);
+    my $salt = $self->{_CLIENT}->{auth_salt} || '';
+
+    $AUTH_TOKENS{'BKPR_SYSTEM'} = sha256_hex('BKPR_SYSTEM'. $salt);
+    $AUTH_TOKENS{'BKPR_ADMIN'}  = sha256_hex('BKPR_ADMIN' . $salt);
+    $AUTH_TOKENS{'BKPR_ROUTER'} = sha256_hex('BKPR_ROUTER'. $salt);
 }
 
 sub __has_authorization_token {

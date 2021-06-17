@@ -52,13 +52,14 @@ sub new {
     };
 
     $self->{_CLIENT} = {
-        forward_to     => $args{'forward_to'},
+        forward_to     => undef,
         response_topic => undef,
         in_progress    => undef,
         curr_request   => undef,
         caller_id      => undef,
         caller_addr    => undef,
         auth_data      => undef,
+        auth_salt      => undef,
         async_cv       => undef,
         correlation_id => 1,
         callbacks      => {},
@@ -92,6 +93,9 @@ sub new {
             }
         }
     }
+
+    $self->{_CLIENT}->{forward_to} = delete $args{'forward_to'};
+    $self->{_CLIENT}->{auth_salt}  = delete $args{'auth_salt'};
 
     # Start a fresh new MQTT session on connect
     $args{'clean_start'} = 1;
@@ -587,13 +591,17 @@ sub set_authentication_data {
 sub __use_authorization_token {
     my ($self, $token) = @_;
 
-    my $secret = 'salt'; #TODO: read from config file
+    # Using a hashing function makes harder to access the wrong worker pool by mistake,
+    # but it is not an effective access restriction: anyone with access to the backend
+    # bus credentials can easily inspect and clone auth data tokens
+
+    my $salt = $self->{_CLIENT}->{auth_salt} || '';
 
     my $adata_ref = \$self->{_CLIENT}->{auth_data};
 
     my $guard = Beekeeper::Client::Guard->new( $adata_ref );
 
-    $$adata_ref = sha256_hex($token . $secret);
+    $$adata_ref = sha256_hex($token . $salt);
 
     return $guard;
 }
