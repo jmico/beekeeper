@@ -582,7 +582,7 @@ sub test_07_big_message : Test(4) {
         payload    => \$data,
     );
 
-    $self->async_wait( 0.2 );
+    $self->async_wait( 1 );
 
     is( scalar(@received), 2, "Received 1 message from topic");
     is( length( $received[1]->{payload} ), 10485760, "Got a 10 MiB message");
