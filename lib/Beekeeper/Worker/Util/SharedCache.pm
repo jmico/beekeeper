@@ -129,9 +129,9 @@ sub _setup_sync_listeners {
     $bus->subscribe(
         topic      => "msg/$local_bus/_sync/$cache_id/set",
         on_publish => sub {
-            my ($body_ref, $msg_headers) = @_;
+            my ($payload_ref, $mqtt_properties) = @_;
 
-            my $entry = decode_json($$body_ref);
+            my $entry = decode_json($$payload_ref);
 
             $self->_merge($entry);
         }
@@ -140,9 +140,9 @@ sub _setup_sync_listeners {
     $bus->subscribe(
         topic      => "priv/reply-$uid",
         on_publish => sub {
-            my ($body_ref, $msg_headers) = @_;
+            my ($payload_ref, $mqtt_properties) = @_;
 
-            my $dump = decode_json($$body_ref);
+            my $dump = decode_json($$payload_ref);
 
             $self->_merge_dump($dump);
 
@@ -224,12 +224,12 @@ sub _accept_sync_requests {
     $bus->subscribe(
         topic      => "\$share/BKPR/req/$local_bus/_sync/$cache_id/dump",
         on_publish => sub {
-            my ($body_ref, $msg_headers) = @_;
+            my ($payload_ref, $mqtt_properties) = @_;
 
             my $dump = encode_json( $self->dump );
 
             $bus->publish(
-                topic   => $msg_headers->{'response_topic'},
+                topic   => $mqtt_properties->{'response_topic'},
                 payload => \$dump,
             );
         }

@@ -221,10 +221,10 @@ sub accept_notifications {
         $self->{_BUS}->subscribe(
             topic      => $topic,
             on_publish => sub {
-                my ($body_ref, $msg_headers) = @_;
+                my ($payload_ref, $mqtt_properties) = @_;
 
                 local $@;
-                my $request = eval { decode_json($$body_ref) };
+                my $request = eval { decode_json($$payload_ref) };
 
                 unless (ref $request eq 'HASH' && $request->{jsonrpc} eq '2.0') {
                     warn "Received invalid JSON-RPC 2.0 notification $at";
@@ -232,7 +232,7 @@ sub accept_notifications {
                 }
 
                 bless $request, 'Beekeeper::JSONRPC::Notification';
-                $request->{_headers} = $msg_headers;
+                $request->{_mqtt_prop} = $mqtt_properties;
 
                 my $method = $request->{method};
 
@@ -486,10 +486,10 @@ sub __create_response_topic {
         topic       => $response_topic,
         maximum_qos => 0,
         on_publish  => sub {
-            my ($body_ref, $msg_headers) = @_;
+            my ($payload_ref, $mqtt_properties) = @_;
 
             local $@;
-            my $resp = eval { decode_json($$body_ref) };
+            my $resp = eval { decode_json($$payload_ref) };
 
             unless (ref $resp eq 'HASH' && $resp->{jsonrpc} eq '2.0') {
                 my $errmsg = "Received invalid JSON-RPC 2.0 message $at";
@@ -528,7 +528,7 @@ sub __create_response_topic {
                 # Unicasted notification
 
                 bless $resp, 'Beekeeper::JSONRPC::Notification';
-                $resp->{_headers} = $msg_headers;
+                $resp->{_headers} = $mqtt_properties;
 
                 my $method = $resp->{method};
 

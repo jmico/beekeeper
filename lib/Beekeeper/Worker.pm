@@ -348,14 +348,14 @@ sub accept_remote_calls {
 
         my $local_bus = $self->{_BUS}->{bus_role};
 
-        my $queue = "\$share/BKPR/req/$local_bus/$service";
-        $queue =~ tr|.*|/#|;
+        my $topic = "\$share/BKPR/req/$local_bus/$service";
+        $topic =~ tr|.*|/#|;
 
         $self->{_BUS}->subscribe(
-            topic       => $queue,
+            topic       => $topic,
             maximum_qos => 1,
             on_publish  => sub {
-                # ($body_ref, $msg_headers) = @_;
+                # ($payload_ref, $mqtt_properties) = @_;
 
                 # Enqueue request
                 push @{$worker->{task_queue_low}}, [ @_ ];
@@ -367,7 +367,7 @@ sub accept_remote_calls {
             },
             on_suback => sub {
                 my ($success, $prop) = @_;
-                die "Could not subscribe to topic '$queue' $at" unless $success;
+                die "Could not subscribe to topic '$topic' $at" unless $success;
             }
         );
     }
@@ -409,13 +409,13 @@ sub __drain_task_queue {
 
             ## Notification
 
-            my ($body_ref, $msg_headers) = @$task;
+            my ($payload_ref, $mqtt_properties) = @$task;
 
             $worker->{notif_count}++;
 
             eval {
 
-                my $request = decode_json($$body_ref);
+                my $request = decode_json($$payload_ref);
 
                 unless (ref $request eq 'HASH' && $request->{jsonrpc} eq '2.0') {
                     log_error "Received invalid JSON-RPC 2.0 notification";
@@ -423,7 +423,7 @@ sub __drain_task_queue {
                 }
 
                 bless $request, 'Beekeeper::JSONRPC::Notification';
-                $request->{_mqtt_prop} = $msg_headers;
+                $request->{_mqtt_prop} = $mqtt_properties;
 
                 my $method = $request->{method};
 
@@ -435,9 +435,9 @@ sub __drain_task_queue {
                 my $cb = $worker->{callbacks}->{"msg.$1.$2"} || 
                          $worker->{callbacks}->{"msg.$1.*"};
 
-                local $client->{caller_id}   = $msg_headers->{'clid'};
-                local $client->{caller_addr} = $msg_headers->{'addr'};
-                local $client->{auth_data}   = $msg_headers->{'auth'};
+                local $client->{caller_id}   = $mqtt_properties->{'clid'};
+                local $client->{caller_addr} = $mqtt_properties->{'addr'};
+                local $client->{auth_data}   = $mqtt_properties->{'auth'};
 
                 unless (($self->authorize_request($request) || "") eq BKPR_REQUEST_AUTHORIZED) {
                     log_error "Notification '$method' was not authorized";
@@ -462,14 +462,14 @@ sub __drain_task_queue {
 
             ## RPC Call
 
-            my ($body_ref, $msg_headers) = @$task;
+            my ($payload_ref, $mqtt_properties) = @$task;
 
             $worker->{calls_count}++;
             my ($request, $request_id, $result, $response);
 
             $result = eval {
 
-                $request = decode_json($$body_ref);
+                $request = decode_json($$payload_ref);
 
                 unless (ref $request eq 'HASH' && $request->{jsonrpc} eq '2.0') {
                     log_error "Received invalid JSON-RPC 2.0 request";
@@ -480,7 +480,7 @@ sub __drain_task_queue {
                 my $method  = $request->{method};
 
                 bless $request, 'Beekeeper::JSONRPC::Request';
-                $request->{_mqtt_prop} = $msg_headers;
+                $request->{_mqtt_prop} = $mqtt_properties;
 
                 unless (defined $method && $method =~ m/^([\.\w-]+)\.([\w-]+)$/) {
                     log_error "Received request with invalid method '$method'";
@@ -490,9 +490,9 @@ sub __drain_task_queue {
                 my $cb = $worker->{callbacks}->{"req.$1.$2"} || 
                          $worker->{callbacks}->{"req.$1.*"};
 
-                local $client->{caller_id}   = $msg_headers->{'clid'};
-                local $client->{caller_addr} = $msg_headers->{'addr'};
-                local $client->{auth_data}   = $msg_headers->{'auth'};
+                local $client->{caller_id}   = $mqtt_properties->{'clid'};
+                local $client->{caller_addr} = $mqtt_properties->{'addr'};
+                local $client->{auth_data}   = $mqtt_properties->{'auth'};
 
                 unless (($self->authorize_request($request) || "") eq BKPR_REQUEST_AUTHORIZED) {
                     log_error "Request '$method' was not authorized";
@@ -556,22 +556,22 @@ sub __drain_task_queue {
                 # processing it may cause unprocessed requests or undelivered responses)
 
                 $self->{_BUS}->publish(
-                    topic     => $msg_headers->{'response_topic'},
-                    addr      => $msg_headers->{'addr'},
+                    topic     => $mqtt_properties->{'response_topic'},
+                    addr      => $mqtt_properties->{'addr'},
                     payload   => \$json,
                     buffer_id => 'response',
                 );
 
-                if (exists $msg_headers->{'packet_id'}) {
+                if (exists $mqtt_properties->{'packet_id'}) {
 
                     $self->{_BUS}->puback(
-                        packet_id => $msg_headers->{'packet_id'},
+                        packet_id => $mqtt_properties->{'packet_id'},
                         buffer_id => 'response',
                     );
                 }
                 else {
                     # Should not happen (clients must publish with QoS 1)
-                    log_warn "Request published with QoS 0 to topic " . $msg_headers->{'topic'};
+                    log_warn "Request published with QoS 0 to topic " . $mqtt_properties->{'topic'};
                 }
 
                 $self->{_BUS}->flush_buffer( buffer_id => 'response' );
@@ -581,7 +581,7 @@ sub __drain_task_queue {
                 # Fire and forget calls doesn't expect responses
 
                 $self->{_BUS}->puback(
-                    packet_id => $msg_headers->{'packet_id'},
+                    packet_id => $mqtt_properties->{'packet_id'},
                 );
             }
         }

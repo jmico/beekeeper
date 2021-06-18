@@ -88,9 +88,9 @@ sub _collect_log {
     $bus->subscribe(
         topic      => "log/#",
         on_publish => sub {
-            my ($body_ref, $msg_headers) = @_;
+            my ($payload_ref, $mqtt_properties) = @_;
 
-            my $req = decode_json($$body_ref);
+            my $req = decode_json($$payload_ref);
 
             $req->{params}->{type} = $req->{method};
 
