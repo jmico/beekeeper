@@ -102,7 +102,7 @@ sub reject_request {
 
     # Just return a JSONRPC error response
 
-    if ($req->get_auth_tokens) {
+    if ($req->mqtt_properties->{'auth'}) {
         # When client provided some kind of authentication tell him the truth
         # about the service being down. Otherwise the one trying to fix the 
         # issue may be deceived into looking for auth/permissions problems
