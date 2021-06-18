@@ -182,15 +182,14 @@ Version 0.05
 
 =head1 DESCRIPTION
 
-By default all workers use a C<Beekeeper::Logger> logger which logs errors and
+By default all workers use a L<Beekeeper::Logger> logger which logs errors and
 warnings both to files and to a topic C<log/{level}/{service}> on the message bus.
 
 This worker keeps an in-memory buffer of every log entry sent to that topic in
 every broker in a logical message bus.
 
 Please note that receiving all log traffic on a single process does not scale
-at all, so a better strategy will be needed for inspecting logs of big real world
-applications.
+at all, so a better strategy will be needed for inspecting logs of big applications.
 
 =head1 METHODS
 

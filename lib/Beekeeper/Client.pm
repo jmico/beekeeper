@@ -691,8 +691,8 @@ All methods in this module are exported by default to C<Beekeeper::Worker>.
 
 Connects to the message broker and returns a singleton instance.
 
-Unless explicit connection parameters to the broker are provided tries 
-to connect using the configuration from config file C<bus.config.json>.
+Unless explicit connection parameters to the broker are provided it tries 
+to connect using the parameters defined in config file C<bus.config.json>.
 
 =head1 METHODS
 
@@ -700,8 +700,9 @@ to connect using the configuration from config file C<bus.config.json>.
 
 Broadcast a notification to the message bus.
 
-All clients and workers listening for C<method> will receive it. If no one is listening
-the notification is lost.
+All clients and workers listening for given method will receive it. 
+
+If no one is listening for it the notification will be discarded.
 
 =over 4
 
@@ -732,7 +733,7 @@ C<$callback> is a coderef that will be called when a notification is received.
 When executed, the callback will receive a parameter C<$params> which contains
 the notification value or data structure sent.
 
-Note that callbacks will not be executed timely if AnyEvent loop is not running.
+Please note that callbacks will not be executed timely if AnyEvent loop is not running.
 
 =head3 stop_accepting_notifications ( $method, ... )
 
@@ -751,7 +752,7 @@ C<$method> must be one of the strings used previously in C<accept_notifications>
 Makes a synchronous RPC call to a service worker through the message bus.
 
 It will wait (in the event loop) until a response is received, wich will be either
-an C<Beekeeper::JSONRPC::Response> object or a C<Beekeeper::JSONRPC::Error>.
+a L<Beekeeper::JSONRPC::Response> object or a L<Beekeeper::JSONRPC::Error>.
 
 On error it will die unless C<raise_error> option is set to false.
 
@@ -781,9 +782,9 @@ request takes too long but otherwise was executed successfully the response will
 eventually arrive but it will be ignored.
 
 =item raise_error
- 
+
 If set to true (the default) dies with the received error message when a call returns
-an error response. If set to false returns a C<Beekeeper::JSONRPC::Error> instead.
+an error response. If set to false returns a L<Beekeeper::JSONRPC::Error> instead.
 
 =back
 
@@ -791,7 +792,7 @@ an error response. If set to false returns a C<Beekeeper::JSONRPC::Error> instea
 
 Makes an asynchronous RPC call to a service worker through the message bus.
 
-It returns immediately a C<Beekeeper::JSONRPC::Request> object which, once completed,
+It returns immediately a L<Beekeeper::JSONRPC::Request> object which, once completed,
 will have a defined C<response>.
 
 This method  accepts parameters C<method>, C<params>, C<address> and C<timeout> 
@@ -802,21 +803,20 @@ the same as C<call_remote>. Additionally two callbacks can be specified:
 =item on_success
 
 Callback which will be executed after receiving a successful response with a
-C<Beekeeper::JSONRPC::Response> object as parameter. Must be a coderef.
+L<Beekeeper::JSONRPC::Response> object as parameter. Must be a coderef.
 
 =item on_error
 
 Callback which will be executed after receiving an error response with a
-C<Beekeeper::JSONRPC::Error> object as parameter. Must be a coderef.
+L<Beekeeper::JSONRPC::Error> object as parameter. Must be a coderef.
 
 =back
 
 =head3 fire_remote ( %args )
 
-Fire and forget an asynchronous RPC call to a service worker through the message bus.
+Fire and forget an RPC call to a service worker through the message bus.
 
-It returns undef immediately, there is no way to know if the call was executed
-successfully or not.
+It returns undef immediately. The worker receiving the call will not send back a response.
 
 This method accepts parameters C<method>, C<params> and C<address> the same as C<call_remote>.
 
@@ -842,7 +842,7 @@ Gets the current authentication data blob.
 
 =head1 SEE ALSO
  
-L<Beekeeper::MQTT>, L<Beekeeper::Worker>.
+L<Beekeeper::Worker>, L<Beekeeper::MQTT>.
 
 =head1 AUTHOR
 

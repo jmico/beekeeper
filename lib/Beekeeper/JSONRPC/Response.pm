@@ -55,8 +55,8 @@ Version 0.05
 
 Objects of this class represents a JSON-RPC response (see L<http://www.jsonrpc.org/specification>).
 
-When a RPC call is made the worker replies with a Beekeeper::JSONRPC::Response object
-if the invoked method was executed successfully. On error, a Beekeeper::JSONRPC::Error
+When a RPC call is made the worker replies with a L<Beekeeper::JSONRPC::Response> object
+if the invoked method was executed successfully. On error, a L<Beekeeper::JSONRPC::Error>
 is returned instead.
 
 Method C<Beekeeper::Client-\>call_remote> returns objects of this class on success.

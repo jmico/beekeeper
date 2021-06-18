@@ -383,12 +383,12 @@ Version 0.05
 
 =head1 DESCRIPTION
 
-This module contains the core of the command line tool C<bkpr> which is used
+This module contains the core of the command line tool L<bkpr> which is used
 to manage worker pools: it start, stop and monitor pools of persistent
-C<Beekeeper::Worker> processes which receive RPC requests from message bus.
+L<Beekeeper::Worker> processes which receive RPC requests from message bus.
 
 When started it daemonize itself (unless C<--foreground> option is passed) and
-fork all worker processes, then monitor those forked processes and B<immediately>
+fork all worker processes, then monitor those forked processes and immediately
 respawn defunct ones.
 
 =head1 CONFIGURATION
@@ -450,7 +450,6 @@ The following example defines the logical bus "backend":
       "host"   : "10.0.0.1",
       "user"   : "username",
       "pass"   : "password",
-      "vhost"  : "/backend",
   }]
 
 =head1 AUTHOR

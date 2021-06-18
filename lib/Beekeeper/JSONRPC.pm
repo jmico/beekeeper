@@ -53,6 +53,11 @@ All Beekeeper RPC calls follow the JSON-RPC 2.0 specification (see L<http://www.
 
 Constructors on this class are not actually used and are provided just for completeness.
 
+=head1 SEE ALSO
+ 
+L<Beekeeper::JSONRPC::Request>, L<Beekeeper::JSONRPC::Response>, L<Beekeeper::JSONRPC::Notification>, 
+L<Beekeeper::JSONRPC::Error>.
+
 =head1 AUTHOR
 
 José Micó, C<jose.mico@gmail.com>

@@ -1821,7 +1821,7 @@ Version 0.05
   
   $mqtt->disconnect;
 
-Most methods allows to send arbitrary properties along with commands.
+Most methods allow to send arbitrary properties as key-value pairs of utf8 strings.
 
 Except for trivial cases, error checking is delegated to the server.
 
@@ -1893,10 +1893,7 @@ Callback which is executed after the server accepted the connection.
 
 =head3 disconnect ( %args )
 
-A client can disconnect from the server at anytime by closing the socket but 
-there is no guarantee that the previously sent packets have been received by
-the server. This method should be called to do a graceful shutdown, where the
-client is assured that all previous packets have been received by the server.
+Does a graceful disconnection from the server.
 
 =over 4
 

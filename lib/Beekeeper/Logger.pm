@@ -188,7 +188,7 @@ Version 0.05
 
 =head1 DESCRIPTION
 
-By default all workers use a C<Beekeeper::Logger> logger which logs errors and
+By default all workers use a L<Beekeeper::Logger> logger which logs errors and
 warnings both to files and to a topic 'log/{level}/{service}' on the message bus. 
 
 Logs location can be specified with option C<log_file> in config file C<pool.config.json>.
@@ -201,8 +201,8 @@ Log entries are also sent to a topic C</topic/log> in the message bus. The comma
 line tool C<bkpr-log> allows to inspect this topic in real time. Having a common topic
 for logs allows to easily shovel them to an external log management system.
 
-To replace this default log mechanism for another one of your choice, just override 
-in your worker classes the inherithed method C<log_handler>.
+This default log mechanism can be replaced overriding the method C<log_handler>
+in worker classes.
 
 =head1 AUTHOR
 

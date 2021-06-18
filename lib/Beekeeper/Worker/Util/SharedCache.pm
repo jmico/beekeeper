@@ -558,7 +558,7 @@ Even if you are using this cache for small data sets that do not change very
 often, please consider if a distributed memory cache (or even a plain DB) is 
 a better alternative.
 
-Due to propagation costs, B<this cache does not scale>.
+Due to propagation costs, this cache does not scale very well.
 
 =head1 AUTHOR
 
