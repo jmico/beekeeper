@@ -474,7 +474,7 @@ sub __create_response_topic {
     my $self = shift;
     my $client = $self->{_CLIENT};
 
-    my ($file, $line) = (caller)[1,2];
+    my ($file, $line) = (caller(2))[1,2];
     my $at = "at $file line $line\n";
 
     # Subscribe to an exclusive topic for receiving RPC responses
@@ -492,8 +492,7 @@ sub __create_response_topic {
             my $resp = eval { decode_json($$payload_ref) };
 
             unless (ref $resp eq 'HASH' && $resp->{jsonrpc} eq '2.0') {
-                my $errmsg = "Received invalid JSON-RPC 2.0 message $at";
-                defined *{'log_error'} ? log_error $errmsg : warn $errmsg;
+                warn "Received invalid JSON-RPC 2.0 message $at";
                 return;
             }
 
@@ -533,8 +532,7 @@ sub __create_response_topic {
                 my $method = $resp->{method};
 
                 unless (defined $method && $method =~ m/^([\.\w-]+)\.([\w-]+)$/) {
-                    my $errmsg = "Received notification with invalid method '$method' $at";
-                    defined *{'log_error'} ? log_error $errmsg : warn $errmsg;
+                    warn "Received notification with invalid method '$method' $at";
                     return;
                 }
 
@@ -542,8 +540,7 @@ sub __create_response_topic {
                          $client->{callbacks}->{"msg.$1.*"};
 
                 unless ($cb) {
-                    my $errmsg = "No callback found for received notification '$method' $at";
-                    defined *{'log_error'} ? log_error $errmsg : warn $errmsg;
+                    warn "No callback found for received notification '$method' $at";
                     return;
                 }
 
