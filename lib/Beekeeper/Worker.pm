@@ -87,8 +87,8 @@ sub new {
         hostname        => hostname(),
         stop_cv         => undef,
         callbacks       => {},
-        job_queue_high  => [],
-        job_queue_low   => [],
+        task_queue_high => [],
+        task_queue_low  => [],
         queued_tasks    => 0,
         last_report     => 0,
         calls_count     => 0,
@@ -281,7 +281,7 @@ sub accept_notifications {
                 # ($payload_ref, $properties) = @_;
 
                 # Enqueue notification
-                push @{$worker->{job_queue_high}}, [ @_ ];
+                push @{$worker->{task_queue_high}}, [ @_ ];
 
                 unless ($worker->{queued_tasks}) {
                     $worker->{queued_tasks} = 1;
@@ -330,13 +330,13 @@ sub accept_remote_calls {
     foreach my $fq_meth (keys %args) {
 
         $fq_meth =~ m/^  ( [\w-]+ (?: \.[\w-]+ )* ) 
-                      \. ( [\w-]+ | \* ) $/x or die "Invalid job method '$fq_meth' $at";
+                      \. ( [\w-]+ | \* ) $/x or die "Invalid remote call method '$fq_meth' $at";
 
         my ($service, $method) = ($1, $2);
 
         my $callback = $self->__get_cb_coderef($fq_meth, $args{$fq_meth});
 
-        die "Already accepting jobs '$fq_meth' $at" if exists $callbacks->{"req.$fq_meth"};
+        die "Already accepting remote calls '$fq_meth' $at" if exists $callbacks->{"req.$fq_meth"};
         $callbacks->{"req.$fq_meth"} = $callback;
 
         next if $subscribed_to{$service};
@@ -357,8 +357,8 @@ sub accept_remote_calls {
             on_publish  => sub {
                 # ($body_ref, $msg_headers) = @_;
 
-                # Enqueue job
-                push @{$worker->{job_queue_low}}, [ @_ ];
+                # Enqueue request
+                push @{$worker->{task_queue_low}}, [ @_ ];
 
                 unless ($worker->{queued_tasks}) {
                     $worker->{queued_tasks} = 1;
@@ -394,7 +394,7 @@ sub __drain_task_queue {
     my $client = $self->{_CLIENT};
     my $task;
 
-    # When jobs or notifications are received they are not executed immediately
+    # When requests or notifications are received these are not executed immediately
     # because that could happen in the middle of the process of another request,
     # so these tasks get queued until the worker is ready to process the next one.
     #
@@ -405,7 +405,7 @@ sub __drain_task_queue {
 
     DRAIN: {
 
-        while ($task = shift @{$worker->{job_queue_high}}) {
+        while ($task = shift @{$worker->{task_queue_high}}) {
 
             ## Notification
 
@@ -458,7 +458,7 @@ sub __drain_task_queue {
             }
         }
 
-        if ($task = shift @{$worker->{job_queue_low}}) {
+        if ($task = shift @{$worker->{task_queue_low}}) {
 
             ## RPC Call
 
@@ -504,12 +504,12 @@ sub __drain_task_queue {
                     die Beekeeper::JSONRPC::Error->method_not_found;
                 }
 
-                # Execute job
+                # Execute method callback
                 $cb->($self, $request->{params}, $request);
             };
 
             if ($@) {
-                # Got an exception while executing job
+                # Got an exception while executing method callback
                 if (blessed($@) && $@->isa('Beekeeper::JSONRPC::Error')) {
                     # Handled exception
                     $response = $@;
@@ -578,7 +578,7 @@ sub __drain_task_queue {
             }
             else {
 
-                # Background jobs doesn't expect responses
+                # Fire and forget calls doesn't expect responses
 
                 $self->{_BUS}->puback(
                     packet_id => $msg_headers->{'packet_id'},
@@ -586,9 +586,9 @@ sub __drain_task_queue {
             }
         }
 
-        redo DRAIN if (@{$worker->{job_queue_high}} || @{$worker->{job_queue_low}});
+        redo DRAIN if (@{$worker->{task_queue_high}} || @{$worker->{task_queue_low}});
 
-        # Execute tasks postponed until job queue is empty
+        # Execute tasks postponed until task queue is empty
         if (exists $worker->{postponed}) {
             $_->() foreach @{$worker->{postponed}};
             delete $worker->{postponed};
@@ -676,7 +676,7 @@ sub stop_accepting_calls {
     foreach my $fq_meth (@methods) {
 
         $fq_meth =~ m/^  ( [\w-]+ (?: \.[\w-]+ )* ) 
-                      \. ( [\w-]+ | \* ) $/x or die "Invalid method '$fq_meth' $at";
+                      \. ( [\w-]+ | \* ) $/x or die "Invalid remote call method '$fq_meth' $at";
 
         my ($service, $method) = ($1, $2);
 
@@ -685,7 +685,7 @@ sub stop_accepting_calls {
             # through a single MQTT subscription (in order to load balance them), it is 
             # not possible to reject a single method. A workaround is to use a different
             # class for each method that need to be individually rejected.
-            die "Cannot cancel individual job subscription to '$fq_meth' $at";
+            die "Cannot stop accepting individual methods, only '$service.*' is allowed $at";
         }
 
         my $worker    = $self->{_WORKER};
@@ -694,7 +694,7 @@ sub stop_accepting_calls {
         my @cb_keys = grep { $_ =~ m/^req.\Q$service\E\b/ } keys %$callbacks;
 
         unless (@cb_keys) {
-            log_warn "Not previously accepting jobs '$fq_meth' $at";
+            log_warn "Not previously accepting remote calls '$fq_meth' $at";
             next;
         }
 
@@ -703,10 +703,10 @@ sub stop_accepting_calls {
         my $topic = "\$share/BKPR/req/$local_bus/$service";
         $topic =~ tr|.*|/#|;
 
-        # Cannot remove callbacks right now, as new jobs could be in flight or be already 
-        # queued. We must wait for unsubscription completion, and then until the job queue 
-        # is empty to ensure that all received jobs were processed. And even then wait a
-        # bit more, as some brokers may send jobs *after* unsubscription.
+        # Cannot remove callbacks right now, as new requests could be in flight or be already 
+        # queued. We must wait for unsubscription completion, and then until the task queue 
+        # is empty to ensure that all received requests were processed. And even then wait a
+        # bit more, as some brokers may send requests *after* unsubscription.
         my $postpone = sub {
 
             $worker->{_timers}->{"unsub-$topic"} = AnyEvent->timer( 
@@ -794,8 +794,8 @@ sub stop_working {
 
     $worker->{shutting_down} = 1;
 
-    # Cannot exit right now, as some jobs could be in flight or already queued.
-    # So tell the broker to stop sending jobs, and exit after the job queue is empty
+    # Cannot exit right now, as some requests could be in flight or already queued.
+    # So tell the broker to stop sending requests, and exit after the task queue is empty
     foreach my $service (keys %services) {
 
         $worker->{stop_cv}->begin;

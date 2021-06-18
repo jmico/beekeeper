@@ -336,8 +336,8 @@ sub call_remote_async {
 sub fire_remote {
     my $self = shift;
 
-    # Send job to a worker, but do not wait for result
-    $self->__do_rpc_request( @_, req_type => 'BACKGROUND' );
+    # Send request to a worker, but do not wait for response
+    $self->__do_rpc_request( @_, req_type => 'FIRE_FORGET' );
 
     return;
 }
@@ -384,7 +384,7 @@ sub __do_rpc_request {
     $send_args{'auth'} = $client->{auth_data} if defined $client->{auth_data};
     $send_args{'clid'} = $client->{caller_id} if defined $client->{caller_id};
 
-    my $BACKGROUND  = $args{req_type} eq 'BACKGROUND';
+    my $FIRE_FORGET = $args{req_type} eq 'FIRE_FORGET';
     my $SYNCHRONOUS = $args{req_type} eq 'SYNCHRONOUS';
     my $raise_error = $args{'raise_error'};
     my $req_id;
@@ -400,7 +400,7 @@ sub __do_rpc_request {
     $send_args{'response_topic'} = $client->{response_topic} ||
                                    $self->__create_response_topic;
 
-    unless ($BACKGROUND) {
+    unless ($FIRE_FORGET) {
         # Assign an unique request id (unique only for this client)
         $req_id = $client->{correlation_id}++;
         $req->{'id'} = $req_id;
@@ -419,7 +419,7 @@ sub __do_rpc_request {
         %send_args,
     );
 
-    if ($BACKGROUND) {
+    if ($FIRE_FORGET) {
          # Nothing else to do
          return;
     }

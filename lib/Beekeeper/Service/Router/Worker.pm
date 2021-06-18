@@ -142,7 +142,7 @@ sub on_shutdown {
     my $tmr = AnyEvent->timer( after => 30, cb => sub { $cv->send });
     $cv->recv;
 
-    # 4. Just in case of pool stop, wait for workers to finish their current jobs
+    # 4. Just in case of pool full stop, wait for workers to finish their current tasks
     my $wait = AnyEvent->condvar;
     $tmr = AnyEvent->timer( after => SHUTDOWN_WAIT, cb => sub { $wait->send });
     $wait->recv;

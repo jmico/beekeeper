@@ -20,7 +20,7 @@ sub authorize_request {
         return unless $self->__has_authorization_token('BKPR_SYSTEM');
     }
 
-    # All requests will be rejected by reject_job 
+    # All requests will be rejected later by reject_request 
     return BKPR_REQUEST_AUTHORIZED;
 }
 
@@ -70,7 +70,7 @@ sub on_unserviced_queues {
         my $local_bus = $self->{_BUS}->{bus_role};
         log_error "Draining unserviced req/$local_bus/$queue";
 
-        $self->accept_remote_calls( "$queue.*" => 'reject_job' );
+        $self->accept_remote_calls( "$queue.*" => 'reject_request' );
     }
 }
 
@@ -97,7 +97,7 @@ sub on_worker_status {
     }
 }
 
-sub reject_job {
+sub reject_request {
     my ($self, $params, $req) = @_;
 
     # Just return a JSONRPC error response

@@ -153,7 +153,7 @@ sub test_03_fire_and_forget_calls : Test(1) {
 
     my $expected = 597;
     my $max_wait = 10; while ($max_wait--) { sleep 0.5; last if $var == $expected }
-    is( $var, $expected, "Background job executed 3 times");
+    is( $var, $expected, "Fire and forget method executed 3 times");
 }
 
 sub test_04_async_calls : Test(18) {

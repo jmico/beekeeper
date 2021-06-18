@@ -26,12 +26,12 @@ sub response {
 }
 
 sub result {
-    # Shortcut for $job->response->result
+    # Shortcut for $req->response->result
     return ($_[0]->{_response}) ? $_[0]->{_response}->{result} : undef;
 }
 
 sub success {
-    # Shortcut for $job->response->success
+    # Shortcut for $req->response->success
     return ($_[0]->{_response}) ? $_[0]->{_response}->success : undef;
 }
 

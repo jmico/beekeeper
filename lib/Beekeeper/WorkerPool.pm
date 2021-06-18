@@ -144,10 +144,10 @@ sub main {
     # Install signal handlers to control this daemon and forked workers.
     # The supported signals and related actions are:
     #
-    # TERM  tell workers to quit after finishing their current jobs, then quit
-    # INT   tell workers to quit immediately (even in the middle of a job), then quit
+    # TERM  tell workers to quit after finishing their current tasks, then quit
+    # INT   tell workers to quit immediately (even in the middle of a task), then quit
     # PWR   received when system is being shut down, it is handled the same as TERM
-    # HUP   restart workers after finishing their current jobs
+    # HUP   restart workers after finishing their current tasks
 
     my $mode = '';
 
