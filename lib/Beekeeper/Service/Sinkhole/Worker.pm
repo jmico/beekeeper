@@ -3,7 +3,7 @@ package Beekeeper::Service::Sinkhole::Worker;
 use strict;
 use warnings;
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 use Beekeeper::Worker ':log';
 use base 'Beekeeper::Worker';
@@ -127,7 +127,7 @@ Beekeeper::Service::Sinkhole::Worker - Handle unserviced call topics
 
 =head1 VERSION
  
-Version 0.05
+Version 0.06
 
 =head1 DESCRIPTION
 
