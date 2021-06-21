@@ -5,6 +5,7 @@ use warnings;
 
 our $VERSION = '0.06';
 
+use Beekeeper::AnyEvent;
 use Beekeeper::MQTT;
 use Beekeeper::JSONRPC;
 use Beekeeper::Config;
@@ -14,10 +15,6 @@ use Sys::Hostname;
 use Time::HiRes;
 use Digest::SHA 'sha256_hex';
 use Carp;
-
-# Prefer AnyEvent perl backend as it is fast enough and it
-# does not ignore exceptions thrown from within callbacks
-$ENV{'PERL_ANYEVENT_MODEL'} ||= 'Perl' unless $AnyEvent::MODEL;
 
 use constant QUEUE_LANES => 2;
 use constant REQ_TIMEOUT => 60;
@@ -329,7 +326,7 @@ sub call_remote_async {
     my $self = shift;
 
     my $req = $self->__do_rpc_request( @_, req_type => 'ASYNCHRONOUS' );
-    
+
     return $req;
 }
 
