@@ -144,8 +144,10 @@ receive an error response instead of timing out.
 As soon as a worker of the downed service becomes online again the Sinkhole
 workers will stop rejecting requests.
 
-A Sinkhole worker is created automatically in every worker pool, and it can 
-handle around 500 req/s. Extra workers can simply be declared into config file.
+Sinkhole workers are not created automatically. In order to add Sinkhole workers
+to a pool these must be declared into config file C<pool.config.json>.
+
+A single Sinkhole worker can handle around 3500 req/s.
 
 =head1 AUTHOR
 

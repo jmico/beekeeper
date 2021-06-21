@@ -105,9 +105,8 @@ sub main {
     my $pool_id        = $self->{config}->{'pool_id'};
 
     my @spawn_workers = (
-        # Every pool spawns at least a Supervisor and a Sinkhole
+        # Every pool spawns a Supervisor worker
         'Beekeeper::Service::Supervisor::Worker',
-        'Beekeeper::Service::Sinkhole::Worker',
     );
 
     if ($self->{config}->{'use_toybroker'}) {
