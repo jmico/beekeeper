@@ -423,7 +423,7 @@ sub __drain_task_queue {
                 }
 
                 bless $request, 'Beekeeper::JSONRPC::Notification';
-                $request->{_mqtt_prop} = $mqtt_properties;
+                $request->{_mqtt_properties} = $mqtt_properties;
 
                 my $method = $request->{method};
 
@@ -480,7 +480,7 @@ sub __drain_task_queue {
                 my $method  = $request->{method};
 
                 bless $request, 'Beekeeper::JSONRPC::Request';
-                $request->{_mqtt_prop} = $mqtt_properties;
+                $request->{_mqtt_properties} = $mqtt_properties;
 
                 unless (defined $method && $method =~ m/^([\.\w-]+)\.([\w-]+)$/) {
                     log_error "Received request with invalid method '$method'";

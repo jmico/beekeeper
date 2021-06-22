@@ -229,7 +229,7 @@ sub accept_notifications {
                 }
 
                 bless $request, 'Beekeeper::JSONRPC::Notification';
-                $request->{_mqtt_prop} = $mqtt_properties;
+                $request->{_mqtt_properties} = $mqtt_properties;
 
                 my $method = $request->{method};
 

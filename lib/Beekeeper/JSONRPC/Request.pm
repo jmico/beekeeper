@@ -36,7 +36,7 @@ sub success {
 }
 
 sub mqtt_properties {
-    $_[0]->{_mqtt_prop};
+    $_[0]->{_mqtt_properties};
 }
 
 1;
