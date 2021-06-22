@@ -1,10 +1,10 @@
 ## Flood example
 
 This example allows to estimate the performance of a Beekeper setup, which depends 
-mostly of the performance of the message broker and the network latency. 
+heavily on the performance of the message broker and the network latency. 
 
 
-To run this example start a worker pool of `TestWorker` processes:
+To run this example start the worker pool:
 ```
 cd beekeper/examples/flood
 source setup.sh
@@ -17,6 +17,10 @@ Then flood the worker pool with requests:
 Monitor the worker pool load:
 ```
 bkpr-top
+```
+Logs can be inspected with `bkpr-log` or with:
+```
+tail /var/log/myapp-service-flood.log
 ```
 Finally stop the worker pool with:
 ```

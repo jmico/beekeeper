@@ -6,4 +6,4 @@ if [ -z "$BEEKEEPER_CONFIG_DIR" ]; then
     exit 
 fi
 
-bkpr --pool "test" ${1-start}
+bkpr --pool "myapp" ${1-start}
