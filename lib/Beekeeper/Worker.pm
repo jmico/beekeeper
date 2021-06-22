@@ -312,7 +312,7 @@ sub __get_cb_coderef {
     else {
         my ($file, $line) = (caller(1))[1,2];
         my $at = "at $file line $line\n";
-        die "Invalid callback '$callback' for '$method' $at";
+        die "Invalid handler '$callback' for '$method' $at";
     }
 }
 
@@ -445,7 +445,7 @@ sub __drain_task_queue {
                 }
 
                 unless ($cb) {
-                    log_error "No callback found for received notification '$method'";
+                    log_error "No handler found for received notification '$method'";
                     return;
                 }
 
@@ -500,16 +500,16 @@ sub __drain_task_queue {
                 }
 
                 unless ($cb) {
-                    log_error "No callback found for received request '$method'";
+                    log_error "No handler found for received request '$method'";
                     die Beekeeper::JSONRPC::Error->method_not_found;
                 }
 
-                # Execute method callback
+                # Execute method handler
                 $cb->($self, $request->{params}, $request);
             };
 
             if ($@) {
-                # Got an exception while executing method callback
+                # Got an exception while executing method handler
                 if (blessed($@) && $@->isa('Beekeeper::JSONRPC::Error')) {
                     # Handled exception
                     $response = $@;
@@ -536,7 +536,7 @@ sub __drain_task_queue {
 
             if ($request_id) {
 
-                # Send response back to caller
+                # Send back response to caller
 
                 $response->{id} = $request_id;
 
@@ -968,7 +968,7 @@ This method MUST be overrided in worker classes, as the default behavior is
 to deny the execution of any request.
 
 When a request is received this method is called before executing the corresponding
-callback, and it must return the exported constant C<BKPR_REQUEST_AUTHORIZED> in order
+handler, and it must return the exported constant C<BKPR_REQUEST_AUTHORIZED> in order
 to authorize it. Returning any other value will result in the request being ignored. 
 
 This is the place to handle application authentication and authorization.
@@ -1013,16 +1013,16 @@ Make this worker start accepting specified notifications from message bus.
 C<$method> is a string with the format "{service_class}.{method}". A default
 or fallback handler can be specified using a wildcard as "{service_class}.*".
 
-C<$callback> is a method name or a coderef that will be called when a notification
-is received. When executed, the callback will receive two parameters C<$params> 
-(which contains the notification data itself) and C<$req> which is a
+C<$callback> is the method handler (a method name or a coderef) that will be called 
+when a notification is received. When executed, the handler will receive two parameters
+C<$params> (which contains the notification data itself) and C<$req> which is a
 L<Beekeeper::JSONRPC::Notification> object (usually redundant unless it is necessary
-to inspect the MQTT properties of the request).
+to inspect the MQTT properties of the notification).
 
 Notifications are not expected to return a value. Any value returned from notification
-callbacks will be ignored.
+handlers will be ignored.
 
-The callback is executed within an eval block. If it dies the error will be logged
+The handler is executed within an eval block. If it dies the error will be logged
 but the worker will continue running.
 
 Example:
@@ -1059,18 +1059,17 @@ Make this worker start accepting specified RPC requests from message bus.
 C<$method> is a string with the format "{service_class}.{method}". A default
 or fallback handler can be specified using a wildcard as "{service_class}.*".
 
-C<$callback> is a method name or a coderef that will be called when a request
-is received. When executed, the callback will receive two parameters C<$params> 
-(which contains the notification data itself) and C<$req> which is a
-L<Beekeeper::JSONRPC::Request> object (usually redundant unless it is necessary
-to inspect the MQTT properties of the request).
+C<$callback> is the method handler (a method name or a coderef) that will be 
+called when a request is received. When executed, the handler will receive two 
+parameters C<$params> (which contains the notification data itself) and C<$req>
+which is a L<Beekeeper::JSONRPC::Request> object.
 
-The value or reference returned by the callback will be sent back to the caller
 as response.
+The value or reference returned by the handler will be sent back to the caller
 
-The callback is executed within an eval block. If it dies the error will be
-logged and the caller will receive a generic error response, but the worker will
-continue running.
+The handler is executed within an eval block. If it dies the error will be logged 
+and the caller will receive a generic error response, but the worker will continue
+running.
 
 Example:
 
