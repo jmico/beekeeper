@@ -213,6 +213,8 @@ This distribution includes some examples that can be run out of the box using an
 
 [examples/flood](./examples/flood) allows to estimate the performance of a Beekeper setup.
 
+[examples/scraper](./examples/scraper) demonstrates asynchronous workers and clients.
+
 [examples/websocket](./examples/websocket) uses a service from a browser using WebSockets.
 
 [examples/chat](./examples/chat) implements a real world setup with isolated buses and redundancy.
