@@ -90,6 +90,7 @@ sub new {
         task_queue_high => [],
         task_queue_low  => [],
         queued_tasks    => 0,
+        in_progress     => 0,
         last_report     => 0,
         calls_count     => 0,
         notif_count     => 0,
@@ -526,6 +527,11 @@ sub __drain_task_queue {
                 # Explicit error response
                 $response = $result;
             }
+            elsif ($request->{_async_response}) {
+                # Response was deferred and will be sent later
+                $worker->{in_progress}++;
+                $request->{_worker} = $self;
+            }
             else {
                 # Build a success response
                 $response = {
@@ -534,7 +540,7 @@ sub __drain_task_queue {
                 };
             }
 
-            if ($request_id) {
+            if (defined $request_id && defined $response) {
 
                 # Send back response to caller
 
@@ -550,9 +556,9 @@ sub __drain_task_queue {
                     $json = $JSON->encode( $response );
                 }
 
-                # Request is ack'ed as received just after sending the response. So, if the
-                # process is abruptly interrupted here, the broker will send the request to
-                # another worker and it will be executed twice! (acking the request just before 
+                # Request is acknowledged as received just after sending the response. So, if
+                # the process is abruptly interrupted here, the broker will send the request to
+                # another worker and it will be executed twice (acking the request just before
                 # processing it may cause unprocessed requests or undelivered responses)
 
                 $self->{_BUS}->publish(
@@ -578,7 +584,8 @@ sub __drain_task_queue {
             }
             else {
 
-                # Fire and forget calls doesn't expect responses
+                # Acknowledge requests that doesn't send a response right now (fire & forget calls
+                # and requests handled asynchronously), signaling the broker to send more requests
 
                 $self->{_BUS}->puback(
                     packet_id => $mqtt_properties->{'packet_id'},
@@ -603,6 +610,60 @@ sub __drain_task_queue {
     }
 
     $worker->{queued_tasks} = 0;
+}
+
+sub __send_response {
+    my ($self, $request, $result) = @_;
+
+    # Send back async response to caller
+
+    my ($timing_tasks, $response);
+
+    $self->{_WORKER}->{in_progress}--;
+
+    # fire & forget calls doesn't expect responses
+    return unless defined $request->{id};
+
+    unless (defined $BUSY_SINCE) {
+        $BUSY_SINCE = Time::HiRes::time;
+        $timing_tasks = 1; 
+    }
+
+    if (blessed($result) && $result->isa('Beekeeper::JSONRPC::Error')) {
+        # Explicit error response
+        $response = $result;
+    }
+    else {
+        # Build a success response
+        $response = {
+            jsonrpc => '2.0',
+            result  => $result,
+        };
+    }
+
+    $response->{id} = $request->{id};
+
+    local $@;
+    my $json = eval { $JSON->encode( $response ) };
+
+    if ($@) {
+        # Probably response contains blessed references 
+        log_error "Couldn't serialize response as JSON: $@";
+        $response = Beekeeper::JSONRPC::Error->server_error;
+        $response->{id} = $request->{id};
+        $json = $JSON->encode( $response );
+    }
+
+    $self->{_BUS}->publish(
+        topic    => $request->{_mqtt_properties}->{'response_topic'},
+        addr     => $request->{_mqtt_properties}->{'addr'},
+        payload  => \$json,
+    );
+
+    if (defined $timing_tasks) {
+        $BUSY_TIME += Time::HiRes::time - $BUSY_SINCE;
+        undef $BUSY_SINCE;
+    }
 }
 
 
@@ -639,11 +700,11 @@ sub stop_accepting_notifications {
         # even then wait a bit more, as some brokers may send messages *after* unsubscription.
         my $postpone = sub {
 
-            $worker->{_timers}->{"unsub-$topic"} = AnyEvent->timer( 
+           my $unsub_tmr; $unsub_tmr = AnyEvent->timer( 
                 after => UNSUBSCRIBE_LINGER, cb => sub {
 
                     delete $worker->{callbacks}->{"msg.$fq_meth"};
-                    delete $worker->{_timers}->{"unsub-$topic"};
+                    undef $unsub_tmr;
                 }
             );
         };
@@ -709,15 +770,36 @@ sub stop_accepting_calls {
         # bit more, as some brokers may send requests *after* unsubscription.
         my $postpone = sub {
 
-            $worker->{_timers}->{"unsub-$topic"} = AnyEvent->timer( 
+            $worker->{stop_cv}->begin;
+
+            my $unsub_tmr; $unsub_tmr = AnyEvent->timer( 
                 after => UNSUBSCRIBE_LINGER, cb => sub {
 
                     delete $worker->{callbacks}->{$_} foreach @cb_keys;
                     delete $worker->{subscriptions}->{$service};
-                    delete $worker->{_timers}->{"unsub-$topic"};
+                    undef $unsub_tmr;
 
-                    # When shutting down tell _work_forever to stop
-                    $worker->{stop_cv}->end if $worker->{shutting_down};
+                    return unless $worker->{shutting_down};
+
+                    if ($worker->{in_progress} > 0) {
+
+                        # The task queue is empty now, but an asynchronous method handler is
+                        # still busy processing some requests received previously. Wait for
+                        # these requests to be completed before telling _work_forever to stop
+
+                        my $wait_time = 60;
+                        $worker->{stop_cv}->begin;
+
+                        my $busy_tmr; $busy_tmr = AnyEvent->timer( after => 1, interval => 1, cb => sub {
+                            unless ($worker->{in_progress} > 0 && --$wait_time > 0) {
+                                undef $busy_tmr;
+                                $worker->{stop_cv}->end;
+                            }
+                        });
+                    }
+
+                    # Tell _work_forever to stop
+                    $worker->{stop_cv}->end;
                 }
             );
         };
@@ -776,6 +858,8 @@ sub stop_working {
 
     # This is the default handler for TERM signal
 
+    $worker->{shutting_down} = 1;
+
     unless (exists $worker->{stop_cv}) {
         # Worker did not completed initialization yet
         CORE::exit(0);
@@ -787,20 +871,18 @@ sub stop_working {
         $services{$1} = 1;
     }
 
-    unless (keys %services) {
-        $worker->{stop_cv}->send;
-        return;
+    if (keys %services) {
+
+        # Cannot exit right now, as some requests could be in flight or already queued.
+        # So tell the broker to stop sending requests, and exit after the task queue is empty
+        foreach my $service (keys %services) {
+
+            $self->stop_accepting_calls( $service . '.*' );
+        }
     }
-
-    $worker->{shutting_down} = 1;
-
-    # Cannot exit right now, as some requests could be in flight or already queued.
-    # So tell the broker to stop sending requests, and exit after the task queue is empty
-    foreach my $service (keys %services) {
-
-        $worker->{stop_cv}->begin;
-
-        $self->stop_accepting_calls( $service . '.*' );
+    else {
+        # Tell _work_forever to stop
+        $worker->{stop_cv}->send;
     }
 }
 
@@ -1033,7 +1115,7 @@ Example:
   use base 'Beekeeper::Worker';
   
   sub on_startup {
-      my $self = shift;
+      my ($self) = @_;
       
       $self->accept_notifications(
           'foo.bar' => 'bar',       # call $self->bar       for notifications 'foo.bar'
@@ -1043,7 +1125,7 @@ Example:
   }  
   
   sub bar {
-       my ($self, $params, $req) = @_
+       my ($self, $params, $req) = @_;
        
        # $self is a MyWorker object
        # $params is a ref to the notification data
@@ -1064,8 +1146,8 @@ called when a request is received. When executed, the handler will receive two
 parameters C<$params> (which contains the notification data itself) and C<$req>
 which is a L<Beekeeper::JSONRPC::Request> object.
 
-as response.
 The value or reference returned by the handler will be sent back to the caller
+as response (unless the response is deferred with C<$req-\>async_response>).
 
 The handler is executed within an eval block. If it dies the error will be logged 
 and the caller will receive a generic error response, but the worker will continue
@@ -1079,7 +1161,7 @@ Example:
   use base 'Beekeeper::Worker';
   
   sub on_startup {
-      my $self = shift;
+       my ($self) = @_;
       
       $self->accept_remote_calls(
           'foo.inc' => 'increment',  # call $self->increment  for requests to 'foo.inc'
@@ -1089,7 +1171,7 @@ Example:
   }
   
   sub increment {
-       my ($self, $params, $req) = @_
+       my ($self, $params, $req) = @_;
        
        # $self is a MyWorker object
        # $params is a ref to the parameters of the request
@@ -1099,6 +1181,32 @@ Example:
   
        return $params->{number} + 1;
   }
+
+Remote calls can be processed concurrently by means of calling C<$req-\>async_response>
+to tell Beekeeper that the response for the request will be deferred until it is
+available, freeing the worker to accept more requests. Once the response is ready, 
+it must be sent back to the caller with C<$req-\>send_response>.
+
+This handler process requests concurrently:
+
+  sub increment {
+      my ($self, $params, $req) = @_;
+  
+      my $number = $params->{number};
+  
+      $req->async_response;
+  
+      my $t; $t = AnyEvent->timer( after => 1, cb => sub {
+          undef $t;
+          $req->send_response( $number + 1 );
+      });
+  }
+
+Note that callback closures will not be executed in Beekeeper scope but in the event loop
+one, so uncatched exceptions in these closures will cause the worker to die and be respawn.
+
+Asynchronous method handlers use system resources more efficiently, but are significantly 
+harder to write and debug.
 
 =head3 stop_accepting_notifications ( $method, ... )
 
