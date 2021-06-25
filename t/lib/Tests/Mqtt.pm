@@ -11,7 +11,7 @@ use Test::More;
 use Time::HiRes 'sleep';
 use Data::Dumper;
 
-my $DEBUG = 1;
+my $DEBUG = 0;
 
 my $bus_config;
 

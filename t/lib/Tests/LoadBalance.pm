@@ -8,7 +8,7 @@ use base 'Tests::Service::Base';
 use Test::More;
 use Time::HiRes 'sleep';
 
-use constant DEBUG => 0;
+my $VERBOSE = $ENV{'HARNESS_IS_VERBOSE'};
 
 
 sub start_test_workers : Test(startup => 1) {
@@ -58,7 +58,7 @@ sub test_01_load_balance_async : Test(6) {
         my $dev = abs( $offs / $expected * 100 );
         $total += $got;
 
-        DEBUG && diag "$pid: $got  $offs  $dev %";
+        $VERBOSE && diag "$pid: $got  $offs  $dev %";
 
         cmp_ok($dev,'<', 60, "expected average $expected async runs, got $got");
     }
@@ -99,7 +99,7 @@ sub test_02_load_balance_background : Test(6) {
         my $dev = abs( $offs / $expected * 100 );
         $total += $got;
 
-        DEBUG && diag "$pid: $got  $offs  $dev %";
+        $VERBOSE && diag "$pid: $got  $offs  $dev %";
 
         cmp_ok($dev,'<', 60, "expected average $expected background runs, got $got");
     }
@@ -178,7 +178,7 @@ sub test_03_slow_consumer_async : Test(7) {
             my $offs = $got - $expected_fast;
             my $dev = abs( $offs / $expected_fast * 100 );
 
-            DEBUG && diag "$pid: $got  $offs  $dev %";
+            $VERBOSE && diag "$pid: $got  $offs  $dev %";
 
             cmp_ok($dev,'<', 60, "expected average $expected_fast fast runs, got $got");
         }

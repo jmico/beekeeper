@@ -8,7 +8,7 @@ use base 'Tests::Service::Base';
 use Test::More;
 use Time::HiRes 'sleep';
 
-use constant DEBUG => 0;
+my $VERBOSE = $ENV{'HARNESS_IS_VERBOSE'};
 
 
 sub test_01_term_signal : Test(21) {
@@ -39,7 +39,7 @@ sub test_01_term_signal : Test(21) {
 
         # When workers are stopped they are probably processing a request that must be completed before quitting
         my $old = shift @worker_pids;
-        DEBUG && diag "Stopping TERM worker $old";
+        $VERBOSE && diag "Stopping TERM worker $old";
         kill('TERM', $old);
 
         my ($new) = $self->start_workers('Tests::Service::Worker', workers_count => 1, no_wait => 1);
@@ -49,7 +49,7 @@ sub test_01_term_signal : Test(21) {
         ok(1);
     }
 
-    DEBUG && diag "Waiting for backlog";
+    $VERBOSE && diag "Waiting for backlog";
     $cli->wait_async_calls;
 
     my @ok = grep { $_->success } @req;
