@@ -858,6 +858,7 @@ sub stop_working {
 
     # This is the default handler for TERM signal
 
+    return if $worker->{shutting_down};
     $worker->{shutting_down} = 1;
 
     unless (exists $worker->{stop_cv}) {
