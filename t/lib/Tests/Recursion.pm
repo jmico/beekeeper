@@ -12,7 +12,7 @@ use Time::HiRes 'sleep';
 sub start_test_workers : Test(startup => 1) {
     my $self = shift;
 
-    my $running = $self->start_workers('Tests::Service::Worker', workers_count => 3);
+    my $running = $self->start_workers('Tests::Service::Worker', worker_count => 3);
     is( $running, 3, "Spawned 4 workers");
 };
 
@@ -131,7 +131,7 @@ sub test_03_recursion : Test(21) {
         return "This test may fail when not enough system resources are available";
     }
 
-    my $running = $self->start_workers('Tests::Service::Worker', workers_count => 8);
+    my $running = $self->start_workers('Tests::Service::Worker', worker_count => 8);
     is( $running, 8, "Spawned 8 additional workers");
 
     my $cli = Beekeeper::Client->instance;

@@ -22,8 +22,8 @@
         "use_toybroker" :  1,
 
         "workers" : {
-            "MyApp::Service::Scraper::Worker"     : { "workers_count" : 2 },
-            "Beekeeper::Service::LogTail::Worker" : { "workers_count" : 1 },
+            "MyApp::Service::Scraper::Worker"     : { "worker_count" : 2 },
+            "Beekeeper::Service::LogTail::Worker" : { "worker_count" : 1 },
         },
     },
 ]

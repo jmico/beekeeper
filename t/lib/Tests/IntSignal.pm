@@ -24,7 +24,7 @@ sub test_01_int_signal : Test(21) {
     my $cli = Beekeeper::Client->instance;
     my @req;
 
-    my @worker_pids = $self->start_workers('Tests::Service::Worker', workers_count => 4);
+    my @worker_pids = $self->start_workers('Tests::Service::Worker', worker_count => 4);
 
     for (1..20) {
 
@@ -42,7 +42,7 @@ sub test_01_int_signal : Test(21) {
         $VERBOSE && diag "Killing INT worker $old";
         kill('INT', $old);
 
-        my ($new) = $self->start_workers('Tests::Service::Worker', workers_count => 1, no_wait => 1);
+        my ($new) = $self->start_workers('Tests::Service::Worker', worker_count => 1, no_wait => 1);
         push @worker_pids, $new;
 
         sleep 1;

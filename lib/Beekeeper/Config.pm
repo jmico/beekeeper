@@ -169,8 +169,8 @@ Example:
           "description" : "pool of MyApp workers",
   
           "workers" : {
-              "MyApp::Service::Foo::Worker" : { "workers_count" : 4 },
-              "MyApp::Service::Bar::Worker" : { "workers_count" : 2 },
+              "MyApp::Service::Foo::Worker" : { "worker_count" : 4 },
+              "MyApp::Service::Bar::Worker" : { "worker_count" : 2 },
           },
       },
   ]

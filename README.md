@@ -134,7 +134,7 @@ should be used and which services it will run. For example:
     "pool_id" : "myapp",
     "bus_id"  : "backend",
     "workers" : {
-        "MyApp::Worker" : { "workers_count" : 4 },
+        "MyApp::Worker" : { "worker_count" : 4 },
     },
 }]
 ```

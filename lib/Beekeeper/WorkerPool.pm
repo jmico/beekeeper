@@ -115,7 +115,7 @@ sub main {
     }
 
     foreach my $worker_class (@spawn_workers) {
-        $workers_config->{$worker_class} ||= { workers_count => 1 };
+        $workers_config->{$worker_class} ||= { worker_count => 1 };
     }
 
     foreach my $worker_class (sort keys %$workers_config) {
@@ -125,7 +125,9 @@ sub main {
 
     # Make a list of individual workers to spawn
     foreach my $worker_class (@spawn_workers) {
-        my $worker_count = $workers_config->{$worker_class}->{workers_count};
+        my $worker_count = $workers_config->{$worker_class}->{worker_count}  ||
+                           $workers_config->{$worker_class}->{workers_count} ;  # compat
+        $worker_count = 1 unless defined $worker_count;
         for (1..$worker_count) {
             push @spawn_queue, $worker_class;
         }
@@ -415,7 +417,7 @@ The following example defines "MyApp" as a pool of 2 C<MyApp::Worker> processes:
       "pool_id" : "MyApp",
       "bus_id"  : "backend",
       "workers" : {
-          "MyApp::Worker" : { "workers_count" : 2 },
+          "MyApp::Worker" : { "worker_count" : 2 },
       },
   }]
 

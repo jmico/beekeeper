@@ -20,7 +20,7 @@ sub start_test_workers : Test(startup => 1) {
         $self->SKIP_ALL("Load balance tests are not deterministic");
     }
 
-    my $running = $self->start_workers('Tests::Service::Cache', workers_count => 5);
+    my $running = $self->start_workers('Tests::Service::Cache', worker_count => 5);
     is( $running, 5, "Spawned 5 workers");
 };
 
@@ -150,18 +150,18 @@ sub test_03_slow_consumer_async : Test(7) {
     my $runs = $resp->result;
 
     my %slowed_workers;
-    my $slowed_workers_count = 0;
+    my $slowed_worker_count = 0;
 
     foreach my $pid (sort keys %$runs) {
         my $got = $runs->{$pid};
         next unless ($got < $expected_fast * 0.20);
         $slowed_workers{$pid} = 1;
-        $slowed_workers_count++;
+        $slowed_worker_count++;
     }
 
     TODO: {
         local $TODO = "ToyBroker does simple round robin, ignoring backlog";
-        is($slowed_workers_count, $expected_slow, "expected $expected_slow slowed workers, got $slowed_workers_count");
+        is($slowed_worker_count, $expected_slow, "expected $expected_slow slowed workers, got $slowed_worker_count");
     }
 
     my $total = 0;
