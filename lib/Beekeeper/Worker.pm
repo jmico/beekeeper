@@ -34,6 +34,7 @@ our @EXPORT_OK = qw(
     log_info
     log_debug
     log_trace
+    log_level
 );
 
 our %EXPORT_TAGS = ('log' => [ @EXPORT_OK, @EXPORT ]);
@@ -51,6 +52,7 @@ sub log_notice   (@) { $LogLevel >= LOG_NOTICE && $Logger->( LOG_NOTICE, @_ ) }
 sub log_info     (@) { $LogLevel >= LOG_INFO   && $Logger->( LOG_INFO,   @_ ) }
 sub log_debug    (@) { $LogLevel >= LOG_DEBUG  && $Logger->( LOG_DEBUG,  @_ ) }
 sub log_trace    (@) { $LogLevel >= LOG_TRACE  && $Logger->( LOG_TRACE,  @_ ) }
+sub log_level   (;$) { $LogLevel =  shift      if scalar @_; return $LogLevel }
 
 our $BUSY_SINCE; *BUSY_SINCE = \$Beekeeper::MQTT::BUSY_SINCE;
 our $BUSY_TIME;  *BUSY_TIME  = \$Beekeeper::MQTT::BUSY_TIME;
