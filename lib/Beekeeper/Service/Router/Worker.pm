@@ -11,6 +11,7 @@ use base 'Beekeeper::Worker';
 use Beekeeper::Worker::Util 'shared_cache';
 use Scalar::Util 'weaken';
 
+use constant FRONTEND_ROLE   =>'frontend';
 use constant SESSION_TIMEOUT => 1800;
 use constant SHUTDOWN_WAIT   => 2;
 use constant QUEUE_LANES     => 2;
@@ -30,15 +31,16 @@ sub authorize_request {
 sub on_startup {
     my $self = shift;
 
-    $self->_init_routing_table;
-
     my $worker_config = $self->{_WORKER}->{config};
     my $bus_config    = $self->{_WORKER}->{bus_config};
 
-    # Determine name of frontend bus group
-    my $frontend_role = $worker_config->{'frontend_role'} || 'frontend';
-    $self->{frontend_role} = $frontend_role;
+    $self->{sess_timeout}  = $worker_config->{'session_timeout'} || SESSION_TIMEOUT;
+    $self->{shutdown_wait} = $worker_config->{'shutdown_wait'}   || SHUTDOWN_WAIT;
+    $self->{frontend_role} = $worker_config->{'frontend_role'}   || FRONTEND_ROLE;
 
+    $self->_init_routing_table;
+
+    my $frontend_role = $self->{frontend_role};
     my $frontends_config = Beekeeper::Config->get_bus_group_config( bus_role => $frontend_role );
 
     unless (@$frontends_config) {
@@ -144,7 +146,7 @@ sub on_shutdown {
 
     # 4. Just in case of pool full stop, wait for workers to finish their current tasks
     my $wait = AnyEvent->condvar;
-    $tmr = AnyEvent->timer( after => SHUTDOWN_WAIT, cb => sub { $wait->send });
+    $tmr = AnyEvent->timer( after => $self->{shutdown_wait}, cb => sub { $wait->send });
     $wait->recv;
 
     $cv = AnyEvent->condvar;
@@ -382,16 +384,13 @@ sub pull_backend_notifications {
 sub _init_routing_table {
     my $self = shift;
 
-    my $worker_config = $self->{_WORKER}->{config};
-    my $sess_timeout = $worker_config->{'session_timeout'} ||  SESSION_TIMEOUT;
-
     $self->{Addr_to_topics}   = {};
     $self->{Addr_to_sessions} = {};
 
     $self->{MqttSessions} = $self->shared_cache( 
         id => "router",
         persist => 1,
-        max_age => $sess_timeout,
+        max_age => $self->{sess_timeout},
         on_update => sub {
             my ($caller_id, $value, $old_value) = @_;
 

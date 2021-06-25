@@ -17,8 +17,6 @@ use Scalar::Util 'blessed';
 use Carp;
 
 use constant COMPILE_ERROR_EXIT_CODE => 99;
-use constant REPORT_STATUS_PERIOD    => 5;
-use constant UNSUBSCRIBE_LINGER      => 2;
 use constant BKPR_REQUEST_AUTHORIZED => int(rand(90000000)+10000000);
 
 use Exporter 'import';
@@ -56,6 +54,9 @@ sub log_trace    (@) { $LogLevel >= LOG_TRACE  && $Logger->( LOG_TRACE,  @_ ) }
 
 our $BUSY_SINCE; *BUSY_SINCE = \$Beekeeper::MQTT::BUSY_SINCE;
 our $BUSY_TIME;  *BUSY_TIME  = \$Beekeeper::MQTT::BUSY_TIME;
+
+our $REPORT_STATUS_PERIOD = 5;
+our $UNSUBSCRIBE_LINGER   = 2;
 
 my %AUTH_TOKENS;
 my $JSON;
@@ -225,8 +226,8 @@ sub __init_worker {
     AnyEvent->now_update;
 
     $self->{_WORKER}->{report_status_timer} = AnyEvent->timer(
-        after    => rand( REPORT_STATUS_PERIOD ), 
-        interval => REPORT_STATUS_PERIOD,
+        after    => rand( $REPORT_STATUS_PERIOD ), 
+        interval => $REPORT_STATUS_PERIOD,
         cb       => sub { $self->__report_status },
     );
 }
@@ -701,7 +702,7 @@ sub stop_accepting_notifications {
         my $postpone = sub {
 
            my $unsub_tmr; $unsub_tmr = AnyEvent->timer( 
-                after => UNSUBSCRIBE_LINGER, cb => sub {
+                after => $UNSUBSCRIBE_LINGER, cb => sub {
 
                     delete $worker->{callbacks}->{"msg.$fq_meth"};
                     undef $unsub_tmr;
@@ -773,7 +774,7 @@ sub stop_accepting_calls {
             $worker->{stop_cv}->begin;
 
             my $unsub_tmr; $unsub_tmr = AnyEvent->timer( 
-                after => UNSUBSCRIBE_LINGER, cb => sub {
+                after => $UNSUBSCRIBE_LINGER, cb => sub {
 
                     delete $worker->{callbacks}->{$_} foreach @cb_keys;
                     delete $worker->{subscriptions}->{$service};

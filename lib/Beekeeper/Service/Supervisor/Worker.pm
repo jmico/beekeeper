@@ -10,7 +10,7 @@ use base 'Beekeeper::Worker';
 
 use Beekeeper::Worker::Util 'shared_cache';
 
-use constant CHECK_PERIOD => Beekeeper::Worker::REPORT_STATUS_PERIOD;
+our $CHECK_PERIOD = $Beekeeper::Worker::REPORT_STATUS_PERIOD;
 
 
 sub authorize_request {
@@ -35,7 +35,7 @@ sub on_startup {
     $self->{host} = $self->{_WORKER}->{hostname};
     $self->{pool} = $self->{_WORKER}->{pool_id};
 
-    $self->{Workers} = $self->shared_cache( id => "workers", max_age => CHECK_PERIOD * 4 );
+    $self->{Workers} = $self->shared_cache( id => "workers", max_age => $CHECK_PERIOD * 4 );
     $self->{Queues} = {};
     $self->{Load} = {};
 
@@ -52,8 +52,8 @@ sub on_startup {
     );
 
     $self->{check_status_tmr} = AnyEvent->timer(
-        after    => rand(CHECK_PERIOD), 
-        interval => CHECK_PERIOD, 
+        after    => rand($CHECK_PERIOD), 
+        interval => $CHECK_PERIOD, 
         cb => sub {
             $self->check_workers;
             $self->check_queues;
@@ -184,7 +184,7 @@ sub check_workers {
             $cpu_ticks = $utime + $stime;
         }
 
-        my $cpu_load = sprintf("%.2f",($cpu_ticks - ($self->{Load}->{$pid} || 0)) / CHECK_PERIOD);
+        my $cpu_load = sprintf("%.2f",($cpu_ticks - ($self->{Load}->{$pid} || 0)) / $CHECK_PERIOD);
         $self->{Load}->{$pid} = $cpu_ticks;
 
         my $old_msize = $worker->{msize} || 0.01;
