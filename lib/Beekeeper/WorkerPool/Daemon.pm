@@ -471,9 +471,9 @@ sub stop_daemon {
     # Nothing to do if daemon is not running
     return unless ($pid);
 
-    my $send_SIGINT  = 15; # seconds
-    my $send_SIGKILL = 30; # seconds
-    my $give_up      = 90; # seconds
+    my $send_SIGINT  = 120; # seconds  #TODO: This should be configurable
+    my $send_SIGKILL = 130; # seconds
+    my $give_up      = 140; # seconds
 
     my $start_time = time();
     local $| = 1;
