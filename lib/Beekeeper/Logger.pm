@@ -31,12 +31,12 @@ our @EXPORT_OK = qw(
     LOG_INFO
     LOG_DEBUG
     LOG_TRACE
-    %Label
+    %LOG_LABEL
 );
 
 our %EXPORT_TAGS = ('log_levels' => \@EXPORT_OK );
 
-our %Label = (
+our %LOG_LABEL = (
     &LOG_FATAL  => 'fatal',
     &LOG_ALERT  => 'alert',
     &LOG_CRIT   => 'critical',
@@ -117,7 +117,7 @@ sub log {
 
     ## 1. Log to local file
 
-    print STDERR "[$tstamp][$$][$Label{$level}] $msg\n";
+    print STDERR "[$tstamp][$$][$LOG_LABEL{$level}] $msg\n";
 
     ## 2. Log to topic
 
@@ -130,7 +130,7 @@ sub log {
 
     my $json = $JSON->encode({
         jsonrpc => '2.0',
-        method  => $Label{$level},
+        method  => $LOG_LABEL{$level},
         params  => {
             level   => $level,
             service => $self->{service},
@@ -157,7 +157,7 @@ sub log {
 
     if ($@) {
         my $msg = $@; chomp($msg);
-        print STDERR "[$tstamp][$$][$Label{$level}] $msg\n";
+        print STDERR "[$tstamp][$$][$LOG_LABEL{$level}] $msg\n";
     }
 }
 
