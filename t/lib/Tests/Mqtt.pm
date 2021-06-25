@@ -27,7 +27,7 @@ sub async_wait {
     my ($self, $time) = @_;
     $time *= 10 if $self->automated_testing;
     my $cv = AnyEvent->condvar; 
-    my $tmr = AnyEvent->timer( after => 1, cb => $cv ); 
+    my $tmr = AnyEvent->timer( after => $time, cb => $cv ); 
     $cv->recv;
 }
 
