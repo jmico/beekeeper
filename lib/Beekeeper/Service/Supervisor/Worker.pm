@@ -277,6 +277,7 @@ sub get_services_status {
         $services{$worker->{class}}{count}++;
         $services{$worker->{class}}{cps}  += $worker->{cps};
         $services{$worker->{class}}{nps}  += $worker->{nps};
+        $services{$worker->{class}}{err}  += $worker->{err};
         $services{$worker->{class}}{cpu}  += $worker->{cpu} || 0;
         $services{$worker->{class}}{mem}  += $worker->{mem} || 0;
         $services{$worker->{class}}{load} += $worker->{load};
@@ -289,6 +290,7 @@ sub get_services_status {
     foreach my $service (values %services) {
         $service->{cps}  = sprintf("%.2f", $service->{cps} );
         $service->{nps}  = sprintf("%.2f", $service->{nps} );
+        $service->{err}  = sprintf("%.2f", $service->{err} );
         $service->{cpu}  = sprintf("%.2f", $service->{cpu} );
         $service->{mem}  = sprintf("%.2f", $service->{mem} );
         $service->{load} = sprintf("%.2f", $service->{load});

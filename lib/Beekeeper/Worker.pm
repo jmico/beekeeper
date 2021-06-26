@@ -95,8 +95,9 @@ sub new {
         queued_tasks    => 0,
         in_progress     => 0,
         last_report     => 0,
-        calls_count     => 0,
+        call_count      => 0,
         notif_count     => 0,
+        error_count     => 0,
         busy_time       => 0,
     };
 
@@ -459,6 +460,7 @@ sub __drain_task_queue {
             if ($@) {
                 # Got an exception while processing message
                 log_error $@;
+                $worker->{error_count}++;
             }
         }
 
@@ -468,7 +470,7 @@ sub __drain_task_queue {
 
             my ($payload_ref, $mqtt_properties) = @$task;
 
-            $worker->{calls_count}++;
+            $worker->{call_count}++;
             my ($request, $request_id, $result, $response);
 
             $result = eval {
@@ -517,18 +519,22 @@ sub __drain_task_queue {
                 if (blessed($@) && $@->isa('Beekeeper::JSONRPC::Error')) {
                     # Handled exception
                     $response = $@;
+                    $worker->{error_count}++;
                 }
                 else {
                     # Unhandled exception
                     log_error $@;
+                    $worker->{error_count}++;
                     $response = Beekeeper::JSONRPC::Error->server_error;
                     # Sending exact error to caller is very handy, but it is also a security risk
-                    $response->{error}->{data} = $@ if $self->{_WORKER}->{debug};
+                    $response->{error}->{data} = $@ if $worker->{debug};
+                    $worker->{error_count}++;
                 }
             }
             elsif (blessed($result) && $result->isa('Beekeeper::JSONRPC::Error')) {
                 # Explicit error response
                 $response = $result;
+                $worker->{error_count}++;
             }
             elsif ($request->{_async_response}) {
                 # Response was deferred and will be sent later
@@ -635,6 +641,7 @@ sub __send_response {
     if (blessed($result) && $result->isa('Beekeeper::JSONRPC::Error')) {
         # Explicit error response
         $response = $result;
+        $self->{_WORKER}->{error_count}++;
     }
     else {
         # Build a success response
@@ -655,6 +662,7 @@ sub __send_response {
         $response = Beekeeper::JSONRPC::Error->server_error;
         $response->{id} = $request->{id};
         $json = $JSON->encode( $response );
+        $self->{_WORKER}->{error_count}++;
     }
 
     $self->{_BUS}->publish(
@@ -903,18 +911,20 @@ sub __report_status {
     $worker->{last_report} = $now;
 
     # Average calls per second
-    my $cps = sprintf("%.2f", $worker->{calls_count} / $period);
-    $worker->{calls_count} = 0;
+    my $cps = sprintf("%.2f", $worker->{call_count} / $period);
+    $worker->{call_count} = 0;
 
     # Average notifications per second
     my $nps = sprintf("%.2f", $worker->{notif_count} / $period);
     $worker->{notif_count} = 0;
 
+    # Average errors per second
+    my $err = sprintf("%.2f", $worker->{error_count} / $period);
+    $worker->{error_count} = 0;
+
     # Average load as percentage of wall clock busy time (not cpu usage)
     my $load = sprintf("%.2f", ($BUSY_TIME - $worker->{busy_time}) / $period * 100);
     $worker->{busy_time} = $BUSY_TIME;
-
-    #ENHACEMENT: report handled and unhandled errors count
 
     # Queues
     my %queues;
@@ -936,6 +946,7 @@ sub __report_status {
             pid   => $$,
             cps   => $cps,
             nps   => $nps,
+            err   => $err,
             load  => $load,
             queue => [ keys %queues ],
         },

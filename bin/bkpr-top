@@ -50,6 +50,7 @@ The metrics displayed are:
 
    nps:   number of received notifications per second
    cps:   number of processed calls per second
+   err:   number of errors per second
    mem:   resident non shared memory size in KiB
    cpu:   percentage of cpu load
    load:  percentage of busy time
@@ -78,6 +79,7 @@ if ($opt_list) {
         'M' => 'mem',
         'N' => 'nps',
         'C' => 'cps',
+        'E' => 'err',
         'U' => 'cpu',
         'L' => 'load',
     );
@@ -97,14 +99,14 @@ if ($opt_list) {
         print "\033[2J" if ($scr_size ne "$columns-$lines" && !$opt_batch);
         $scr_size = "$columns-$lines";
 
-        my $w = $columns - 60;
+        my $w = $columns - 66;
         $w = 0 if $w < 0;
 
         # Echo title
         print "\033[0;0H" unless $opt_batch;  # jump to 0,0
         print "\033[7m";                      # reverse
-        printf("%-${w}.${w}s %-8s %-8s %-8s %5s %5s %5s %5s %7s \n",
-               'class','pool','host','pid','mem','nps','cps','cpu','load');
+        printf("%-${w}.${w}s %-8s %-8s %5s %8s %5s %5s %5s %5s %7s \n",
+               'class','pool','host','pid','KiB','nps','cps','err','cpu','load');
         print "\033[0m";  # back to normal
 
         # Sort
@@ -118,7 +120,8 @@ if ($opt_list) {
         splice( @workers, $lines - 2 );
 
         foreach my $worker (@workers) {
-            printf("%-${w}.${w}s %-8s %-8s %-8s %5s %5s %5s %5s %5s %% \n",
+            $worker->{class} =~ s/::Worker$//;
+            printf("%-${w}.${w}s %-8s %-8s %5s %8s %5s %5s %5s %5s %5s %% \n",
                 $worker->{class},
                 $worker->{pool},
                 $worker->{host},
@@ -126,6 +129,7 @@ if ($opt_list) {
                 $worker->{mem} || '-',
                 sprintf("%.0f", $worker->{nps}  + .5) || '0',
                 sprintf("%.0f", $worker->{cps}  + .5) || '0',
+                sprintf("%.0f", $worker->{err}  + .5) || '0',
                 sprintf("%.0f", $worker->{cpu}  + .5) || '0',
                 sprintf("%.0f", $worker->{load} + .5) || '0',
             );
@@ -160,6 +164,7 @@ else {
         'M' => 'mem',
         'N' => 'nps',
         'C' => 'cps',
+        'E' => 'err',
         'U' => 'cpu',
         'L' => 'load',
     );
@@ -185,14 +190,14 @@ else {
         print "\033[2J" if ($scr_size ne "$columns-$lines" && !$opt_batch);
         $scr_size = "$columns-$lines";
 
-        my $w = $columns - 48;
+        my $w = $columns - 57;
         $w = 0 if $w < 0;
 
         # Echo title
         print "\033[0;0H" unless $opt_batch;  # jump to 0,0
         print "\033[7m";                      # reverse
-        printf("%-${w}.${w}s %5s %8s %8s %8s %5s %7s \n",
-               'class','count','MB','nps','cps','cpu','load');
+        printf("%-${w}.${w}s %5s %8s %8s %8s %8s %5s %7s \n",
+               'class','count','MiB','nps','cps','err','cpu','load');
         print "\033[0m";  # back to normal
 
         # Sort
@@ -206,12 +211,14 @@ else {
         splice( @services, $lines - 2 );
 
         foreach my $svc (@services) {
-            printf("%-${w}.${w}s %5d %8.1f %8.1f %8.1f %5.0f %5.0f %% \n", 
+            $svc->{class} =~ s/::Worker$//;
+            printf("%-${w}.${w}s %5d %8.1f %8.1f %8.1f %8.1f %5.0f %5.0f %% \n", 
                 $svc->{class},
                 $svc->{count},
                 $svc->{mem} / 1000,
                 $svc->{nps},
                 $svc->{cps},
+                $svc->{err},
                 $svc->{cpu},
                 $svc->{load},
             );
@@ -268,6 +275,7 @@ Version 0.06
   
      nps:   number of received notifications per second
      cps:   number of processed calls per second
+     err:   number of errors per second
      mem:   resident memory size in KiB
      cpu:   percentage of cpu load
      load:  percentage of busy time
