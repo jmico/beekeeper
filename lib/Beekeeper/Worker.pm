@@ -133,8 +133,8 @@ sub new {
     };
 
     if ($@) {
-        log_error "Worker died while initialization: $@";
-        log_error "$class could not be started";
+        log_fatal "Worker died while initialization: $@";
+        log_fatal "$class could not be started";
         CORE::exit( COMPILE_ERROR_EXIT_CODE );
     }
 
@@ -239,7 +239,7 @@ sub __init_worker {
 sub on_startup {
     # Placeholder, intended to be overrided
     my $class = ref $_[0];
-    log_warn "Worker class $class doesn't define on_startup() method";
+    log_fatal "Worker class $class doesn't define on_startup() method";
 }
 
 sub on_shutdown {
@@ -249,7 +249,7 @@ sub on_shutdown {
 sub authorize_request {
     # Placeholder, must to be overrided
     my $class = ref $_[0];
-    log_error "Worker class $class doesn't define authorize_request() method";
+    log_fatal "Worker class $class doesn't define authorize_request() method";
     return undef; # do not authorize
 }
 
@@ -852,7 +852,7 @@ sub __work_forever {
     };
 
     if ($@) {
-        log_error "Worker died: $@";
+        log_fatal "Worker died: $@";
         CORE::exit(255);
     }
 
