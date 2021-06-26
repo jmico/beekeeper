@@ -86,8 +86,9 @@ sub new {
 
         my $log_file = $self->{log_file};
 
-        # If running as root (which should you not) temporarily restore uid to allow opening
+        # If running as root temporarily restore uid and gid to allow opening
         local $> = $< if ($< == 0);
+        local $) = $( if ($( == 0);
 
         if (open(my $fh, '>>', $log_file)) {
             # Send STDERR and STDOUT to log file

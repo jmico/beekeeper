@@ -42,6 +42,14 @@ sub new {
     # Pool cannot be started without a proper config file
     $self->load_config || CORE::exit(1);
 
+    unless ($self->{config}->{log_file}) {
+        my $file = "$pool_id-pool.log";
+        my $dir  = '/var/log';
+        my $user = $self->{options}->{'user'} || getpwuid($>);
+        ($user) = ($user =~ m/^(\w+)$/); # untaint
+        $self->{config}->{log_file} = (-d "$dir/$user") ? "$dir/$user/$file" : "$dir/$file";
+    }
+
     return $self;
 }
 

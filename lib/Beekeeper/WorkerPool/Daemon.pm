@@ -250,7 +250,7 @@ sub _fork {
 sub redirect_output {
     my $self = shift;
 
-    my $logfile = $self->{config}->{logfile};
+    my $logfile = $self->{config}->{log_file};
 
     unless ($logfile) {
         my $dir  = $LOG_FILE_DIR;

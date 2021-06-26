@@ -19,6 +19,7 @@ bkpr-top
 ```
 Logs can be inspected with `bkpr-log` or with:
 ```
+tail /var/log/myapp-pool.log
 tail /var/log/myapp-service-scraper.log
 ```
 Finally stop the worker pool with:

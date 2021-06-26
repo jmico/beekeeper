@@ -21,8 +21,9 @@ bkpr-top
 ```
 Logs can be inspected with `bkpr-log` or with:
 ```
+tail /var/log/myapp-pool.log
 tail /var/log/myapp-service-calculator.log
-tail /var/log/myapp-service-router.log
+tail /var/log/beekeeper-service-router.log
 ```
 Finally stop the worker pool with:
 ```
