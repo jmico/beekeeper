@@ -8,8 +8,9 @@ our $VERSION = '0.06';
 use Beekeeper::Worker ':log';
 use base 'Beekeeper::Worker';
 
-use JSON::XS;
+use Beekeeper::Logger ':log_levels';
 use Scalar::Util 'weaken';
+use JSON::XS;
 
 my @Log_buffer;
 
@@ -25,13 +26,16 @@ sub authorize_request {
 sub on_startup {
     my $self = shift;
 
-    $self->{max_size} = $self->{config}->{max_size} || 1000;
+    $self->{max_entries} = $self->{config}->{buffer_entries} || 100000;
+    $self->{log_level}   = $self->{config}->{log_level}      || LOG_INFO;
 
     $self->_connect_to_all_brokers;
 
     $self->accept_remote_calls(
         '_bkpr.logtail.tail' => 'tail',
     );
+
+    log_info "Ready";
 }
 
 sub _connect_to_all_brokers {
@@ -81,26 +85,38 @@ sub _connect_to_all_brokers {
 
 sub _collect_log {
     my ($self, $bus) = @_;
-    weaken($self);
 
     # Default logger logs to topic log/$level/$service
 
-    $bus->subscribe(
-        topic      => "log/#",
-        on_publish => sub {
-            my ($payload_ref, $mqtt_properties) = @_;
+    my $max_entries = $self->{max_entries};
+    my $log_level   = $self->{log_level};
+    my $worker      = $self->{_WORKER};
 
-            my $req = decode_json($$payload_ref);
+    foreach my $level (1..$log_level) {
 
-            $req->{params}->{type} = $req->{method};
+        my $topic = "log/$level/#";
+        my $req;
 
-            push @Log_buffer, $req->{params};
+        $bus->subscribe(
+            topic      => $topic,
+            on_publish => sub {
+              # my ($payload_ref, $mqtt_properties) = @_;
 
-            shift @Log_buffer if (@Log_buffer >= $self->{max_size});
+                $req = decode_json( ${$_[0]} );
 
-            $self->{notif_count}++;
-        }
-    );
+                push @Log_buffer, $req->{params};
+
+                shift @Log_buffer if (@Log_buffer > $max_entries);
+
+                # Track number of collected log entries
+                $worker->{notif_count}++;
+            },
+            on_suback => sub {
+                my ($success, $prop) = @_;
+                die "Could not subscribe to log topic '$topic'" unless $success;
+            },
+        );
+    }
 }
 
 sub on_shutdown {
