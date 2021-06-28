@@ -25,10 +25,10 @@
         "description"   : "pool #1 of MyApp workers",
 
         "workers" : {
+            "Beekeeper::Service::LogTail::Worker" : { "worker_count" : 1 },
+            "Beekeeper::Service::Router::Worker"  : { "worker_count" : 2 },
             "MyApp::Service::Chat::Worker"        : { "worker_count" : 4 },
             "MyApp::Service::Auth::Worker"        : { "worker_count" : 2 },
-            "Beekeeper::Service::Router::Worker"  : { "worker_count" : 2 },
-            "Beekeeper::Service::LogTail::Worker" : { "worker_count" : 1 },
         },
     },
     {
@@ -37,10 +37,10 @@
         "description" : "pool #2 of MyApp workers",
 
         "workers" : {
+            "Beekeeper::Service::LogTail::Worker" : { "worker_count" : 1 },
+            "Beekeeper::Service::Router::Worker"  : { "worker_count" : 2 },
             "MyApp::Service::Chat::Worker"        : { "worker_count" : 4 },
             "MyApp::Service::Auth::Worker"        : { "worker_count" : 2 },
-            "Beekeeper::Service::Router::Worker"  : { "worker_count" : 2 },
-            "Beekeeper::Service::LogTail::Worker" : { "worker_count" : 1 },
         },
     },
     {
