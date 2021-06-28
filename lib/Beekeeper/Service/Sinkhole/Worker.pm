@@ -144,10 +144,25 @@ receive an error response instead of timing out.
 As soon as a worker of the downed service becomes online again the Sinkhole
 workers will stop rejecting requests.
 
-Sinkhole workers are not created automatically. In order to add Sinkhole workers
-to a pool these must be declared into config file C<pool.config.json>.
+A single Sinkhole worker can handle around 4000 req/s.
 
-A single Sinkhole worker can handle around 3500 req/s.
+Sinkhole workers are not created automatically. In order to add Sinkhole workers
+to a pool these must be declared into config file C<pool.config.json>:
+
+  [
+      {
+          "pool_id" : "myapp",
+          "bus_id"  : "backend",
+          "workers" : {
+              "Beekeeper::Service::Sinkhole::Worker" : { "worker_count": 2 },
+               ...
+          },
+      },
+  ]
+
+=head1 METHODS
+
+This worker class does not expose public methods.
 
 =head1 AUTHOR
 

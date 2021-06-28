@@ -35,7 +35,7 @@ __END__
 
 =head1 NAME
  
-Beekeeper::JSONRPC::Notification - Representation of a JSON-RPC notification.
+Beekeeper::JSONRPC::Notification - Representation of a JSON-RPC notification
  
 =head1 VERSION
  

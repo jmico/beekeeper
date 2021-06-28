@@ -71,7 +71,6 @@ it does not ignore exceptions thrown from within callbacks.
 
 Addresses resolved by AnyEvent::DNS are tainted, causing an "Insecure
 dependency in connect" error as Beekeeper runs with taint mode enabled.
-
 This module untaints resolved addresses, which can be done safely because
 AnyEvent validates these addresses properly before using them.
 

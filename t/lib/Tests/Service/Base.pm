@@ -47,7 +47,7 @@ sub automated_testing {
 
 sub _sleep {
     my ($self, $time) = @_;
-    # Run tests really slow on limited hardware of smoke testers
+    # Run tests really slow on constrained platforms
     $time *= 10 if $self->automated_testing;
     sleep $time;
 }

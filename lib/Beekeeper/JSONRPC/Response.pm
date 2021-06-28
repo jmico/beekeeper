@@ -32,7 +32,7 @@ __END__
 
 =head1 NAME
  
-Beekeeper::JSONRPC::Response - Representation of a JSON-RPC response.
+Beekeeper::JSONRPC::Response - Representation of a JSON-RPC response
  
 =head1 VERSION
  
@@ -78,7 +78,7 @@ and it is used for response matching.
 =item success
 
 Always returns true. It is used to determine if a method was executed successfully
-or not (C<$response-\>result> cannot be trusted as it may be undefined on success).
+or not (C<$response-E<gt>result> cannot be trusted as it may be undefined on success).
 
 =back
 

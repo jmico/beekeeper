@@ -30,7 +30,7 @@ __END__
 
 =head1 NAME
  
-Beekeeper::Worker::Util
+Beekeeper::Worker::Util - Utilities for worker classes
  
 =head1 VERSION
  

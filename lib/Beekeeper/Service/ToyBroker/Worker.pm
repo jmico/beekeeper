@@ -1504,7 +1504,7 @@ __END__
 
 =head1 NAME
 
-Beekeeper::Service::ToyBroker::Worker - Basic MQTT 5 broker
+Beekeeper::Service::ToyBroker::Worker - Basic MQTT 5.0 broker
 
 =head1 VERSION
 
@@ -1512,10 +1512,13 @@ Version 0.06
 
 =head1 DESCRIPTION
 
-ToyBroker implements a small MQTT subset needed to run a Beekeeper worker pool.
+ToyBroker implements a small MQTT 5.0 subset needed to run a Beekeeper worker pool.
 
-Being single threaded it does not scale at all, but it is suitable for development
-or running tests.
+It is intended to be used for development or running tests only. For production
+work a real broker (like Mosquitto, HiveMQ, VerneMQ...) is needed.
+
+A ToyBroker will be started automatically in any pool which has C<use_toybroker> 
+option set to a true value in its config file C<pool.config.json>.
 
 ToyBroker is configured from file C<toybroker.config.json>, which is looked for 
 in ENV C<BEEKEEPER_CONFIG_DIR>, C<~/.config/beekeeper> and then C</etc/beekeeper>.

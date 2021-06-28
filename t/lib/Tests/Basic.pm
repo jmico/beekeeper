@@ -110,7 +110,7 @@ sub test_02_sync_calls : Test(20) {
     };
 
     is( $resp, undef );
-    like( $@, qr/Invalid method 'test.#' at /); # local error, call not made
+    like( $@, qr/Invalid method 'test.#' at /); # local error, the remote call was not made
 
     # Invalid method
     $resp = eval {

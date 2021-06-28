@@ -52,7 +52,7 @@ The metrics displayed are:
    cps:   number of processed calls per second
    err:   number of errors per second
    mem:   resident non shared memory size in KiB
-   cpu:   percentage of cpu load
+   cpu:   percentage of CPU load
    load:  percentage of busy time
 
 Change sorting pressing (N)otifications, (C)alls, (M)emory, cp(U) or (L)oad.
@@ -277,18 +277,66 @@ Version 0.06
      cps:   number of processed calls per second
      err:   number of errors per second
      mem:   resident memory size in KiB
-     cpu:   percentage of cpu load
+     cpu:   percentage of CPU load
      load:  percentage of busy time
   
   Change sorting field pressing (N)otifications, (C)alls, (M)emory, cp(U) or (L)oad.
 
 =head1 DESCRIPTION
 
-Display in real-time performance metrics of all running workers connected
-to a logic message bus in a 'top' fashion.
+Display real-time performance metrics of running workers in a C<top> fashion.
 
 Sorting order can be changed pressing keys N, C, M, U and L.
 Pressing Q quits the program.
+
+=head3 Displayed metrics
+
+=over
+
+=item nps
+
+Number of received notifications per second.
+
+=item cps
+
+Number of processed calls per second.
+
+=item err
+
+Number of errors per second generated while handling calls or notifications.
+
+=item mem
+
+Resident non shared memory size in KiB. This is roughly equivalent to the value
+of C<RES> minus C<SHR> displayed by C<top>.
+
+For example, supposing that there are 2 GiB of memory available, a service that 
+shows a C<mem> usage of 1024 is using half of the memory resources.
+
+=item cpu
+
+Percentage of CPU load (100 indicates a full utilization of one core thread).
+
+For example, supposing that there are 4 core threads available, a service that
+shows a C<cpu> load of 200 is using half of the CPU resources.
+
+=item load
+
+Percentage of busy time (100% indicates that there are no idle workers).
+
+Note that workers can have a high load with very little CPU usage when being
+blocked by synchronous operations (like slow SQL queries).
+
+For example, supposing that there are 10 workers running, a service that shows a 
+C<load> of 50% is working at half capacity. Spawning 10 additional workers will 
+lower the load to 25%.
+
+Due to inaccuracies of measurement the actual maximum may be slightly below 100%.
+
+=back
+
+Unless the option C<--host> is passed the values shown are the aggregate of all
+workers, even if these are on different hosts.
 
 =head1 SEE ALSO
 

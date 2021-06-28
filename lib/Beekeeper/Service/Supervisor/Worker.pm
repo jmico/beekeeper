@@ -158,7 +158,7 @@ sub check_workers {
         my ($mem_size, $cpu_ticks);
 
         if (open my $fh, '<', "/proc/$pid/statm") {
-            # Linux on intel x86 has a fixed 4KB page size
+            # Linux on intel x86 has a fixed 4KiB page size
             my ($virt, $res, $share) = map { $_ * 4 } (split /\s/, scalar <$fh>)[0,1,2];            
             close $fh;
 
@@ -409,7 +409,7 @@ __END__
 
 =head1 NAME
 
-Beekeeper::Service::Supervisor::Worker - Worker pool supervisor.
+Beekeeper::Service::Supervisor::Worker - Worker pool supervisor
 
 =head1 VERSION
 
@@ -419,71 +419,52 @@ Version 0.06
 
 A Supervisor worker is created automatically in every worker pool.
 
-It keeps a shared table of the status of every worker connected to a logical 
-bus in every broker, routinely checking local workers and keeping track of 
-workers periodic performance reports.
+It keeps a shared table of the performance metrics of every worker connected to
+every broker, and routinely measures the CPU and memory usage of local workers.
 
-=head3 worker_status
+These metrics can be queried using the methods provided by L<Beekeeper::Service::Supervisor>
+or using the command line client L<bkpr-top>.
 
-Handler for 'supervisor.worker_status' request.
+=head3 Measured performance metrics
 
-This request is made by workers every few seconds and acts as a heart-beat.
-It contains statistical data about worker performance.
+=over
 
-Note that workers processing long tasks (like slow SQL queries) may not make 
-this request timely.
+=item nps
 
-=head3 on_worker_exit
+Number of received notifications per second.
 
-Handler for 'supervisor.worker_exit' request.
+=item cps
 
-This request is made by workers just before exiting gracefully. It is not made 
-when a worker is terminated abruptly (as the process has no chance to do so).
+Number of processed calls per second.
 
-=head3 check_workers
+=item err
 
-Check every worker process in this host (even workers in other pools) to
-ensure that they are running, and measure their memory and CPU usage.
+Number of errors per second generated while handling calls or notifications.
 
-This is needed as workers with long blocking procedures may not report its 
-status timely, and abruptly terminated workers has no chance to report that 
-they had exited.
+=item mem
 
-=head3 check_queues
+Resident non shared memory size in KiB. This is roughly equivalent to the value
+of C<RES> minus C<SHR> displayed by C<top>.
 
-In the case of all workers of a given service being down, all requests sent to
-the service will timeout as no one is serving them. This may cause a serious
-disruption in the application, as any other service depending of the broken
-one will halt too for the duration of the timeout.
+=item cpu
 
-In order to mitigate this situation the Sinkhole service will be notified
-when unserviced queues are detected, making it to respond immediately to 
-all requests with an error response. Then callers will quickly receive an
-error response instead of timing out.
+Percentage of CPU load (100 indicates a full utilization of one core thread).
 
-=head3 get_workers_status
+=item load
 
-Handler for 'supervisor.get_workers_status' request.
+Percentage of busy time (100 indicates no idle time).
 
-Used by bkpr-top command line tool.
+Note that workers can have a high load with very little CPU usage when being
+blocked by synchronous operations (like slow SQL queries, for example).
 
-=head3 get_services_status
+Due to inaccuracies of measurement the actual maximum may be slightly below 100.
 
-Handler for 'supervisor.get_services_status' request.
+=back
 
-Used by bkpr-top command line tool.
+=head1 METHODS
 
-=head3 restart_workers
-
-Handler for 'supervisor.restart_workers' notification.
-
-This request is sent by bkpr-restart command line tool.
-
-=head3 restart_pool
-
-Handler for 'supervisor.restart_pool' notification.
-
-This request is sent by bkpr-restart command line tool.
+See L<Beekeeper::Service::Supervisor> for a description of the methods exposed 
+by this worker class.
 
 =head1 AUTHOR
 

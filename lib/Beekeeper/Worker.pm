@@ -1061,7 +1061,7 @@ It can be overrided as needed, the default implementation does nothing.
 
 =head3 authorize_request( $req )
 
-This method MUST be overrided in worker classes, as the default behavior is
+This method must be overrided in worker classes, as the default behavior is
 to deny the execution of any request.
 
 When a request is received this method is called before executing the corresponding
@@ -1085,12 +1085,13 @@ implementing a C<log> method (see C<Beekeeper::Logger::log> for reference).
 
 For convenience you can import the ':log' symbols and expose to your class the
 functions C<log_fatal>, C<log_alert>, C<log_critical>, C<log_error>, C<log_warn>, 
-C<log_warning>, C<log_notice>, C<log_info>, C<log_debug> and C<log_trace>.
+C<log_warning>, C<log_notice>, C<log_info>, C<log_debug>, C<log_trace> and C<log_level>.
 
 These will call the underlying C<log> method of the logger class if the severity
-is equal or higher than C<$Beekeeper::Worker::LogLevel>, which is set to C<LOG_INFO>
-by default. The log level can be set to C<LOG_DEBUG> with the --debug option of L<bkpr>, 
-or setting a "debug" option to a true value in config file pool.config.json.
+is equal or higher than C<$Beekeeper::Worker::LogLevel>, which is C<LOG_INFO> by 
+default and can be set with C<log_level>. The default level can be set globally to 
+C<LOG_DEBUG> with the --debug option of L<bkpr>, or setting a "debug" option
+to a true value in config file pool.config.json.
 
 Using these functions makes very easy to switch logging backends at a later date.
 
@@ -1099,16 +1100,17 @@ logged (unless their severity is below the current log level).
 
 =head3 RPC call methods
 
-In order to make RPC calls to another services, methods C<send_notification>, 
-C<call_remote>, C<call_remote_async>, C<fire_remote> and C<wait_async_calls> are 
-automatically imported from L<Beekeeper::Client>.
+In order to make RPC calls to another services all methods from L<Beekeeper::Client>
+are imported automatically. Workers can use C<send_notification>, C<call_remote>,
+C<call_remote_async>, C<fire_remote>, C<wait_async_calls>, C<set_authentication_data>
+and C<get_authentication_data> the same as clients.
 
 =head3 accept_notifications ( $method => $callback, ... )
 
-Make this worker start accepting specified notifications from message bus.
+Makes a worker start accepting the specified notifications from the message bus.
 
-C<$method> is a string with the format "{service_class}.{method}". A default
-or fallback handler can be specified using a wildcard as "{service_class}.*".
+C<$method> is a string with the format C<{service_class}.{method}>. A default
+or fallback handler can be specified using a wildcard like C<{service_class}.*>.
 
 C<$callback> is the method handler (a method name or a coderef) that will be called 
 when a notification is received. When executed, the handler will receive two parameters
@@ -1151,10 +1153,10 @@ Example:
 
 =head3 accept_remote_calls ( $method => $callback, ... )
 
-Make this worker start accepting specified RPC requests from message bus.
+Makes a worker start accepting the specified RPC requests from the message bus.
 
-C<$method> is a string with the format "{service_class}.{method}". A default
-or fallback handler can be specified using a wildcard as "{service_class}.*".
+C<$method> is a string with the format C<{service_class}.{method}>. A default
+or fallback handler can be specified using a wildcard like C<{service_class}.*>.
 
 C<$callback> is the method handler (a method name or a coderef) that will be 
 called when a request is received. When executed, the handler will receive two 
@@ -1162,7 +1164,7 @@ parameters C<$params> (which contains the notification data itself) and C<$req>
 which is a L<Beekeeper::JSONRPC::Request> object.
 
 The value or reference returned by the handler will be sent back to the caller
-as response (unless the response is deferred with C<$req-\>async_response>).
+as response (unless the response is deferred with C<$req-E<gt>async_response>).
 
 The handler is executed within an eval block. If it dies the error will be logged 
 and the caller will receive a generic error response, but the worker will continue
@@ -1197,10 +1199,10 @@ Example:
        return $params->{number} + 1;
   }
 
-Remote calls can be processed concurrently by means of calling C<$req-\>async_response>
+Remote calls can be processed concurrently by means of calling C<$req-E<gt>async_response>
 to tell Beekeeper that the response for the request will be deferred until it is
 available, freeing the worker to accept more requests. Once the response is ready, 
-it must be sent back to the caller with C<$req-\>send_response>.
+it must be sent back to the caller with C<$req-E<gt>send_response>.
 
 This handler process requests concurrently:
 
@@ -1225,29 +1227,29 @@ harder to write and debug.
 
 =head3 stop_accepting_notifications ( $method, ... )
 
-Make this worker stop accepting specified notifications from message bus.
+Makes a worker stop accepting the specified notifications from the message bus.
 
 C<$method> must be one of the strings used previously in C<accept_notifications>.
 
 =head3 stop_accepting_calls ( $method, ... )
 
-Make this worker stop accepting specified RPC requests from message bus.
+Makes a worker stop accepting the specified RPC requests from the message bus.
 
 C<$method> must be one of the strings used previously in C<accept_remote_calls>.
 
 =head3 stop_working 
 
-Make this worker stop accepting new RPC requests, process all requests already
+Makes a worker stop accepting new RPC requests, process all requests already
 received, execute C<on_shutdown> method, and then exit.
 
-This is the default signal handler for TERM signal. 
+This is the default signal handler for C<TERM> signal. 
 
 Please note that it is not possible to stop worker pools calling this method, as 
 WorkerPool will immediately respawn another worker after the current one exits.
 
 =head1 SEE ALSO
  
-L<Beekeeper::Client>, L<Beekeeper::Logger>, L<Beekeeper::WorkerPool>.
+L<Beekeeper::Client>, L<Beekeeper::Config>, L<Beekeeper::Logger>, L<Beekeeper::WorkerPool>.
 
 =head1 AUTHOR
 

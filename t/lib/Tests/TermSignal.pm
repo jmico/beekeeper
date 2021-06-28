@@ -17,8 +17,7 @@ sub test_01_term_signal : Test(21) {
     ## Test that broker complete all requests before quitting when workers are stopped with TERM
 
     if ($self->automated_testing) {
-        # It is hard to make this test run reliably on smoke testers platforms
-        return "This test may fail when not enough system resources are available";
+        return "This test does not run reliably on constrained platforms";
     }
 
     my $cli = Beekeeper::Client->instance;

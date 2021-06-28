@@ -201,17 +201,37 @@ Version 0.06
 By default all workers use a L<Beekeeper::Logger> logger which logs errors and
 warnings both to files and to a topic C<log/{level}/{service}> on the message bus.
 
-This worker keeps an in-memory buffer of every log entry sent to that topic in
-every broker in a logical message bus.
+This worker keeps an in-memory buffer of every log entry sent to these topics in
+every broker of a logical message bus. Then this buffer can be queried using the 
+C<tail> method provided by L<Beekeeper::Service::LogTail> or using the command line
+client L<bkpr-log>.
 
-Please note that receiving all log traffic on a single process does not scale
-at all, so a better strategy will be needed for inspecting logs of big applications.
+Buffered entries consume 1.5 kiB for messages of 100 bytes, increasing to 2 KiB
+for messages of 500 bytes. Holding the last million log entries in memory will 
+consume around 2 GiB.
+
+LogTail workers are CPU bound and can collect up to 20000 log entries per second.
+Applications exceeding that traffic will need another strategy to consolidate log
+entries from brokers.
+
+LogTail workers are not created automatically. In order to add a LogTail worker to a
+pool it must be declared into config file C<pool.config.json>:
+
+  [
+      {
+          "pool_id" : "myapp",
+          "bus_id"  : "backend",
+          "workers" : {
+              "Beekeeper::Service::LogTail::Worker" : { "buffer_entries": 100000 },
+               ...
+          },
+      },
+  ]
 
 =head1 METHODS
 
-=head3 tail ( %filters )
-
-Returns all buffered entries that match the filter criteria.
+See L<Beekeeper::Service::LogTail> for a description of the methods exposed by 
+this worker class.
 
 =head1 AUTHOR
 

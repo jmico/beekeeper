@@ -57,7 +57,7 @@ __END__
 
 =head1 NAME
  
-Beekeeper::JSONRPC::Request - Representation of a JSON-RPC request.
+Beekeeper::JSONRPC::Request - Representation of a JSON-RPC request
  
 =head1 VERSION
  
@@ -112,17 +112,17 @@ or L<Beekeeper::JSONRPC::Error> object.
 
 Once the request is complete, it returns the result encapsulated in the response.
 
-It is just a shortcut for C<$req-\>response-\>result>.
+It is just a shortcut for C<$req-E<gt>response-E<gt>result>.
 
 =item success
 
 Once the request is complete, it returns true unless the response is an error. It is 
-used to determine if a method was executed successfully or not (C<$response-\>result> 
+used to determine if a method was executed successfully or not (C<$response-E<gt>result> 
 cannot be trusted as it may be undefined on success).
 
 Returns undef if the request is in still progress.
 
-It is just a shortcut for C<$req-\>response-\>success>.
+It is just a shortcut for C<$req-E<gt>response-E<gt>success>.
 
 =item mqtt_properties
 
@@ -135,10 +135,10 @@ Returns a hashref containing the MQTT properties of the request.
 =head3 async_response
 
 On worker classes remote calls can be processed concurrently by means of calling
-C<$req-\>async_response> to tell Beekeeper that the response for the request will
+C<$req-E<gt>async_response> to tell Beekeeper that the response for the request will
 be deferred until it is available, freeing the worker to accept more requests.
 
-Once the response is ready, it must be sent back to the caller with C<$req-\>send_response>.
+Once the response is ready, it must be sent back to the caller with C<$req-E<gt>send_response>.
 
 =head3 send_response ( $val )
 

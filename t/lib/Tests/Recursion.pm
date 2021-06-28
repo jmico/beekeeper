@@ -127,8 +127,7 @@ sub test_03_recursion : Test(21) {
     ## This test shows how effective is the broker doing load balance
 
     if ($self->automated_testing) {
-        # It is hard to make this test run reliably on some smoke testers platforms
-        return "This test may fail when not enough system resources are available";
+        return "This test does not run reliably on constrained platforms";
     }
 
     my $running = $self->start_workers('Tests::Service::Worker', worker_count => 8);
