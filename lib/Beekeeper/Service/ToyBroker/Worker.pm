@@ -3,7 +3,7 @@ package Beekeeper::Service::ToyBroker::Worker;
 use strict;
 use warnings;
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 use Beekeeper::Worker ':log';
 use base 'Beekeeper::Worker';
@@ -1508,7 +1508,7 @@ Beekeeper::Service::ToyBroker::Worker - Basic MQTT 5.0 broker
 
 =head1 VERSION
 
-Version 0.06
+Version 0.07
 
 =head1 DESCRIPTION
 

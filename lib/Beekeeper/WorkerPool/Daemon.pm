@@ -3,7 +3,7 @@ package Beekeeper::WorkerPool::Daemon;
 use strict;
 use warnings;
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 use POSIX;
 use Fcntl qw(:DEFAULT :flock);
@@ -570,7 +570,7 @@ Beekeeper::WorkerPool::Daemon - Daemonize processes
 
 =head1 VERSION
 
-Version 0.06
+Version 0.07
 
 =head1 SYNOPSIS
 

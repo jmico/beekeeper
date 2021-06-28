@@ -3,7 +3,7 @@ package Beekeeper::MQTT;
 use strict;
 use warnings;
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 use AnyEvent;
 use AnyEvent::Handle;
@@ -1784,7 +1784,7 @@ Beekeeper::MQTT - Asynchronous MQTT 5.0 client
  
 =head1 VERSION
  
-Version 0.06
+Version 0.07
 
 =head1 SYNOPSIS
 

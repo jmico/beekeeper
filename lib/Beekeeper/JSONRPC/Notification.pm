@@ -3,7 +3,7 @@ package Beekeeper::JSONRPC::Notification;
 use strict;
 use warnings;
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 
 sub new {
@@ -39,7 +39,7 @@ Beekeeper::JSONRPC::Notification - Representation of a JSON-RPC notification
  
 =head1 VERSION
  
-Version 0.06
+Version 0.07
 
 =head1 DESCRIPTION
 

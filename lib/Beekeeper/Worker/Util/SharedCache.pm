@@ -3,7 +3,7 @@ package Beekeeper::Worker::Util::SharedCache;
 use strict;
 use warnings;
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 use Beekeeper::Worker ':log';
 use AnyEvent;
@@ -525,7 +525,7 @@ Beekeeper::Worker::Util::SharedCache - Locally mirrored shared cache
 
 =head1 VERSION
 
-Version 0.06
+Version 0.07
 
 =head1 SYNOPSIS
 
