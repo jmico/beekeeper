@@ -305,7 +305,11 @@ sub call_remote {
 
     # Make AnyEvent allow one level of recursive condvar blocking, as we may
     # block both in $worker->__work_forever and in $client->__do_rpc_request
-    $AE_WAITING && Carp::confess "Recursive condvar blocking wait attempted";
+    $AE_WAITING && Carp::confess "Recursive blocking call attempted: "                  .
+        "trying to make a call_remote while another call_remote is still in progress, " .
+        "but it is not possible to make two blocking calls simultaneously "             .
+        "(tip: one of the two calls must be made with call_remote_async)";
+
     local $AE_WAITING = 1;
     local $AnyEvent::CondVar::Base::WAITING = 0;
 
