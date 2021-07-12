@@ -13,7 +13,7 @@ use Beekeeper::Config;
 use JSON::XS;
 use Sys::Hostname;
 use Time::HiRes;
-use Digest::SHA 'sha256_hex';
+use Digest::MD5 'md5_base64';
 use Carp;
 
 use constant QUEUE_LANES => 2;
@@ -92,7 +92,7 @@ sub new {
     }
 
     $self->{_CLIENT}->{forward_to} = delete $args{'forward_to'};
-    $self->{_CLIENT}->{auth_salt}  = delete $args{'auth_salt'};
+    $self->{_CLIENT}->{auth_salt}  = delete $args{'auth_salt'} || $args{'bus_id'};
 
     # Start a fresh new MQTT session on connect
     $args{'clean_start'} = 1;
@@ -593,13 +593,13 @@ sub __use_authorization_token {
     # but it is not an effective access restriction: anyone with access to the backend
     # bus credentials can easily inspect and clone auth data tokens
 
-    my $salt = $self->{_CLIENT}->{auth_salt} || '';
+    my $salt = $self->{_CLIENT}->{auth_salt};
 
     my $adata_ref = \$self->{_CLIENT}->{auth_data};
 
     my $guard = Beekeeper::Client::Guard->new( $adata_ref );
 
-    $$adata_ref = sha256_hex($token . $salt);
+    $$adata_ref = md5_base64($token . $salt);
 
     return $guard;
 }

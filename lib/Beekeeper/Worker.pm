@@ -12,7 +12,7 @@ use Beekeeper::JSONRPC;
 use JSON::XS;
 use Time::HiRes;
 use Sys::Hostname;
-use Digest::SHA 'sha256_hex';
+use Digest::MD5 'md5_base64';
 use Scalar::Util 'blessed';
 use Carp;
 
@@ -148,11 +148,11 @@ sub __init_auth_tokens {
     # but it is not an effective access restriction: anyone with access to the backend
     # bus credentials can easily inspect and clone auth data tokens
 
-    my $salt = $self->{_CLIENT}->{auth_salt} || '';
+    my $salt = $self->{_CLIENT}->{auth_salt};
 
-    $AUTH_TOKENS{'BKPR_SYSTEM'} = sha256_hex('BKPR_SYSTEM'. $salt);
-    $AUTH_TOKENS{'BKPR_ADMIN'}  = sha256_hex('BKPR_ADMIN' . $salt);
-    $AUTH_TOKENS{'BKPR_ROUTER'} = sha256_hex('BKPR_ROUTER'. $salt);
+    $AUTH_TOKENS{'BKPR_SYSTEM'} = md5_base64('BKPR_SYSTEM'. $salt);
+    $AUTH_TOKENS{'BKPR_ADMIN'}  = md5_base64('BKPR_ADMIN' . $salt);
+    $AUTH_TOKENS{'BKPR_ROUTER'} = md5_base64('BKPR_ROUTER'. $salt);
 }
 
 sub __has_authorization_token {
