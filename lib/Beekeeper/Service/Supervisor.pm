@@ -7,6 +7,9 @@ our $VERSION = '0.07';
 
 use Beekeeper::Client;
 
+# Show errors from perspective of caller
+$Carp::Internal{(__PACKAGE__)}++;
+
 
 sub restart_pool {
     my ($class, %args) = @_;
