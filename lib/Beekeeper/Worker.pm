@@ -202,9 +202,10 @@ sub __init_client {
     my $self = shift;
 
     my $bus_id = $self->{_WORKER}->{bus_id};
+    my $config = $self->{_WORKER}->{bus_config}->{$bus_id};
 
     my $client = Beekeeper::Client->new(
-        bus_id   => $bus_id,
+        %$config,
         timeout  => 0,  # retry forever
         on_error => sub { 
             my $errmsg = $_[0] || ""; $errmsg =~ s/\s+/ /sg;
