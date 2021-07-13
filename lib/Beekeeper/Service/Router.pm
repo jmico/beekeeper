@@ -32,21 +32,60 @@ sub bind_remote_session {
     my $guard = $self->__use_authorization_token('BKPR_ROUTER');
 
     $self->call_remote(
-        method => '_bkpr.router.bind',
-        params => $params,
+        method  => '_bkpr.router.bind',
+        params  => $params,
+        timeout => $args{'timeout'},
+    );
+}
+
+sub bind_remote_session_async {
+    my ($self, %args) = @_;
+
+    my $params = {
+        address     => $args{'address'},
+        caller_id   => $self->{_CLIENT}->{caller_id},
+        caller_addr => $self->{_CLIENT}->{caller_addr},
+        auth_data   => $self->{_CLIENT}->{auth_data},
+    };
+
+    my $guard = $self->__use_authorization_token('BKPR_ROUTER');
+
+    $self->call_remote_async(
+        method     => '_bkpr.router.bind',
+        params     => $params,
+        timeout    => $args{'timeout'},
+        on_success => $args{'on_success'},
+        on_error   => $args{'on_error'},
     );
 }
 
 sub unbind_remote_session {
-    my ($self) = @_;
+    my ($self, %args) = @_;
 
     my $params = { caller_id => $self->{_CLIENT}->{caller_id} };
 
     my $guard = $self->__use_authorization_token('BKPR_ROUTER');
 
     $self->call_remote(
-        method => '_bkpr.router.unbind',
-        params => $params,
+        method  => '_bkpr.router.unbind',
+        params  => $params,
+        timeout => $args{'timeout'},
+    );
+}
+
+sub unbind_remote_session_async {
+    my ($self, %args) = @_;
+
+    my $params = { caller_id => $self->{_CLIENT}->{caller_id} };
+
+    my $guard = $self->__use_authorization_token('BKPR_ROUTER');
+
+    $self->call_remote_async(
+        method     => '_bkpr.router.unbind',
+        params     => $params,
+        timeout    => $args{'timeout'},
+        on_success => $args{'on_success'},
+        on_error   => $args{'on_error'},
     );
 }
 
@@ -58,8 +97,25 @@ sub unbind_remote_address {
     my $guard = $self->__use_authorization_token('BKPR_ROUTER');
 
     $self->call_remote(
-        method => '_bkpr.router.unbind',
-        params => $params,
+        method  => '_bkpr.router.unbind',
+        params  => $params,
+        timeout => $args{'timeout'},
+    );
+}
+
+sub unbind_remote_address_async {
+    my ($self, %args) = @_;
+
+    my $params = { address => $args{'address'} };
+
+    my $guard = $self->__use_authorization_token('BKPR_ROUTER');
+
+    $self->call_remote_async(
+        method     => '_bkpr.router.unbind',
+        params     => $params,
+        timeout    => $args{'timeout'},
+        on_success => $args{'on_success'},
+        on_error   => $args{'on_error'},
     );
 }
 
@@ -92,6 +148,17 @@ Version 0.07
   $self->unbind_remote_session;
   
   $self->unbind_remote_address( address => "frontend.user-123" );
+  
+  $self->bind_remote_session_async(
+      address    => "frontend.user-123";
+      on_success => sub {
+          log_info "Address assigned";
+      },
+      on_error => sub {
+          my ($error) = @_;
+          log_error $error->message;
+      },
+  );
 
 =head1 DESCRIPTION
 
@@ -112,7 +179,7 @@ But please note that, when the application does use the session binding mechanis
 routers will need the in-memory shared table, and this shared table will not scale to 
 a great extent as the rest of the system. The limiting factor is the global rate of 
 updates to the table, which will cap around 5000 bind operations (logins) per second.
-This may be fixed on future releases by means of partitioning the table. Meanwhile, 
+This might be fixed on future releases by means of partitioning the table. Meanwhile, 
 this session binding mechanism is not suitable for applications with a large number
 of concurrent clients.
 
@@ -147,6 +214,21 @@ Clear the authorization data and address assignment of all remote clients which 
 assigned the given address.
 
 This is intended to implement "logout from all devices" functionality.
+
+=head3 bind_remote_session_async ( address => $address, on_success => $cb, on_error => $cb )
+
+Asynchronous version of C<bind_remote_session> method.
+
+Callbacks C<on_success> and C<on_error> must be coderefs and will receive respectively 
+L<Beekeeper::JSONRPC::Response> and L<Beekeeper::JSONRPC::Error> objects as arguments.
+
+=head3 unbind_remote_session_async ( on_success => $cb, on_error => $cb )
+
+Asynchronous version of C<unbind_remote_session> method.
+
+=head3 unbind_remote_address_async ( address => $address, on_success => $cb, on_error => $cb )
+
+Asynchronous version of C<unbind_remote_address> method.
 
 =head1 SEE ALSO
  

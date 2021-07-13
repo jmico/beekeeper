@@ -5,7 +5,6 @@ use warnings;
 
 our $VERSION = '0.07';
 
-
 use Beekeeper::Client;
 
 # Show errors from perspective of caller
@@ -13,18 +12,43 @@ $Carp::Internal{(__PACKAGE__)}++;
 
 
 sub tail {
-    my ($class, %filters) = @_;
+    my ($class, %args) = @_;
 
     my $client = Beekeeper::Client->instance;
-
     my $guard = $client->__use_authorization_token('BKPR_ADMIN');
+    my $timeout = delete $args{'timeout'};
 
     my $resp = $client->call_remote(
-        method => '_bkpr.logtail.tail',
-        params => \%filters,
+        method  => '_bkpr.logtail.tail',
+        params  => \%args,
+        timeout => $timeout,
     );
 
     return $resp->result;
+}
+
+sub tail_async {
+    my ($class, %args) = @_;
+
+    my $on_success = delete $args{'on_success'};
+    my $on_error   = delete $args{'on_error'};
+
+    unless ($on_error) {
+        my ($file, $line) = (caller)[1,2];
+        $on_error = sub { die $_[0]->message . " at $file line $line\n"; };
+    }
+
+    my $client = Beekeeper::Client->instance;
+    my $guard = $client->__use_authorization_token('BKPR_ADMIN');
+    my $timeout = delete $args{'timeout'};
+
+    $client->call_remote_async(
+        method     => '_bkpr.logtail.tail',
+        params     => \%args,
+        timeout    => $timeout,
+        on_success => $on_success,
+        on_error   => $on_error,
+    );
 }
 
 1;
@@ -45,14 +69,28 @@ Version 0.07
 
 =head1 SYNOPSIS
 
-  my $l = Beekeeper::Service::LogTail->tail(
+  my $entries = Beekeeper::Service::LogTail->tail(
       count   => 100,
       level   => LOG_DEBUG,
-      host    => '.*', 
-      pool    => '.*', 
+      host    => '.*',
+      pool    => '.*',
       service => 'myapp-foo',
       message => 'Use of uninitialized value',
       after   =>  now() - 10,
+  );
+  
+  print "$_->{message}\n" foreach @$entries;
+  
+  Beekeeper::Service::LogTail->tail_async(
+      count      => 100,
+      on_success => sub {
+          my ($entries) = @_;
+          print "$_->{message}\n" foreach @$entries;
+      },
+      on_error => sub {
+          my ($error) = @_;
+          die $error->message;
+      },
   );
 
 =head1 DESCRIPTION
@@ -96,6 +134,13 @@ C<service>: Regex that applies to service name.
 C<message>: Regex that applies to error messages.
 
 C<after>: Return only entries generated after given timestamp.
+
+=head3 tail_async ( %filters, on_success => $cb, on_error => $cb  )
+
+Asynchronous version of C<tail> method.
+
+Callbacks C<on_success> and C<on_error> must be coderefs and will receive respectively 
+L<Beekeeper::JSONRPC::Response> and L<Beekeeper::JSONRPC::Error> objects as arguments.
 
 =head1 SEE ALSO
 
