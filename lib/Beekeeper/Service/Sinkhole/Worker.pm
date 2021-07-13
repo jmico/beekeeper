@@ -160,9 +160,7 @@ to a pool these must be declared into config file C<pool.config.json>:
       },
   ]
 
-=head1 METHODS
-
-This worker class does not expose public methods.
+This worker class does not expose public RPC methods.
 
 =head1 AUTHOR
 

@@ -5,12 +5,32 @@ use warnings;
 
 our $VERSION = '0.07';
 
+use Exporter 'import';
+
+our @EXPORT = qw( shared_cache );
+
+
+sub shared_cache {
+    my $self = shift;
+
+    Beekeeper::Worker::Extension::SharedCache::Cache->new(
+        worker => $self,
+        @_
+    );
+}
+
+package
+    Beekeeper::Worker::Extension::SharedCache::Cache;   # hide from PAUSE
+
 use Beekeeper::Worker ':log';
 use AnyEvent;
 use JSON::XS;
 use Fcntl qw(:DEFAULT :flock);
 use Scalar::Util 'weaken';
 use Carp;
+
+# Show errors from perspective of caller
+$Carp::Internal{(__PACKAGE__)}++;
 
 
 sub new {
@@ -529,7 +549,7 @@ Version 0.07
 
 =head1 SYNOPSIS
 
-  use Beekeeper::Worker::Extension 'shared_cache'
+  use Beekeeper::Worker::Extension::SharedCache;
   
   my $c = $self->shared_cache(
       id      => "mycache",
@@ -544,7 +564,7 @@ Version 0.07
 
 =head1 DESCRIPTION
 
-This module implements a locally mirrored shared cache: each worker keeps a
+This extension implements a locally mirrored shared cache: each worker keeps a
 copy of all cached data, and all copies are synced through the message bus.
 
 Access operations are essentially free, as data is held locally. But changes 

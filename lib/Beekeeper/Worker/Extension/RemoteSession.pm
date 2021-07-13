@@ -1,4 +1,4 @@
-package Beekeeper::Service::Router;
+package Beekeeper::Worker::Extension::RemoteSession;
 
 use strict;
 use warnings;
@@ -7,13 +7,11 @@ our $VERSION = '0.07';
 
 use Exporter 'import';
 
-our @EXPORT_OK = qw(
+our @EXPORT = qw(
     bind_remote_session
     unbind_remote_session
     unbind_remote_address
 );
-
-our %EXPORT_TAGS = ('all' => \@EXPORT_OK );
 
 # Show errors from perspective of caller
 $Carp::Internal{(__PACKAGE__)}++;
@@ -129,7 +127,7 @@ __END__
 
 =head1 NAME
 
-Beekeeper::Service::Router - Route messages between backend and frontend buses
+Beekeeper::Worker::Extension::RemoteSession - ...
 
 =head1 VERSION
 
@@ -137,6 +135,8 @@ Version 0.07
 
 =head1 SYNOPSIS
 
+  use Beekeeper::Worker::Extension::RemoteSession;
+  
   $self->bind_remote_session( address => "frontend.user-123" );
   
   $self->send_notification(
@@ -161,6 +161,10 @@ Version 0.07
   );
 
 =head1 DESCRIPTION
+
+This extension allows to assign authorization data to remote client sessions and
+give arbitrary addresses to them. These addresses can be used later to push unicasted 
+notifications to clients.
 
 Router workers pull requests from all frontend brokers and forward them to the single
 backend broker it is connected to, and pull generated responses from the backend and

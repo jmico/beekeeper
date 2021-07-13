@@ -8,7 +8,7 @@ our $VERSION = '0.07';
 use Beekeeper::Worker ':log';
 use base 'Beekeeper::Worker';
 
-use Beekeeper::Worker::Extension 'shared_cache';
+use Beekeeper::Worker::Extension::SharedCache;
 
 our $CHECK_PERIOD = $Beekeeper::Worker::REPORT_STATUS_PERIOD;
 
@@ -461,10 +461,10 @@ Due to inaccuracies of measurement the actual maximum may be slightly below 100.
 
 =back
 
-=head1 METHODS
+=head1 SEE ALSO
 
-See L<Beekeeper::Service::Supervisor> for a description of the methods exposed 
-by this worker class.
+L<Beekeeper::Service::Supervisor>, which is the interface to the RPC methods
+exposed by this worker class.
 
 =head1 AUTHOR
 

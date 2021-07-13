@@ -6,7 +6,7 @@ use warnings;
 use MyApp::Service::Base;
 use base 'MyApp::Service::Base';
 
-use Beekeeper::Service::Router ':all';
+use Beekeeper::Worker::Extension::RemoteSession;
 use MyApp::Service::Chat;
 
 

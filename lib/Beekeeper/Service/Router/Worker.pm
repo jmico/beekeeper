@@ -8,7 +8,7 @@ our $VERSION = '0.07';
 use Beekeeper::Worker ':log';
 use base 'Beekeeper::Worker';
 
-use Beekeeper::Worker::Extension 'shared_cache';
+use Beekeeper::Worker::Extension::SharedCache;
 use Scalar::Util 'weaken';
 
 use constant FRONTEND_ROLE   =>'frontend';
@@ -575,10 +575,10 @@ these must be declared into config file C<pool.config.json>:
       },
   ]
 
-=head1 METHODS
+=head1 SEE ALSO
 
-See L<Beekeeper::Service::Router> for a description of the methods exposed by this
-worker class.
+L<Beekeeper::Worker::Extension::RemoteSession>, which is the interface to the RPC
+methods exposed by this worker class.
 
 =head1 AUTHOR
 

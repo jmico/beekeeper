@@ -228,9 +228,9 @@ pool it must be declared into config file C<pool.config.json>:
       },
   ]
 
-=head1 METHODS
+=head1 SEE ALSO
 
-See L<Beekeeper::Service::LogTail> for a description of the methods exposed by 
+L<Beekeeper::Service::LogTail>, which is the interface to the RPC methods exposed by
 this worker class.
 
 =head1 AUTHOR
