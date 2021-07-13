@@ -8,7 +8,7 @@ our $VERSION = '0.07';
 use Beekeeper::Worker ':log';
 use base 'Beekeeper::Worker';
 
-use Beekeeper::Worker::Util 'shared_cache';
+use Beekeeper::Worker::Extension 'shared_cache';
 use Scalar::Util 'weaken';
 
 use constant FRONTEND_ROLE   =>'frontend';

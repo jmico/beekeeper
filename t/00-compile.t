@@ -28,7 +28,7 @@ use_ok $_ for qw(
     Beekeeper::Worker
     Beekeeper::WorkerPool::Daemon
     Beekeeper::WorkerPool
-    Beekeeper::Worker::Util
+    Beekeeper::Worker::Extension
     Beekeeper::Service::Supervisor
     Beekeeper::Service::Supervisor::Worker
     Beekeeper::Service::Sinkhole::Worker

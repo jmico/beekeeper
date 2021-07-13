@@ -1,4 +1,4 @@
-package Beekeeper::Worker::Util::SharedCache;
+package Beekeeper::Worker::Extension::SharedCache;
 
 use strict;
 use warnings;
@@ -521,7 +521,7 @@ __END__
 
 =head1 NAME
 
-Beekeeper::Worker::Util::SharedCache - Locally mirrored shared cache
+Beekeeper::Worker::Extension::SharedCache - Locally mirrored shared cache
 
 =head1 VERSION
 
@@ -529,7 +529,7 @@ Version 0.07
 
 =head1 SYNOPSIS
 
-  use Beekeeper::Worker::Util 'shared_cache'
+  use Beekeeper::Worker::Extension 'shared_cache'
   
   my $c = $self->shared_cache(
       id      => "mycache",

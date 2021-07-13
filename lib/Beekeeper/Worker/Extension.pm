@@ -1,11 +1,11 @@
-package Beekeeper::Worker::Util;
+package Beekeeper::Worker::Extension;
 
 use strict;
 use warnings;
 
 our $VERSION = '0.07';
 
-use Beekeeper::Worker::Util::SharedCache;
+use Beekeeper::Worker::Extension::SharedCache;
 
 use Exporter 'import';
 
@@ -15,7 +15,7 @@ our @EXPORT = qw( shared_cache );
 sub shared_cache {
     my ($self, %args) = @_;
 
-    my $shared = Beekeeper::Worker::Util::SharedCache->new( worker => $self, %args );
+    my $shared = Beekeeper::Worker::Extension::SharedCache->new( worker => $self, %args );
 
     return $shared;
 }
@@ -30,7 +30,7 @@ __END__
 
 =head1 NAME
  
-Beekeeper::Worker::Util - Utilities for worker classes
+Beekeeper::Worker::Extension - Extensions for worker classes
  
 =head1 VERSION
  
@@ -38,7 +38,7 @@ Version 0.07
 
 =head1 SYNOPSIS
 
-  use Beekeeper::Worker::Util 'shared_cache';
+  use Beekeeper::Worker::Extension 'shared_cache';
   
   my $c = $self->shared_cache( ... );
   
@@ -48,7 +48,7 @@ Version 0.07
 
 =head1 SEE ALSO
  
-L<Beekeeper::Worker::Util::SharedCache>
+L<Beekeeper::Worker::Extension::SharedCache>
 
 =head1 AUTHOR
 

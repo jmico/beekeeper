@@ -8,7 +8,7 @@ our $VERSION = '0.07';
 use Beekeeper::Worker ':log';
 use base 'Beekeeper::Worker';
 
-use Beekeeper::Worker::Util 'shared_cache';
+use Beekeeper::Worker::Extension 'shared_cache';
 
 our $CHECK_PERIOD = $Beekeeper::Worker::REPORT_STATUS_PERIOD;
 
