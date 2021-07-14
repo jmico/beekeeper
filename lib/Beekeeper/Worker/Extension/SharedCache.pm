@@ -62,10 +62,13 @@ sub new {
 
     $self->_connect_to_all_brokers($worker);
 
+    my $Self = $self;
+    weaken $Self;
+
     AnyEvent->now_update;
 
     if ($self->{max_age}) {
-        my $Self = $self;
+
         $self->{gc_timer} = AnyEvent->timer(
             after    => $self->{max_age} * rand() + 60,
             interval => $self->{max_age},
@@ -74,7 +77,7 @@ sub new {
     }
 
     if ($self->{refresh}) {
-        my $Self = $self;
+
         $self->{refresh_timer} = AnyEvent->timer(
             after    => $self->{refresh} * rand() + 60,
             interval => $self->{refresh},
@@ -87,7 +90,7 @@ sub new {
 
 sub _connect_to_all_brokers {
     my ($self, $worker) = @_;
-    weaken($self);
+    weaken $self;
 
     #TODO: using multiple shared_cache from the same worker will cause multiple bus connections
 
@@ -105,7 +108,7 @@ sub _connect_to_all_brokers {
             $self->_setup_sync_listeners($worker_bus);
             $self->_send_sync_request($worker_bus);
             $self->{_BUS} = $worker_bus;
-            weaken($self->{_BUS});
+            weaken $self->{_BUS};
             next;
         }
 
@@ -140,7 +143,7 @@ sub _connect_to_all_brokers {
 
 sub _setup_sync_listeners {
     my ($self, $bus) = @_;
-    weaken($self);
+    weaken $self;
 
     my $cache_id  = $self->{id};
     my $uid       = $self->{uid};
@@ -173,7 +176,7 @@ sub _setup_sync_listeners {
 
 sub _send_sync_request {
     my ($self, $bus) = @_;
-    weaken($self);
+    weaken $self;
 
     # Do not send more than one sync request at the time
     return if $self->{_sync_timeout};
@@ -231,8 +234,8 @@ sub _sync_completed {
 
 sub _accept_sync_requests {
     my ($self, $bus) = @_;
-    weaken($self);
-    weaken($bus);
+    weaken $self;
+    weaken $bus;
 
     my $cache_id  = $self->{id};
     my $uid       = $self->{uid};
@@ -260,7 +263,7 @@ my $_now = 0;
 
 sub set {
     my ($self, $key, $value) = @_;
-    weaken($self);
+    weaken $self;
 
     croak "Key value is undefined" unless (defined $key);
 
@@ -512,7 +515,7 @@ sub _load_state {
     }
 }
 
-sub disconnect {
+sub _disconnect {
     my $self = shift;
 
     $self->_save_state if $self->{persist};
@@ -527,8 +530,7 @@ sub disconnect {
 sub DESTROY {
     my $self = shift;
 
-    #TODO: $self contains a circular reference
-    $self->disconnect;
+    $self->_disconnect;
 }
 
 1;

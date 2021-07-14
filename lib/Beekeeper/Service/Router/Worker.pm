@@ -183,8 +183,8 @@ sub on_shutdown {
         $frontend_bus->disconnect;
     }
 
-    # Disconnect from backend bus group
-    $self->{MqttSessions}->disconnect;
+    # Disconnect shared cache
+    undef $self->{MqttSessions};
 }
 
 sub pull_frontend_requests {

@@ -61,6 +61,13 @@ sub on_startup {
     );
 }
 
+sub on_shutdown {
+    my $self = shift;
+
+    # Disconnect shared cache
+    undef $self->{Workers};
+}
+
 sub log_handler {
     my $self = shift;
 
