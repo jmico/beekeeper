@@ -873,7 +873,7 @@ sub stop_working {
     return if $worker->{shutting_down};
     $worker->{shutting_down} = 1;
 
-    unless (exists $worker->{stop_cv}) {
+    unless (defined $worker->{stop_cv}) {
         # Worker did not completed initialization yet
         CORE::exit(0);
     }
