@@ -38,11 +38,17 @@ sub on_startup {
     # Watch the Supervisor data traffic in order to stop rejecting
     # requests as soon as a worker handling these becomes online
 
+    my $topic = "msg/$local_bus/_sync/workers/set";
+
     $self->{_BUS}->subscribe(
-        topic      => "msg/$local_bus/_sync/workers/set",
+        topic      => $topic,
         on_publish => sub {
             my ($payload_ref, $properties) = @_;
             $self->on_worker_status( decode_json($$payload_ref)->[1] );
+        },
+        on_suback => sub {
+            my ($success) = @_;
+            log_error "Could not subscribe to topic '$topic'" unless $success;
         }
     );
 

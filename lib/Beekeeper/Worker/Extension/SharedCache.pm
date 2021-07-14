@@ -149,19 +149,27 @@ sub _setup_sync_listeners {
     my $uid       = $self->{uid};
     my $local_bus = $bus->{bus_role};
 
-    $bus->subscribe(
-        topic      => "msg/$local_bus/_sync/$cache_id/set",
-        on_publish => sub {
-            my ($payload_ref, $mqtt_properties) = @_;
+    my $topic = "msg/$local_bus/_sync/$cache_id/set";
 
-            my $entry = decode_json($$payload_ref);
+    $bus->subscribe(
+        topic      => $topic,
+        on_publish => sub {
+          # my ($payload_ref, $mqtt_properties) = @_;
+
+            my $entry = decode_json( ${$_[0]} );
 
             $self->_merge($entry);
+        },
+        on_suback => sub {
+            my ($success) = @_;
+            log_error "Could not subscribe to topic '$topic'" unless $success;
         }
     );
 
+    my $reply_topic = "priv/reply-$uid";
+
     $bus->subscribe(
-        topic      => "priv/reply-$uid",
+        topic      => $reply_topic,
         on_publish => sub {
             my ($payload_ref, $mqtt_properties) = @_;
 
@@ -170,6 +178,10 @@ sub _setup_sync_listeners {
             $self->_merge_dump($dump);
 
             $self->_sync_completed(1);
+        },
+        on_suback => sub {
+            my ($success) = @_;
+            log_error "Could not subscribe to reply topic '$reply_topic'" unless $success;
         }
     );
 }
@@ -244,8 +256,10 @@ sub _accept_sync_requests {
 
     log_debug "Shared cache '$self->{id}': Accepting sync requests from $local_bus";
 
+    my $topic = "\$share/BKPR/req/$local_bus/_sync/$cache_id/dump";
+
     $bus->subscribe(
-        topic      => "\$share/BKPR/req/$local_bus/_sync/$cache_id/dump",
+        topic      => $topic,
         on_publish => sub {
             my ($payload_ref, $mqtt_properties) = @_;
 
@@ -255,6 +269,10 @@ sub _accept_sync_requests {
                 topic   => $mqtt_properties->{'response_topic'},
                 payload => \$dump,
             );
+        },
+        on_suback => sub {
+            my ($success) = @_;
+            log_error "Could not subscribe to topic '$topic'" unless $success;
         }
     );
 }
