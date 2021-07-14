@@ -26,8 +26,8 @@ sub authorize_request {
 sub on_startup {
     my $self = shift;
 
-    $self->{max_entries} = $self->{config}->{buffer_entries} || 100000;
-    $self->{log_level}   = $self->{config}->{log_level}      || LOG_INFO;
+    $self->{max_entries} = $self->{config}->{buffer_entries} || 20000;
+    $self->{log_level}   = $self->{config}->{log_level}      || LOG_DEBUG;
 
     $self->_connect_to_all_brokers;
 
@@ -208,9 +208,10 @@ every broker of a logical message bus. Then this buffer can be queried using the
 C<tail> method provided by L<Beekeeper::Service::LogTail> or using the command line
 client L<bkpr-log>.
 
-Buffered entries consume 1.5 kiB for messages of 100 bytes, increasing to 2 KiB
-for messages of 500 bytes. Holding the last million log entries in memory will 
-consume around 2 GiB.
+By default the buffer holds the last 20000 log entries (this can be changed setting
+the C<buffer_entries> configuration option). Buffered entries consume 1.5 kiB for 
+messages of 100 bytes, increasing to 2 KiB for messages of 500 bytes. Holding the 
+last million log entries in memory will consume around 2 GiB (!). 
 
 LogTail workers are CPU bound and can collect up to 20000 log entries per second.
 Applications exceeding that traffic will need another strategy to consolidate log

@@ -102,9 +102,10 @@ LogTail workers keep an in-memory buffer of every log entry sent to these topics
 every broker of a logical message bus. Then this buffer can be queried using the
 C<tail> method provided by this module or using the command line client L<bkpr-log>.
 
-Buffered entries consume 1.5 kiB for messages of 100 bytes, increasing to 2 KiB
-for messages of 500 bytes. Holding the last million log entries in memory will 
-consume around 2 GiB.
+By default the buffer holds the last 20000 log entries (this can be changed setting
+the C<buffer_entries> configuration option of workers). Buffered entries consume 1.5
+kiB for messages of 100 bytes, increasing to 2 KiB for messages of 500 bytes. Holding
+the  last million log entries in memory will consume around 2 GiB (!). 
 
 LogTail workers are CPU bound and can collect up to 20000 log entries per second.
 Applications exceeding that traffic will need another strategy to consolidate log
