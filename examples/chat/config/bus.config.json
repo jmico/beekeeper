@@ -25,6 +25,7 @@
         "host"     : "localhost",
         "username" : "backend",
         "password" : "def456",
+        "auth_salt": "qQA9zC",
         "default"  : 1,
     },
     {
@@ -33,6 +34,7 @@
         "host"     : "localhost",
         "username" : "backend",
         "password" : "def456",
+        "auth_salt": "qQA9zC",
     },
     {
         "bus_id"   : "frontend-1",
