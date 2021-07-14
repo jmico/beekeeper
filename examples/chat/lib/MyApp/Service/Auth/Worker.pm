@@ -33,6 +33,12 @@ sub on_startup {
     log_info "Ready";
 }
 
+sub on_shutdown {
+    my $self = shift;
+
+    log_info "Stopped";
+}
+
 sub login {
     my ($self, $params) = @_;
 

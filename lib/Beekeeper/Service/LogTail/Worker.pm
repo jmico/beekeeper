@@ -127,6 +127,8 @@ sub on_shutdown {
         next unless ($bus->{is_connected});
         $bus->disconnect;
     }
+
+    log_info "Stopped";
 }
 
 sub tail {

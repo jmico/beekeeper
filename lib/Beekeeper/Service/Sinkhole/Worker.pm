@@ -45,6 +45,14 @@ sub on_startup {
             $self->on_worker_status( decode_json($$payload_ref)->[1] );
         }
     );
+
+    log_info "Ready";
+}
+
+sub on_shutdown {
+    my $self = shift;
+
+    log_info "Stopped";
 }
 
 sub log_handler {

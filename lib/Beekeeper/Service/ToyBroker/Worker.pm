@@ -56,6 +56,8 @@ sub on_shutdown {
 
     # Get rid of our self connection
     $self->{_BUS}->disconnect;
+
+    log_info "Stopped";
 }
 
 sub authorize_request {

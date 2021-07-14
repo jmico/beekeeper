@@ -185,6 +185,8 @@ sub on_shutdown {
 
     # Disconnect shared cache
     undef $self->{MqttSessions};
+
+    log_info "Stopped";
 }
 
 sub pull_frontend_requests {
