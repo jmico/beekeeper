@@ -223,7 +223,7 @@ sub pull_frontend_requests {
 
                 # eg: req/backend/myapp/service
                 $dest_queue = $mqtt_properties->{'fwd_to'} || '';
-                return unless $dest_queue =~ m|^req(/(?!_)[\w-]+)+$|;
+                return unless $dest_queue =~ m|^req(?:/(?!_)[\w-]+)+$|;
 
                 # eg: priv/7nXDsxMDwgLUSedX
                 $reply_to = $mqtt_properties->{'response_topic'} || '';
