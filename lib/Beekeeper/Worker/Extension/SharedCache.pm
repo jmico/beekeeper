@@ -29,6 +29,8 @@ use Fcntl qw(:DEFAULT :flock);
 use Scalar::Util 'weaken';
 use Carp;
 
+use constant SYNC_REQUEST_TIMEOUT => 30;
+
 # Show errors from perspective of caller
 $Carp::Internal{(__PACKAGE__)}++;
 
@@ -36,13 +38,15 @@ $Carp::Internal{(__PACKAGE__)}++;
 sub new {
     my ($class, %args) = @_;
 
-    my $worker = $args{'worker'};
-    my $id     = $args{'id'};
-    my $uid    = "$$-" . int(rand(90000000)+10000000);
+    my $worker  = $args{'worker'};
+    my $id      = $args{'id'};
+    my $uid     = "$$-" . int(rand(90000000)+10000000);
+    my $pool_id = $worker->{_WORKER}->{pool_id};
 
     my $self = {
         id        => $id,
         uid       => $uid,
+        pool_id   => $pool_id,
         resolver  => $args{'resolver'},
         on_update => $args{'on_update'},
         persist   => $args{'persist'},
@@ -148,6 +152,7 @@ sub _setup_sync_listeners {
     my $cache_id  = $self->{id};
     my $uid       = $self->{uid};
     my $local_bus = $bus->{bus_role};
+    my $client_id = $bus->{client_id};
 
     my $topic = "msg/$local_bus/_sync/$cache_id/set";
 
@@ -166,7 +171,7 @@ sub _setup_sync_listeners {
         }
     );
 
-    my $reply_topic = "priv/reply-$uid";
+    my $reply_topic = "priv/$client_id/sync-$cache_id";
 
     $bus->subscribe(
         topic      => $reply_topic,
@@ -196,28 +201,19 @@ sub _send_sync_request {
     my $cache_id  = $self->{id};
     my $uid       = $self->{uid};
     my $local_bus = $bus->{bus_role};
+    my $client_id = $bus->{client_id};
 
     $bus->publish(
         topic          => "req/$local_bus/_sync/$cache_id/dump",
-        response_topic => "priv/reply-$uid",
+        response_topic => "priv/$client_id/sync-$cache_id",
     );
-
-    # When a fresh cluster is started nobody will answer, and determining which
-    # worker have the best data set is a complex task when persistence and
-    # clustering is involved. So just let the older workers act as masters
-    my $timeout = 20 + rand();
-
-    if ($self->{persist}) {
-        # Give precedence to workers with bigger data sets
-        my $size = keys %{$self->{data}};
-        $timeout += 20 / (1 + log($size + 1));
-    }
 
     # Ensure that timeout is set properly when the event loop was blocked
     AnyEvent->now_update;
 
+    # When a fresh pool is started there is no master to reply sync requests
     $self->{_sync_timeout} = AnyEvent->timer(
-        after => $timeout,
+        after => SYNC_REQUEST_TIMEOUT,
         cb    => sub { $self->_sync_completed(0) },
     );
 }
@@ -229,8 +225,9 @@ sub _sync_completed {
 
     return if $self->{synced};
 
-    # On a fresh cluster, the first worker to timeout the sync request
-    # will act as a master and relpy all sync requests remaining
+    # BUG: When a fresh pool is started there is no master to reply sync requests.
+    # When two fresh pools are started at t0 and t1 time, and (t1 - t0) < SYNC_REQUEST_TIMEOUT,
+    # cache updates in the t0-t1 range are not properly synced in the pool wich was started later
     log_debug( "Shared cache '$self->{id}': " . ($success ? "Sync completed" : "Acting as master"));
 
     $self->{synced} = 1;
@@ -491,7 +488,8 @@ sub _save_state {
     return unless ($self->{synced});
 
     my $id = $self->{id};
-    my $tmp_file = "/tmp/beekeeper-cache-$id.dump";
+    my ($pool_id) = ($self->{pool_id} =~ m/^([\w-]+)$/); # untaint
+    my $tmp_file = "/tmp/beekeeper-sharedcache-$pool_id-$id.dump";
 
     # Avoid stampede when several workers are exiting simultaneously
     return if (-e $tmp_file && (stat($tmp_file))[9] == time());
@@ -510,7 +508,9 @@ sub _load_state {
     my $self = shift;
 
     my $id = $self->{id};
-    my $tmp_file = "/tmp/beekeeper-cache-$id.dump";
+    my ($pool_id) = ($self->{pool_id} =~ m/^([\w-]+)$/); # untaint
+    my $tmp_file = "/tmp/beekeeper-sharedcache-$pool_id-$id.dump";
+
     return unless (-e $tmp_file);
 
     # Do not load stale dumps
@@ -528,6 +528,7 @@ sub _load_state {
     my $min_time = $self->{max_age} ? time() - $self->{max_age} : undef;
 
     foreach my $entry (@{$dump->{dump}}) {
+        # Do not merge stale entries
         next if ($min_time && $entry->[3] < $min_time);
         $self->_merge($entry);
     }

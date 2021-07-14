@@ -132,7 +132,7 @@ password_file /etc/mosquitto/conf.d/beekeeper.users
 ```
 Create `/etc/mosquitto/conf.d/beekeeper.backend.acl`
 ```
-pattern  read   priv/%c
+pattern  read   priv/%c/#
 
 user backend
 
