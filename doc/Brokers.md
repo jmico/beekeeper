@@ -70,6 +70,7 @@ pid_file /run/mosquitto/mosquitto.backend.pid
 log_dest file /var/log/mosquitto/mosquitto.backend.log
 
 per_listener_settings true
+max_queued_messages 10000
 set_tcp_nodelay true
 
 # Backend
@@ -79,7 +80,6 @@ max_qos 1
 persistence false
 retain_available false
 persistent_client_expiration 1h
-max_queued_messages 10000
 allow_anonymous false
 acl_file /etc/mosquitto/conf.d/beekeeper.backend.acl
 password_file /etc/mosquitto/conf.d/beekeeper.backend.users
@@ -113,6 +113,8 @@ pid_file /run/mosquitto/mosquitto.frontend.pid
 log_dest file /var/log/mosquitto/mosquitto.frontend.log
 
 per_listener_settings true
+max_queued_messages 1
+max_packet_size 131072
 set_tcp_nodelay true
 
 # Frontend tcp
@@ -122,7 +124,6 @@ max_qos 1
 persistence false
 retain_available false
 persistent_client_expiration 1h
-max_queued_messages 100
 allow_anonymous false
 acl_file /etc/mosquitto/conf.d/beekeeper.frontend.acl
 password_file /etc/mosquitto/conf.d/beekeeper.users
@@ -134,7 +135,6 @@ max_qos 1
 persistence false
 retain_available false
 persistent_client_expiration 1h
-max_queued_messages 100
 allow_anonymous false
 acl_file /etc/mosquitto/conf.d/beekeeper.frontend.acl
 password_file /etc/mosquitto/conf.d/beekeeper.frontend.users

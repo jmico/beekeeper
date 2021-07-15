@@ -51,6 +51,7 @@ Mosquitto instance capable of running Beekeper applications with a minimal secur
 Create `/etc/mosquitto/conf.d/beekeeper.conf`
 ```
 per_listener_settings true
+max_queued_messages 10000
 set_tcp_nodelay true
 
 # Backend
@@ -60,7 +61,6 @@ max_qos 1
 persistence false
 retain_available false
 persistent_client_expiration 1h
-max_queued_messages 10000
 allow_anonymous false
 acl_file /etc/mosquitto/conf.d/beekeeper.backend.acl
 password_file /etc/mosquitto/conf.d/beekeeper.users
