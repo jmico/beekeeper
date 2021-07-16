@@ -148,6 +148,8 @@ B<What does this framework provides:>
 
 - Performance metrics gathering, which can be shoveled to an external monitoring application.
 
+- A nice HTML dashboard, which can be used in any project.
+
 
 =head1 Getting Started
 
@@ -306,6 +308,8 @@ C<examples/scraper> demonstrates asynchronous workers and clients.
 C<examples/websocket> uses a service from a browser using WebSockets.
 
 C<examples/chat> implements a real world setup with isolated buses and redundancy.
+
+C<examples/dashboard> is an HTML dashboard for Beekeeper projects.
 
 
 =head1 SEE ALSO

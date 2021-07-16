@@ -58,6 +58,8 @@ Requests and responses are shoveled between buses by a few router processes.
 
 - Performance metrics gathering, which can be shoveled to an external monitoring application.
 
+- A nice HTML [dashboard](./examples/dashboard), which can be used in any project.
+
 
 ## Getting Started
 
@@ -223,6 +225,8 @@ This distribution includes some examples that can be run out of the box using an
 [examples/websocket](./examples/websocket) uses a service from a browser using WebSockets.
 
 [examples/chat](./examples/chat) implements a real world setup with isolated buses and redundancy.
+
+[examples/dashboard](./examples/dashboard) is an HTML dashboard for Beekeeper projects.
 
 
 ## See also
