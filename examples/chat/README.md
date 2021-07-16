@@ -51,16 +51,16 @@ This is `bkpr-top` showing this example running:
 ### Mosquitto setup
 
 This example uses the internal ToyBroker to allow being run out of the box, but to use actual 
-WebSockets from `client.html` a real broker like ![Mosquitto](https://mosquitto.org/) is required
+WebSockets from `client.html` a real broker like [Mosquitto](https://mosquitto.org/) is required
 (`client.pl` works fine with ToyBroker though).
 
 To run this example on a fresh install of Mosquitto set `use_toybroker` to false in config file
 `pool.config.json`. Then follow the instructions below to quickly setup a Mosquitto instance capable 
-of running Beekeper applications with a minimal security. 
+of running Beekeper applications with minimal security. 
 
 Please note that the entire idea is to have the backend and frontend buses serviced by different broker 
 instances, running on isolated servers. This setup uses a single broker instance for simplicity, and works 
-just because topics do not clash (see ![Brokers.md](../../doc/Brokers.md) for a proper configuration).
+just because topics do not clash (see [Brokers.md](../../doc/Brokers.md) for a proper configuration).
 
 Create `/etc/mosquitto/conf.d/beekeeper.conf`
 ```

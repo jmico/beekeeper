@@ -8,19 +8,22 @@ or shortcomings in its implementation.
   suitable for development and running tests, but it does not scale, does not provide any kind 
   of security, and does not provides a WebSocket frontend. So it cannot be used on production.
 
-- **![Eclipse Mosquitto](https://mosquitto.org/)** (as of 2.0.10) works fine. It does not resend
-  unacknowledged messages after abrupt client disconnection, leading to a potential loss of
-  requests on crashes or power loss (`int_signal.t` fails).
+- **[Eclipse Mosquitto](https://mosquitto.org/)** (as of 2.0.11) works fine. It is fast, easy to
+  configure and is battle tested. It is single threaded (each instance uses only one CPU core)
+  so it scales worse than other brokers. As most brokers it does not resend unacknowledged
+  messages after abrupt disconnections, leading to a potential loss of requests on power loss
+  for example (test `int_signal.t` fails).
 
-- **![HiveMQ Community Edition](https://www.hivemq.com/developers/community/)** (as of 2021.1)
-  works fine. It handles correctly abrupt client disconnections, but it does a poor job at load
-  balancing requests (`recursion.t` fails).
+- **[HiveMQ Community Edition](https://www.hivemq.com/developers/community/)** (as of 2021.1)
+  works fine. It handles correctly abrupt disconnections, but it does a poor job at load
+  balancing requests: it sends small batches to a single worker instead of doing a proper 
+  round-robin among idle workers (test `recursion.t` fails).
 
-- **![VerneMQ](https://vernemq.com/)** (as of 1.12.2) works fine. As Mosquitto, it fails to resend
-  unacknowledged messages after abrupt client disconnection (`int_signal.t` fails).
+- **[VerneMQ](https://vernemq.com/)** (as of 1.12.2) works fine. As Mosquitto, it fails to resend
+  unacknowledged messages after abrupt disconnections (test `int_signal.t` fails).
 
-Beekeeper, being broker agnostic and following the MQTT specification as much as possible,
-allows to switch brokers at any time or mix them in different roles.
+Beekeeper, being broker agnostic and following the MQTT specification strictly, allows to switch
+brokers at any time or mix them in different roles.
 
 See a full list of MQTT brokers at https://en.wikipedia.org/wiki/Comparison_of_MQTT_implementations
 
@@ -48,17 +51,18 @@ See a full list of MQTT brokers at https://en.wikipedia.org/wiki/Comparison_of_M
 - Broker must be configured to discard persistent messages if possible, as Beekeeper does not rely on them.
 
 - Being allowed to connect to the frontend broker does not automatically allows a client unrestricted 
-  access to the application, it must additionally be authorized by the application itself. This is done
-  in order to allow users to interact with the system even before being logged in (allowing unregistered
-  users to do a checkout for example). But if this is not needed, access to the frontend broker itself 
-  can be restricted at discretion.
+  access to a Beekeeper application, it must additionally be authorized by the application itself. This is
+  done in order to allow users to interact with the system even before being logged in (allowing unregistered
+  users to do a checkout for example). But if this is not needed, connections to the frontend broker 
+  can be restricted using any access control mechanism provided by the broker.
 
-- The authorization system implemented in workers is advisory only. It makes hard to execute a task
+- The authorization system implemented in workers is advisory only. It makes harder to execute a task
   with wrong permissions by mistake, but if a worker has write access to the backend bus it can easily 
   override these restrictions and make any arbitrary request.
 
 - Remote users should never ever be allowed to connect directly to the backend broker.
 
+---
 
 ### Mosquitto setup
 
@@ -163,11 +167,15 @@ The broker instance can be started with:
 ```
 mosquitto -c /etc/mosquitto/conf.d/beekeeper.frontend.conf
 ```
+In order to scale up multiple broker instances may be needed. Check
+[this tutorial](https://frederik.lindenaar.nl/2019/05/30/multiple-mosquitto-instances-on-debian-with-systemd.html)
+about how to run multiple Mosquitto instances in a single system.
+
 ---
 
 ### HiveMQ setup
 
-To setup an unsecure basic HiveMQ instance suitable to running examples edit `conf/config.xml`:
+To setup an insecure basic HiveMQ instance suitable to running examples edit `conf/config.xml`:
 
 ```
 <?xml version="1.0"?>

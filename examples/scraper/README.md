@@ -38,15 +38,23 @@ https://google.com/xyz
 https://cpan.org
 "The Comprehensive Perl Archive Network - www.cpan.org"
 ```
----
+
+## Dependencies
+
+This example requires `AnyEvent::HTTP` and `Net::SSLeay`.
+
+To install these dependencies on a Debian system run:
+```
+apt install libanyevent-http-perl libnetssleay-perl
+```
 
 ### Mosquitto setup
 
 This example uses the internal ToyBroker to allow being run out of the box.
 
-To run this example on a fresh install of ![Mosquitto](https://mosquitto.org/) set `use_toybroker` 
+To run this example on a fresh install of [Mosquitto](https://mosquitto.org/) set `use_toybroker` 
 to false in config file `pool.config.json`. Then follow the instructions below to quickly setup a 
-Mosquitto instance capable of running Beekeper applications with a minimal security.
+Mosquitto instance capable of running Beekeper applications with minimal security.
 
 Create `/etc/mosquitto/conf.d/beekeeper.conf`
 ```

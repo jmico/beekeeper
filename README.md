@@ -41,11 +41,12 @@ Requests and responses are shoveled between buses by a few router processes.
 
 **What does this framework provides:**
 
-- `Beekeeper::Worker`, to create service workers.
+- [`Beekeeper::Worker`](https://metacpan.org/pod/Beekeeper::Worker), to create service workers.
 
-- `Beekeeper::Client`, to create service clients.
+- [`Beekeeper::Client`](https://metacpan.org/pod/Beekeeper::Client), to create service clients.
 
-- `bkpr` command which spawns and controls worker processes.
+- [`bkpr`](https://metacpan.org/dist/Beekeeper/view/bin/bkpr) command which spawns and controls
+  worker processes.
 
 - Command line tools for monitoring and controlling worker pools.
 
@@ -165,11 +166,14 @@ processes and immediately respawns defunct ones.
 
 The framework includes these command line tools to manage worker pools:
 
-- `bkpr-top` allows to monitor in real time the performance of workers.
+- [`bkpr-top`](https://metacpan.org/dist/Beekeeper/view/bin/bkpr-top) allows to monitor in real
+  time the performance of workers.
 
-- `bkpr-log` allows to monitor in real time the log output of workers.
+- [`bkpr-log`](https://metacpan.org/dist/Beekeeper/view/bin/bkpr-log) allows to monitor in real
+  time the log output of workers.
 
-- `bkpr-restart` gracefully restarts worker pools.
+- [`bkpr-restart`](https://metacpan.org/dist/Beekeeper/view/bin/bkpr-restart) gracefully restarts 
+  worker pools.
 
 
 ## Performance
@@ -237,10 +241,7 @@ This framework requires `Anyevent`, `JSON::XS`, `Term::ReadKey`, and `ps`.
 
 To install these dependencies on a Debian system run:
 ```
-apt install libanyevent-perl
-apt install libjson-xs-perl
-apt install libterm-readkey-perl
-apt install procps
+apt install libanyevent-perl libjson-xs-perl libterm-readkey-perl procps
 ```
 
 ## License
