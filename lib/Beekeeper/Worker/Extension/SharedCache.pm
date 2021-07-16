@@ -3,7 +3,7 @@ package Beekeeper::Worker::Extension::SharedCache;
 use strict;
 use warnings;
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 use Exporter 'import';
 
@@ -566,7 +566,7 @@ Beekeeper::Worker::Extension::SharedCache - Locally mirrored shared cache
 
 =head1 VERSION
 
-Version 0.07
+Version 0.08
 
 =head1 SYNOPSIS
 

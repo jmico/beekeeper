@@ -3,7 +3,7 @@ package Beekeeper::WorkerPool;
 use strict;
 use warnings;
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 use base 'Beekeeper::WorkerPool::Daemon';
 use POSIX ":sys_wait_h";
@@ -370,7 +370,7 @@ Beekeeper::WorkerPool - Start, restart or stop worker pools
 
 =head1 VERSION
  
-Version 0.07
+Version 0.08
 
 =head1 SYNOPSIS
 

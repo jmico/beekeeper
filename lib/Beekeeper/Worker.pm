@@ -3,7 +3,7 @@ package Beekeeper::Worker;
 use strict;
 use warnings;
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 use Beekeeper::Client ':worker';
 use Beekeeper::Logger ':log_levels';
@@ -990,7 +990,7 @@ Beekeeper::Worker - Base class for creating services
 
 =head1 VERSION
 
-Version 0.07
+Version 0.08
 
 =head1 SYNOPSIS
 

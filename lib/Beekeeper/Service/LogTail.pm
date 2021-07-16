@@ -3,7 +3,7 @@ package Beekeeper::Service::LogTail;
 use strict;
 use warnings;
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 use Beekeeper::Client;
 
@@ -65,7 +65,7 @@ Beekeeper::Service::LogTail - Buffer log entries
 
 =head1 VERSION
 
-Version 0.07
+Version 0.08
 
 =head1 SYNOPSIS
 
