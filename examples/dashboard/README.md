@@ -1,5 +1,7 @@
 ## Dashboard
 
+> *Try this dashboard [here](https://beekeeper.net.ar/dashboard/) &nbsp;(user: guest, password: guest)*
+
 ![](../../doc/images/dashboard.png)
 
 To use the dashboard start the worker pool:

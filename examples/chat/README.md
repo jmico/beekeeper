@@ -1,5 +1,7 @@
 ## Chat example
 
+> *Try this example [here](https://beekeeper.net.ar/examples/chat.html)*
+
 This example implements a real world setup with isolated buses and redundancy:
 
 ![](../../doc/images/chat.svg)

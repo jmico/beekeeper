@@ -1,7 +1,8 @@
 ## WebSocket example
 
-This example demonstrates the use of services from browsers using WebSockets.
+> *Try this example [here](https://beekeeper.net.ar/examples/calculator.html)*
 
+This example demonstrates the use of services from browsers using WebSockets.
 
 To run this example start the worker pool:
 ```
