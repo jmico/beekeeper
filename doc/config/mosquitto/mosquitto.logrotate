@@ -1,0 +1,11 @@
+/var/log/mosquitto/* {
+	rotate 10
+	daily
+	compress
+	size 1M
+	missingok
+	nocreate
+	postrotate
+		/bin/pkill -HUP -x mosquitto
+	endscript
+}

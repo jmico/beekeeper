@@ -54,24 +54,24 @@ To run this example on a fresh install of [Mosquitto](https://mosquitto.org/) se
 to false in config file `pool.config.json`. Then follow the instructions below to quickly setup a 
 Mosquitto instance capable of running Beekeper applications with minimal security.
 
-Create `/etc/mosquitto/conf.d/beekeeper.conf`
+Create `/etc/mosquitto/examples.conf`
 ```
-per_listener_settings true
-max_queued_messages 10000
-set_tcp_nodelay true
+per_listener_settings   true
+max_queued_messages     10000
+set_tcp_nodelay         true
 
-# Backend
-listener 1883 0.0.0.0
-protocol mqtt
-max_qos 1
-persistence false
-retain_available false
-persistent_client_expiration 1h
-allow_anonymous false
-acl_file /etc/mosquitto/conf.d/beekeeper.backend.acl
-password_file /etc/mosquitto/conf.d/beekeeper.users
+## Backend
+
+listener            1883  127.0.0.1
+protocol            mqtt
+max_qos             1
+persistence         false
+retain_available    false
+allow_anonymous     false
+acl_file            /etc/mosquitto/backend.acl
+password_file       /etc/mosquitto/backend.users
 ```
-Create `/etc/mosquitto/conf.d/beekeeper.backend.acl`
+Create `/etc/mosquitto/backend.acl`
 ```
 pattern  read   priv/%c/#
 
@@ -85,10 +85,12 @@ topic   write       priv/#
 ```
 Create a broker user running the following command:
 ```
-mosquitto_passwd -c -b /etc/mosquitto/conf.d/beekeeper.users  backend   def456
+mosquitto_passwd -c -b /etc/mosquitto/backend.users  backend  def456
 ```
 Then the Mosquitto broker instance can be started with:
 ```
-mosquitto -c /etc/mosquitto/conf.d/beekeeper.conf
+mosquitto -c /etc/mosquitto/examples.conf
 ```
 If the broker is running elsewhere than localhost edit `bus.config.json` accordingly.
+
+> Detailed Mosquitto install instructions can be found [here](../../doc/Brokers.md)

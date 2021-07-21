@@ -1,0 +1,10 @@
+
+pattern   read   priv/%c/#
+
+user backend
+
+topic   readwrite   req/#
+topic   readwrite   msg/#
+topic   readwrite   res/#
+topic   readwrite   log/#
+topic   write       priv/#

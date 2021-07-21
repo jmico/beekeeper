@@ -1,0 +1,13 @@
+
+pattern  read   priv/%c
+
+user frontend
+
+topic   read    msg/#
+topic   write   req/#
+
+user router
+
+topic   write   msg/#
+topic   read    req/#
+topic   write   priv/#
