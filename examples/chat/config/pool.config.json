@@ -14,7 +14,7 @@
 #
 # To start a the worker pools use the "bkpr" command:
 #
-# $ ./bkpr --pool "broker" start
+# $ ./bkpr --pool "myapp-broker" start
 # $ ./bkpr --pool "myapp-A" start
 # $ ./bkpr --pool "myapp-B" start
 
@@ -44,7 +44,7 @@
         },
     },
     {
-        "pool_id"       : "broker",
+        "pool_id"       : "myapp-broker",
         "bus_id"        : "toybroker",
         "description"   : "ToyBroker",
         "workers"       :  {},

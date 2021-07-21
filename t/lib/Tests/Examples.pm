@@ -265,7 +265,7 @@ sub test_05_example_chat : Test(1) {
     Using configs from  .../examples/chat/config
     Using modules from  .../examples/chat/lib:/.../lib
     Using commands from .../bin
-    Starting ToyBroker: beekeeper-broker.
+    Starting ToyBroker: beekeeper-myapp-broker.
     Starting pool #1 of MyApp workers: beekeeper-myapp-A.
     Starting pool #2 of MyApp workers: beekeeper-myapp-B.
     Available commands:
@@ -285,7 +285,7 @@ sub test_05_example_chat : Test(1) {
     > Sorry, you were kicked
     Stopping pool #1 of MyApp workers: beekeeper-myapp-A.
     Stopping pool #2 of MyApp workers: beekeeper-myapp-B.
-    Stopping ToyBroker: beekeeper-broker.
+    Stopping ToyBroker: beekeeper-myapp-broker.
     };
 
     $expected =~ s/^\\\n//;
