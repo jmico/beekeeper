@@ -1,0 +1,5 @@
+PERL5LIB=\
+/home/beekeeper/beekeeper/examples/chat/lib:\
+/home/beekeeper/beekeeper/examples/flood/lib:\
+/home/beekeeper/beekeeper/examples/scraper/lib:\
+/home/beekeeper/beekeeper/examples/websocket/lib

@@ -1,0 +1,13 @@
+# This file is in relaxed JSON format (it allows comments and trailing commas).
+#
+# This is the config file used by Beekeeper::Service::Dashboard::Worker.
+#
+# Use the following command to hash passwords of dashboard users:
+#
+# $ echo "Username:" && read U && echo "Password:" && read -s P && echo -n "Dashboard$U$P" | shasum -a 256 && U= P=
+
+{
+    "users": {
+        "admin": { "password": "fa4b54aab361e08b95965eb34ccb62099b84e1fc57c74ac3e709c2570f782a2c" },
+    },
+}

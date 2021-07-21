@@ -1,0 +1,26 @@
+[Unit]
+Description=Beekeeper pool
+After=network.target
+Wants=network.target
+
+[Service]
+Type=forking
+PIDFile=/run/beekeeper/beekeeper-%i.pid
+
+User=beekeeper
+Group=beekeeper
+
+ExecStartPre=+/bin/mkdir -m 740 -p /run/beekeeper
+ExecStartPre=+/bin/chown beekeeper /run/beekeeper
+ExecStartPre=+/bin/mkdir -m 740 -p /var/log/beekeeper
+ExecStartPre=+/bin/chown beekeeper /var/log/beekeeper
+
+EnvironmentFile=-/etc/beekeeper/%i.environment
+
+ExecStart=/bin/sh -c 'bkpr --pool "%i" start'
+ExecReload=/bin/sh -c 'bkpr --pool "%i" restart'
+ExecStop=/bin/sh -c 'bkpr --pool "%i" stop'
+
+[Install]
+WantedBy=multi-user.target
+

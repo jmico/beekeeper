@@ -1,0 +1,8 @@
+/var/log/beekeeper/* {
+	rotate 10
+	daily 
+	compress
+	size 1M
+	missingok
+	copytruncate
+}

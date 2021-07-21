@@ -314,6 +314,8 @@ C<examples/dashboard> is an HTML dashboard for Beekeeper projects.
 
 =head1 SEE ALSO
 
+L<How to run Beekeeper pools as systemd services|https://github.com/jmico/beekeeper/blob/master/doc/Install.md>.
+
 L<Notes about supported MQTT brokers|https://github.com/jmico/beekeeper/blob/master/doc/Brokers.md> configuration.
 
 L<Diagram of message routing|https://raw.githubusercontent.com/jmico/beekeeper/master/doc/images/routing.svg> between clients, workers and buses.

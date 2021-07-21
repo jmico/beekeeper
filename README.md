@@ -231,6 +231,8 @@ This distribution includes some examples that can be run out of the box using an
 
 ## See also
 
+- [How to run Beekeeper pools as systemd services](./doc/Install.md).
+
 - [Notes about supported MQTT brokers](./doc/Brokers.md) configuration.
 
 - [Diagram of message routing](https://raw.githubusercontent.com/jmico/beekeeper/master/doc/images/routing.svg)
@@ -241,7 +243,7 @@ This distribution includes some examples that can be run out of the box using an
 
 ## Dependencies
 
-This framework requires `Anyevent`, `JSON::XS`, `Term::ReadKey`, `Net::SSLeay` and `ps`.
+This framework requires `Anyevent`, `JSON::XS`, `Net::SSLeay`, `Term::ReadKey` and `ps`.
 
 To install these dependencies on a Debian system run:
 ```
