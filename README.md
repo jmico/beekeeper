@@ -241,11 +241,11 @@ This distribution includes some examples that can be run out of the box using an
 
 ## Dependencies
 
-This framework requires `Anyevent`, `JSON::XS`, `Term::ReadKey`, and `ps`.
+This framework requires `Anyevent`, `JSON::XS`, `Term::ReadKey`, `Net::SSLeay` and `ps`.
 
 To install these dependencies on a Debian system run:
 ```
-apt install libanyevent-perl libjson-xs-perl libterm-readkey-perl procps
+apt install libanyevent-perl libjson-xs-perl libnet-ssleay-perl libterm-readkey-perl procps
 ```
 
 ## License

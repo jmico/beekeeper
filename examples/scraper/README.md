@@ -41,11 +41,9 @@ https://cpan.org
 
 ## Dependencies
 
-This example requires `AnyEvent::HTTP` and `Net::SSLeay`.
-
-To install these dependencies on a Debian system run:
+This example requires `AnyEvent::HTTP`. To install it on a Debian system run:
 ```
-apt install libanyevent-http-perl libnetssleay-perl
+apt install libanyevent-http-perl
 ```
 
 ### Mosquitto setup
