@@ -42,7 +42,7 @@
         "workers" : {
             "MyApp::Service::Chat::Worker"       : { "worker_count" : 2 },
             "MyApp::Service::Auth::Worker"       : { "worker_count" : 2 },
-            "MyApp::Service::Calculator"         : { "worker_count" : 2 },
+            "MyApp::Service::Calculator::Worker" : { "worker_count" : 2 },
             "MyApp::Service::Flood::Worker"      : { "worker_count" : 2 },
             "MyApp::Service::Scraper::Worker"    : { "worker_count" : 2 },
             "Beekeeper::Service::Router::Worker" : { "worker_count" : 2 },
