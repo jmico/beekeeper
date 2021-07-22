@@ -837,7 +837,8 @@ sub _receive_disconnect {
     my ($self, $packet) = @_;
 
     # Handle abbreviated packet
-    $$packet = "\x00\x00" if (length $$packet == 0);
+    $$packet  = "\x00\x00" if (length $$packet == 0);
+    $$packet .= "\x00"     if (length $$packet == 1);
 
     # 3.14.2.1  Reason Code  (byte)
     my $offs = 0;
