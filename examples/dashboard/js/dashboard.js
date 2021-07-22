@@ -52,14 +52,14 @@ function Dashboard () {
     };
 
     ui.backend = new Backend (ui);
+    ui.auth = new AuthUi (ui);
+    ui.auth.init();
+
     ui.backend.connect( function() {
 
-        ui.auth     = new AuthUi (ui);
         ui.overview = new OverviewUi (ui);
         ui.services = new ServicesUi (ui);
         ui.logs     = new LogsUi (ui);
-
-        ui.auth.init();
     });
 
     return ui;
@@ -80,6 +80,11 @@ function Backend (ui) { return {
             debug:      CONFIG.debug,
             on_connect: cb
         });
+    },
+
+    is_connected: function() {
+
+        return this.bkpr.mqtt.connected;
     },
 
     login: function(params,cb) {
@@ -144,8 +149,11 @@ function AuthUi (ui) { return {
                 }
             },
 
-            onSuccess: function() {
+            onSuccess: function(e) {
+                e.preventDefault();
                 let params = $("#auth .form").form('get values');
+                $("#auth .form").form('clear');
+                if (!ui.backend.is_connected()) return;
                 ui.backend.login( params, function(success) {
                     if (success) {
 
@@ -163,7 +171,6 @@ function AuthUi (ui) { return {
                         $('#auth .login_error').removeClass('hidden');
                     }
                 });
-                return false;
             }
         });
     },
