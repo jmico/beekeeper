@@ -14,10 +14,6 @@ use IPC::Open3;
 my $VERBOSE = $ENV{'HARNESS_IS_VERBOSE'};
 
 
-sub automated_testing {
-    return ($ENV{'AUTOMATED_TESTING'} || $ENV{'PERL_BATCH'}) ? 1 : 0;
-}
-
 sub run_cmd {
     my ($self, @cmds) = @_;
 
@@ -78,14 +74,15 @@ sub check_01_supported_os : Test(startup => 1) {
     ok( 1, "Supported OS ($^O)");
 }
 
-sub check_02_automated_testing : Test(startup => 1) {
+sub check_02_author_testing : Test(startup => 1) {
     my ($self) =  @_;
 
-    if ($self->automated_testing) {
-        $self->SKIP_ALL("This test does not run reliably on constrained platforms");
+    unless ($ENV{'AUTHOR_TESTING'}) {
+        # Fiddling with shell stdin/stdout makes test fail when run by cpanm or dzil
+        $self->SKIP_ALL("This test fails when run by cpanm or dzil");
     }
 
-    ok( 1, "Not automated testing");
+    ok( 1, "Author testing");
 }
 
 sub check_03_dzil_release_testing : Test(startup => 1) {
