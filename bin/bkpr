@@ -5,14 +5,13 @@ use warnings;
 
 our $VERSION = '0.08';
 
-$ENV{PATH} = '/bin'; # untaint
-
 BEGIN {
 
-    unless (eval { require Beekeeper }) {
-        # Modules not installed yet
-        unshift @INC, ($ENV{'PERL5LIB'} =~ m/([^:]+)/g);
-    }
+    # Untaint PATH
+    ($ENV{'PATH'}) = ($ENV{'PATH'} =~ m/(.*)/);
+
+    # PERL5LIB is ignored when taint mode is enabled
+    unshift @INC, ($ENV{'PERL5LIB'} =~ m/([^:]+)/g);
 }
 
 use Beekeeper::WorkerPool;

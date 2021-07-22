@@ -5,16 +5,6 @@ use warnings;
 
 our $VERSION = '0.08';
 
-$ENV{PATH} = '/bin:/usr/bin'; # untaint
-
-BEGIN {
-
-    unless (eval { require Beekeeper }) {
-        # Modules not installed yet
-        unshift @INC, ($ENV{'PERL5LIB'} =~ m/([^:]+)/g);
-    }
-}
-
 use Beekeeper::Service::Supervisor;
 use Term::ReadKey;
 use Getopt::Long;
