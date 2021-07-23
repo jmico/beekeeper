@@ -127,7 +127,7 @@ __END__
 
 =head1 NAME
 
-Beekeeper::Worker::Extension::RemoteSession - ...
+Beekeeper::Worker::Extension::RemoteSession - Remote client session handling
 
 =head1 VERSION
 
