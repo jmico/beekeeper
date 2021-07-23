@@ -240,6 +240,7 @@ function OverviewUi (ui) { return {
 
     draw_charts: function() {
 
+        this.last_data = null;
         let params = { class: "_global", resolution: '1s', count: 300 };
         ui.backend.get_services( params, function(result) {
 
@@ -267,6 +268,7 @@ function OverviewUi (ui) { return {
 
     update_charts: function() {
 
+        if (!this.last_data) return;
         let params = { class: "_global", resolution: '1s', after: this.last_data, count: 300 };
         ui.backend.get_services( params, function(result) {
 
@@ -431,6 +433,7 @@ function ServicesUi (ui) { return {
 
     draw_charts: function() {
 
+        this.last_data = null;
         let service = this.service || '_global';
         let resolution = this.resolution || '2m';
         let count = { '1s':600, '5s':720, '2m':720, '15m':672, '1h':744 }[resolution];
@@ -475,6 +478,7 @@ function ServicesUi (ui) { return {
 
     update_charts: function() {
 
+        if (!this.last_data) return;
         let service = this.service || '_global';
         let resolution = this.resolution || '2m';
         let count = { '1s':600, '5s':720, '2m':720, '15m':672, '1h':744 }[resolution];
@@ -558,8 +562,7 @@ function LogsUi (ui) { return {
             onChange: function(val) {
                 if (this.level == val || !$('#logs').is(":visible")) return;
                 this.level = val;
-                this.after = null;
-                this.get_logs('wipe');
+                this.get_logs();
             }.bind(this)
         });
 
@@ -567,8 +570,7 @@ function LogsUi (ui) { return {
             let new_val = val.toLowerCase().replace(/::worker$/,'').replace(/::/g,'-');
             if (this.service == new_val || !$('#logs').is(":visible")) return;
             this.service = new_val;
-            this.after = null;
-            this.get_logs('wipe');
+            this.get_logs();
         }.bind(this));
 
         $('#logs').on('show', this.on_show.bind(this));
@@ -578,26 +580,31 @@ function LogsUi (ui) { return {
     on_show: function() {
 
         this.get_logs();
-        this.logs_tmr = setInterval( this.get_logs.bind(this), 1000);
+        this.logs_tmr = setInterval( this.update_logs.bind(this), 1000);
     },
 
     on_hide: function() {
 
-        this.after = null,
         $('#log_entries').empty();
         clearInterval(this.logs_tmr);
     },
 
-    get_logs: function(wipe) {
+    get_logs: function(update) {
 
-        var autoscroll = $(window).scrollTop() > ($('#logs').innerHeight() - $(window).innerHeight());
-        if (!this.after) autoscroll = true;
+        let autoscroll = $(window).scrollTop() > ($('#logs').innerHeight() - $(window).innerHeight());
+
+        if (!update) {
+            this.after = null;
+            autoscroll = true;
+        }
+
+        if (update && this.after === null) return;
 
         let params = {
             service: this.service,
             level:   this.level,
             after:   this.after,
-            count:   500
+            count:   200
         };
 
         ui.backend.get_logs( params, function(result) {
@@ -605,7 +612,8 @@ function LogsUi (ui) { return {
             let log_entries = $('#log_entries');
 
             if (!result.length) {
-                if (wipe) log_entries.empty();
+                if (!update) log_entries.empty();
+                if (!this.after) this.after = 0;
                 return;
             }
 
@@ -618,11 +626,7 @@ function LogsUi (ui) { return {
                 html += `<div class="entry"><div class="level l${entry.level}">${type}</div><div class="tstamp">${tstamp}<br/>${entry.service}</div><div class="msg">${entry.message}</div></div>`;
             });
 
-            if (wipe) {
-                log_entries.html(html);
-                this.entries = result.length;
-            }
-            else {
+            if (update) {
                 log_entries.append(html);
                 this.entries += result.length;
                 let remove = this.entries - 1000;
@@ -631,6 +635,10 @@ function LogsUi (ui) { return {
                     log_entries.children().slice(0,remove).remove();
                 }
             }
+            else {
+                log_entries.html(html);
+                this.entries = result.length;
+            }
 
             if (autoscroll) $(window).scrollTop( $('#logs').innerHeight() );
 
@@ -638,6 +646,11 @@ function LogsUi (ui) { return {
 
         }.bind(this));
     },
+
+    update_logs: function() {
+
+        this.get_logs('update');
+    }
 }}
 
 function realTimeLineChart(id, data, points) { return {
