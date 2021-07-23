@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 
 BEGIN {
 
@@ -31,7 +31,7 @@ bkpr - Start, restart or stop worker pools
 
 =head1 VERSION
 
-Version 0.08
+Version 0.09
 
 =head1 SYNOPSIS
 

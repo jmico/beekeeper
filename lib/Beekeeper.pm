@@ -3,7 +3,7 @@ package Beekeeper;
 use strict;
 use warnings;
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 
 1;
 
@@ -19,7 +19,7 @@ Beekeeper - Framework for building applications with a microservices architectur
  
 =head1 VERSION
  
-Version 0.08
+Version 0.09
 
 =head1 SYNOPSIS
 
