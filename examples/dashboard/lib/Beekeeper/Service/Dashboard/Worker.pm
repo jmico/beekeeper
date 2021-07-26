@@ -1,4 +1,5 @@
-package Beekeeper::Service::Dashboard::Worker;
+package 
+    Beekeeper::Service::Dashboard::Worker;   # hide from PAUSE
 
 use strict;
 use warnings;
