@@ -125,7 +125,7 @@ mosquitto -c /etc/mosquitto/examples.conf
 ```
 If the broker is running elsewhere than localhost edit `bus.config.json` and `config.js` accordingly.
 
-> Detailed Mosquitto install instructions can be found [here](../../doc/Brokers.md)
+> *Detailed Mosquitto install instructions can be found [here](../../doc/Brokers.md)*
 
 ---
 

@@ -135,7 +135,7 @@ If the broker is running elsewhere than localhost edit `bus.config.json` and `co
 Mosquitto can serve http data as well, when setting the `http_dir` configuration option.
 This feature can be used in simple projects to host the html files of the dashboard.
 
-> Detailed Mosquitto install instructions can be found [here](../../doc/Brokers.md)
+> *Detailed Mosquitto install instructions can be found [here](../../doc/Brokers.md)*
 
 ---
 
