@@ -143,7 +143,7 @@ This feature can be used in simple projects to host the html files of the dashbo
 
 This software uses the following libraries:
 
-- Semantic UI - https://semantic-ui.com/  
+- Fomantic UI - https://fomantic-ui.com/  
   Released under the terms of the MIT license
 
 - jQuery - https://jquery.com/  
