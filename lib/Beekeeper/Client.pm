@@ -13,6 +13,7 @@ use Beekeeper::Config;
 use JSON::XS;
 use Sys::Hostname;
 use Time::HiRes;
+use Compress::Raw::Zlib ();
 use Digest::MD5 'md5_base64';
 use Carp;
 
@@ -38,6 +39,7 @@ our @EXPORT_OK = qw(
 our %EXPORT_TAGS = ('worker' => \@EXPORT_OK );
 
 our $singleton;
+my  $INFLATE;
 
 
 sub new {
@@ -90,6 +92,8 @@ sub new {
             }
         }
     }
+
+    $INFLATE = Compress::Raw::Zlib::Inflate->new( -ConsumeInput => 0 );
 
     $self->{_CLIENT}->{forward_to} = delete $args{'forward_to'};
     $self->{_CLIENT}->{auth_salt}  = delete $args{'auth_salt'} || $args{'bus_id'};
@@ -489,8 +493,20 @@ sub __create_response_topic {
         on_publish  => sub {
             my ($payload_ref, $mqtt_properties) = @_;
 
+            my $resp;
             local $@;
-            my $resp = eval { decode_json($$payload_ref) };
+            eval {
+
+                if (substr($$payload_ref,0,1) eq "\x78") {
+                    my $decompressed_json;
+                    $INFLATE->inflate($payload_ref, $decompressed_json);
+                    $INFLATE->inflateReset();
+                    $resp = decode_json($decompressed_json);
+                }
+                else {
+                    $resp = decode_json($$payload_ref);
+                }
+            };
 
             unless (ref $resp eq 'HASH' && $resp->{jsonrpc} eq '2.0') {
                 warn "Received invalid JSON-RPC 2.0 message $at";

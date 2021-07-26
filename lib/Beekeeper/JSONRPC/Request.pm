@@ -43,6 +43,10 @@ sub async_response {
     $_[0]->{_async_response} = 1;
 }
 
+sub deflate_response {
+    $_[0]->{_deflate_response} = $_[2] || 1024;
+}
+
 sub send_response {
     $_[0]->{_worker}->__send_response(@_);
 }
@@ -131,6 +135,11 @@ Returns a hashref containing the MQTT properties of the request.
 =back
 
 =head1 METHODS
+
+=head3 deflate_response ( min_size => $min_size )
+
+Deflate the JSON response for the request before being sent to the caller if it is
+longer than `$min_size`. If `$min_size` is not specified a default of 1024 is used.
 
 =head3 async_response
 

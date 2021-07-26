@@ -152,6 +152,9 @@ This software uses the following libraries:
 - MQTT.js - https://github.com/mqttjs/MQTT.js  
   Released under the terms of the MIT license
 
+- pako - https://github.com/nodeca/pako  
+  Released under the terms of the MIT license
+
 - D3.js - https://d3js.org/  
   Released under the terms of the ISC license
 

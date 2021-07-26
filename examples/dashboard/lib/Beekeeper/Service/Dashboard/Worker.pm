@@ -114,12 +114,14 @@ sub login {
 }
 
 sub service_stats {
-    my ($self, $params) = @_;
+    my ($self, $params, $req) = @_;
 
     my $resol = $params->{'resolution'} || '1s';
     my $count = $params->{'count'}      || 1;
     my $class = $params->{'class'};
     my $after = $params->{'after'};
+
+    $req->deflate_response;
 
     my $stats = $self->{"services_$resol"} or die "Invalid resolution";
 
@@ -163,6 +165,7 @@ sub log_tail {
     }
 
     $req->async_response;
+    $req->deflate_response;
 
     Beekeeper::Service::LogTail->tail_async(
         %filters,

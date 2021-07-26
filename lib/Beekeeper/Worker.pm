@@ -12,6 +12,7 @@ use Beekeeper::JSONRPC;
 use JSON::XS;
 use Time::HiRes;
 use Sys::Hostname;
+use Compress::Raw::Zlib ();
 use Digest::MD5 'md5_base64';
 use Scalar::Util 'blessed';
 use Carp;
@@ -61,6 +62,7 @@ our $REPORT_STATUS_PERIOD = 5;
 our $UNSUBSCRIBE_LINGER   = 2;
 
 my %AUTH_TOKENS;
+my $DEFLATE;
 my $JSON;
 
 
@@ -105,6 +107,8 @@ sub new {
     $JSON->utf8;             # encode result as utf8
     $JSON->allow_blessed;    # encode blessed references as null
     $JSON->convert_blessed;  # use TO_JSON methods to serialize objects
+
+    $DEFLATE = Compress::Raw::Zlib::Deflate->new( -AppendOutput => 1 );
 
     if (defined $SIG{TERM} && $SIG{TERM} eq 'DEFAULT') {
         # Stop working gracefully when TERM signal is received
@@ -566,6 +570,14 @@ sub __drain_task_queue {
                     $json = $JSON->encode( $response );
                 }
 
+                if ($request->{_deflate_response} && length($json) > $request->{_deflate_response}) {
+                    my $compressed_json;
+                    $DEFLATE->deflate(\$json, $compressed_json);
+                    $DEFLATE->flush(\$compressed_json);
+                    $DEFLATE->deflateReset;
+                    $json = $compressed_json;
+                }
+
                 # Request is acknowledged as received just after sending the response. So, if
                 # the process is abruptly interrupted here, the broker will send the request to
                 # another worker and it will be executed twice (acking the request just before
@@ -664,6 +676,14 @@ sub __send_response {
         $response->{id} = $request->{id};
         $json = $JSON->encode( $response );
         $self->{_WORKER}->{error_count}++;
+    }
+
+    if ($request->{_deflate_response} && length($json) > $request->{_deflate_response}) {
+        my $compressed_json;
+        $DEFLATE->deflate(\$json, $compressed_json);
+        $DEFLATE->flush(\$compressed_json);
+        $DEFLATE->deflateReset;
+        $json = $compressed_json;
     }
 
     $self->{_BUS}->publish(

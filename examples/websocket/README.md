@@ -131,7 +131,10 @@ If the broker is running elsewhere than localhost edit `bus.config.json` and `co
 
 ### Acknowledgements
 
-This software uses the following library:
+This software uses the following libraries:
 
 - MQTT.js - https://github.com/mqttjs/MQTT.js  
+  Released under the terms of the MIT license
+
+- pako - https://github.com/nodeca/pako  
   Released under the terms of the MIT license
