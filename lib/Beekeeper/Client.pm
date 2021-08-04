@@ -11,8 +11,6 @@ use Beekeeper::JSONRPC;
 use Beekeeper::Config;
 
 use JSON::XS;
-use Sys::Hostname;
-use Time::HiRes;
 use Compress::Raw::Zlib ();
 use Digest::MD5 'md5_base64';
 use Carp;
@@ -460,7 +458,7 @@ sub __do_rpc_request {
     $client->{in_progress}->{$req_id} = $req;
 
     # Ensure that timeout is set properly when the event loop was blocked
-    if ($__now != time) { $__now = time; AnyEvent->now_update }
+    if ($__now != CORE::time) { $__now = CORE::time; AnyEvent->now_update }
 
     # Request timeout timer
     my $timeout = $args{'timeout'} || REQ_TIMEOUT;

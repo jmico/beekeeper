@@ -10,8 +10,8 @@ use Beekeeper::Logger ':log_levels';
 use Beekeeper::JSONRPC;
 
 use JSON::XS;
-use Time::HiRes;
-use Sys::Hostname;
+use Time::HiRes ();
+use Sys::Hostname ();
 use Compress::Raw::Zlib ();
 use Digest::MD5 'md5_base64';
 use Scalar::Util 'blessed';
@@ -89,7 +89,7 @@ sub new {
         pool_id         => $args{'pool_id'},
         bus_id          => $args{'bus_id'},
         config          => $args{'config'},
-        hostname        => hostname(),
+        hostname        => Sys::Hostname::hostname(),
         stop_cv         => undef,
         callbacks       => {},
         task_queue_high => [],
