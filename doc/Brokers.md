@@ -8,7 +8,7 @@ or shortcomings in its implementation.
   suitable for development and running tests, but it does not scale, does not provide any kind 
   of security, and does not provides a WebSocket frontend. So it cannot be used on production.
 
-- **[Eclipse Mosquitto](https://mosquitto.org/)** (as of 2.0.11) works fine. It is fast, easy to
+- **[Eclipse Mosquitto](https://mosquitto.org/)** (as of 2.0.14) works fine. It is fast, easy to
   configure and is battle tested. It is single threaded (each instance uses only one CPU core)
   so it scales worse than other brokers. As most brokers it does not resend unacknowledged
   messages after abrupt disconnections, leading to a potential loss of requests on power loss
@@ -70,8 +70,9 @@ See a full list of MQTT brokers at https://en.wikipedia.org/wiki/Comparison_of_M
 
 Install Mosquitto from official repository:
 ```
-# wget -qO - http://repo.mosquitto.org/debian/mosquitto-repo.gpg.key | apt-key add -
-# echo "deb https://repo.mosquitto.org/debian buster main" | tee /etc/apt/sources.list.d/mosquitto.list
+# wget -qO - http://repo.mosquitto.org/debian/mosquitto-repo.gpg.key | gpg --dearmor -o /usr/share/keyrings/mosquitto.gpg
+# echo "deb [signed-by=/usr/share/keyrings/mosquitto.gpg] https://repo.mosquitto.org/debian bullseye main" > /etc/apt/sources.list.d/mosquitto.list
+
 # apt update
 # apt install mosquitto
 ```
