@@ -256,7 +256,7 @@ apt install libanyevent-perl libjson-xs-perl libnet-ssleay-perl libterm-readkey-
 
 ## License
 
-Copyright 2015-2021 José Micó.
+Copyright 2015-2023 José Micó.
 
 This is free software; you can redistribute it and/or modify it under the same
 terms as the Perl 5 programming language itself.

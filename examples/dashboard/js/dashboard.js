@@ -1,7 +1,7 @@
 /*
     Beekeeper dashboard
 
-    Copyright 2021 José Micó
+    Copyright 2023 José Micó
 
     This software uses the following libraries:
 

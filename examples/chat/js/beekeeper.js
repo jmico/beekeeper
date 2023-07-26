@@ -2,7 +2,7 @@
 
     Beekeeper client (JSON-RPC over MQTT)
 
-    Copyright 2015-2021 José Micó
+    Copyright 2015-2023 José Micó
 
     For protocol references see: 
     - https://mqtt.org/mqtt-specification
