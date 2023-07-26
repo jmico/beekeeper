@@ -127,7 +127,15 @@ sub _connect_to_all_brokers {
                 my $delay = $self->{connect_err}->{$bus_id}++;
                 $self->{reconnect_tmr}->{$bus_id} = AnyEvent->timer(
                     after => ($delay < 10 ? $delay * 3 : 30),
-                    cb    => sub { $bus->connect },
+                    cb => sub { 
+                        $bus->connect(
+                            on_connack => sub {
+                                log_warn "Reconnected to $bus_id";
+                                $self->_setup_sync_listeners($bus);
+                                $self->_accept_sync_requests($bus) if $self->{synced};
+                            }
+                        );
+                    },
                 );
             },
         );

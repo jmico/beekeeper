@@ -40,7 +40,7 @@ sub on_startup {
 
 sub _connect_to_all_brokers {
     my $self = shift;
-    weaken($self);
+    weaken $self;
 
     my $own_bus = $self->{_BUS};
     my $group_config = Beekeeper::Config->get_bus_group_config( bus_id => $own_bus->bus_id );
@@ -59,12 +59,8 @@ sub _connect_to_all_brokers {
 
         my $bus; $bus = Beekeeper::MQTT->new( 
             %$config,
-            bus_id     => $bus_id,
-            timeout    => 300,
-            on_connect => sub {
-                # Setup subscriptions
-                $self->_collect_log($bus);
-            },
+            bus_id   => $bus_id,
+            timeout  => 300,
             on_error => sub {
                 # Reconnect
                 my $errmsg = $_[0] || ""; $errmsg =~ s/\s+/ /sg;
@@ -72,14 +68,27 @@ sub _connect_to_all_brokers {
                 my $delay = $self->{connect_err}->{$bus_id}++;
                 $self->{reconnect_tmr}->{$bus_id} = AnyEvent->timer(
                     after => ($delay < 10 ? $delay * 3 : 30),
-                    cb    => sub { $bus->connect },
+                    cb => sub {
+                        $bus->connect(
+                            on_connack => sub {
+                                # Setup subscriptions
+                                log_warn "Reconnected to $bus_id";
+                                $self->_collect_log($bus);
+                            }
+                        );
+                    },
                 );
             },
         );
 
         push @{$self->{_BUS_GROUP}}, $bus;
 
-        $bus->connect;
+        $bus->connect(
+            on_connack => sub {
+                # Setup subscriptions
+                $self->_collect_log($bus);
+            }
+        );
     }
 }
 

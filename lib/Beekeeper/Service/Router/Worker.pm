@@ -58,6 +58,7 @@ sub on_startup {
 
 sub init_frontend_connection {
     my ($self, $config) = @_;
+    weaken $self;
 
     my $bus_id  = $config->{'bus_id'};
     my $back_id = $self->{_BUS}->bus_id;
@@ -77,7 +78,16 @@ sub init_frontend_connection {
             my $delay = $self->{connect_err}->{$bus_id}++;
             $self->{reconnect_tmr}->{$bus_id} = AnyEvent->timer(
                 after => ($delay < 10 ? $delay * 3 : 30),
-                cb    => sub { $bus->connect },
+                cb => sub {
+                    $bus->connect(
+                        on_connack => sub {
+                            # Setup routing
+                            log_warn "Rerouting: $back_id <--> $bus_id";
+                            $self->{FRONTEND}->{$bus_id} = $bus;
+                            $self->pull_frontend_requests( frontend => $bus );
+                        }
+                    );
+                },
             );
         },
     );
@@ -191,7 +201,7 @@ sub on_shutdown {
 
 sub pull_frontend_requests {
     my ($self, %args) = @_;
-    weaken($self);
+    weaken $self;
 
     # Get requests from frontend bus and forward them to backend bus
     #
