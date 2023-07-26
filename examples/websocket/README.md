@@ -1,6 +1,6 @@
 ## WebSocket example
 
-> *Try this example [here](https://beekeeper.net.ar/examples/calculator.html)*
+> *Try a [live demo](https://beekeeper.net.ar/examples/calculator.html) of this example*
 
 This example demonstrates the use of services from browsers using WebSockets.
 

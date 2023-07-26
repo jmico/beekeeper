@@ -1,6 +1,6 @@
 ## Chat example
 
-> *Try this example [here](https://beekeeper.net.ar/examples/chat.html)*
+> *Try a [live demo](https://beekeeper.net.ar/examples/chat.html) of this example*
 
 This example implements a real world setup with isolated buses and redundancy:
 

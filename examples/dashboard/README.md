@@ -1,6 +1,6 @@
 ## Dashboard
 
-> *Try this dashboard [here](https://beekeeper.net.ar/dashboard/) &nbsp;(user: guest, password: guest)*
+> *Try a [live demo](https://beekeeper.net.ar/dashboard/) of this dashboard*
 
 ![](../../doc/images/dashboard.png)
 
