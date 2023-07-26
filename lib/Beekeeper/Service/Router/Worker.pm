@@ -30,6 +30,7 @@ sub authorize_request {
 
 sub on_startup {
     my $self = shift;
+    weaken $self;
 
     my $worker_config = $self->{_WORKER}->{config};
     my $bus_config    = $self->{_WORKER}->{bus_config};
@@ -54,6 +55,13 @@ sub on_startup {
 
         $self->init_frontend_connection( $config );
     }
+
+    # Ping frontend brokers to avoid disconnections due to inactivity
+    $self->{ping_timer} = AnyEvent->timer(
+        after    => 60 * rand(),
+        interval => 60,
+        cb       => sub { $self->ping_frontend_brokers },
+    );
 }
 
 sub init_frontend_connection {
@@ -390,6 +398,16 @@ sub pull_backend_notifications {
                 log_debug "Forwarding $src_queue \@$backend_id --> msg/frontend/{app}/{service}/{method} \@$frontend_id";
             }
         );
+    }
+}
+
+sub ping_frontend_brokers {
+    my $self = shift;
+
+    foreach my $frontend_bus (values %{$self->{FRONTEND}}) {
+
+        next unless $frontend_bus->{is_connected};
+        $frontend_bus->pingreq;
     }
 }
 

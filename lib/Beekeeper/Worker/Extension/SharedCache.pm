@@ -89,6 +89,13 @@ sub new {
         );
     }
 
+    # Ping backend brokers to avoid disconnections due to inactivity
+    $self->{ping_timer} = AnyEvent->timer(
+        after    => 60 * rand(),
+        interval => 60,
+        cb       => sub { $Self->_ping_backend_brokers },
+    );
+
     return $self;
 }
 
@@ -280,6 +287,16 @@ sub _accept_sync_requests {
             log_error "Could not subscribe to topic '$topic'" unless $success;
         }
     );
+}
+
+sub _ping_backend_brokers {
+    my $self = shift;
+
+    foreach my $bus (@{$self->{_BUS_GROUP}}) {
+
+        next unless $bus->{is_connected};
+        $bus->pingreq;
+    }
 }
 
 my $_now = 0;

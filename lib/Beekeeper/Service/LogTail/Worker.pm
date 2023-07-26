@@ -25,6 +25,7 @@ sub authorize_request {
 
 sub on_startup {
     my $self = shift;
+    weaken $self;
 
     $self->{max_entries} = $self->{config}->{buffer_entries} || 20000;
     $self->{log_level}   = $self->{config}->{log_level}      || LOG_DEBUG;
@@ -33,6 +34,13 @@ sub on_startup {
 
     $self->accept_remote_calls(
         '_bkpr.logtail.tail' => 'tail',
+    );
+
+    # Ping backend brokers to avoid disconnections due to inactivity
+    $self->{ping_timer} = AnyEvent->timer(
+        after    => 60 * rand(),
+        interval => 60,
+        cb       => sub { $self->_ping_backend_brokers },
     );
 
     log_info "Ready";
@@ -128,12 +136,22 @@ sub _collect_log {
     }
 }
 
+sub _ping_backend_brokers {
+    my $self = shift;
+
+    foreach my $bus (@{$self->{_BUS_GROUP}}) {
+
+        next unless $bus->{is_connected};
+        $bus->pingreq;
+    }
+}
+
 sub on_shutdown {
     my ($self, %args) = @_;
 
-     foreach my $bus (@{$self->{_BUS_GROUP}}) {
+    foreach my $bus (@{$self->{_BUS_GROUP}}) {
 
-        next unless ($bus->{is_connected});
+        next unless $bus->{is_connected};
         $bus->disconnect;
     }
 
