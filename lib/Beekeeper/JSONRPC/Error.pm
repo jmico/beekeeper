@@ -3,7 +3,7 @@ package Beekeeper::JSONRPC::Error;
 use strict;
 use warnings;
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 
 use overload '""' => sub { $_[0]->{error}->{message} };

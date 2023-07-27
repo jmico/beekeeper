@@ -3,7 +3,7 @@ package Beekeeper::Service::Supervisor;
 use strict;
 use warnings;
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 use Beekeeper::Client;
 
