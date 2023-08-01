@@ -1,0 +1,52 @@
+
+name: CI
+
+on:
+  # Triggers on push or pull request of the master branch
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+  # Allows to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+
+  run-tests:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        perl-version:
+          - '5.36'
+        # - '5.34'
+        # - '5.32'
+        # - '5.30'
+        # - '5.28'
+        # - '5.26'
+        # - '5.24'
+        # - '5.22'
+        # - '5.20'
+        # - '5.18'
+        # - '5.16'
+        # - '5.14'
+        # - '5.12'
+          - '5.10'
+
+    container:
+      image: perldocker/perl-tester:${{ matrix.perl-version }}
+
+    steps:
+      # Checkout repository under $GITHUB_WORKSPACE
+      - uses: actions/checkout@v3
+      - run: apt install -y libanyevent-perl libjson-xs-perl libnet-ssleay-perl libterm-readkey-perl libtest-class-perl procps
+      - run: cp .github/workflows/CI/Makefile.PL .
+      - run: perl -V
+      - run: cpanm --notest --installdeps --verbose .
+      - run: perl Makefile.PL
+      - run: make
+      - run: prove -wlvmb t
+
