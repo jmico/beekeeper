@@ -1,14 +1,14 @@
 
-name: CI
+name: CI - Run tests
 
 on:
-  # Triggers on push or pull request of the master branch
-  push:
-    branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
 
-  # Allows to run this workflow manually from the Actions tab
+  push:
+    branches: [ 'master', 'devel' ]
+  pull_request:
+    branches: [ 'master', 'devel' ]
+
+  # Allow to run this workflow manually
   workflow_dispatch:
 
 jobs:
@@ -21,7 +21,8 @@ jobs:
       fail-fast: false
       matrix:
         perl-version:
-          - '5.36'
+          - '5.38'
+        # - '5.36'
         # - '5.34'
         # - '5.32'
         # - '5.30'
@@ -40,13 +41,11 @@ jobs:
       image: perldocker/perl-tester:${{ matrix.perl-version }}
 
     steps:
-      # Checkout repository under $GITHUB_WORKSPACE
       - uses: actions/checkout@v3
-      - run: apt install -y libanyevent-perl libjson-xs-perl libnet-ssleay-perl libterm-readkey-perl libtest-class-perl procps
+      - run: apt install -y libanyevent-perl libjson-xs-perl libnet-ssleay-perl libterm-readkey-perl
       - run: cp .github/workflows/CI/Makefile.PL .
       - run: perl -V
       - run: cpanm --notest --installdeps --verbose .
       - run: perl Makefile.PL
       - run: make
       - run: prove -wlvmb t
-
