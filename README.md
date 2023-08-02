@@ -260,3 +260,6 @@ Copyright 2015-2023 José Micó.
 
 This is free software; you can redistribute it and/or modify it under the same
 terms as the Perl 5 programming language itself.
+
+[![CI - master](https://github.com/jmico/beekeeper/actions/workflows/CI.yml/badge.svg)](https://github.com/jmico/beekeeper/actions/workflows/CI.yml)
+[![CI - devel](https://github.com/jmico/beekeeper/actions/workflows/CI.yml/badge.svg?branch=devel)](https://github.com/jmico/beekeeper/actions/workflows/CI.yml)
